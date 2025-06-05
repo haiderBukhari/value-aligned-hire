@@ -8,8 +8,10 @@ import { Upload, ArrowLeft, Loader2, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { createPartFromUri, GoogleGenAI } from "@google/genai";
 
 const genAI = new GoogleGenerativeAI("AIzaSyC8MPRWNW6xARNNyUdG1p3m2bd6QZuNP3A");
+const fileAI = new GoogleGenAI({ apiKey: "AIzaSyC8MPRWNW6xARNNyUdG1p3m2bd6QZuNP3A" });
 
 
 const CreateJob = () => {
@@ -174,7 +176,7 @@ Minimum 5+ years React experience, Bachelor's degree in Computer Science, Experi
       const fileBlob = new Blob([pdfBuffer], { type: 'application/pdf' });
 
       // Upload the PDF to the AI provider (assume ai.files.upload is available)
-      const ai = genAI; // or your AI SDK instance
+      const ai = fileAI; // or your AI SDK instance
       const aiFile = await ai.files.upload({ file: fileBlob });
 
       // Wait for processing
