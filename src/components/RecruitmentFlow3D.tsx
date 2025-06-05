@@ -38,28 +38,6 @@ const FlowNode = ({ position, color, label, active }: {
   );
 };
 
-const ConnectionLine = ({ start, end, active }: { 
-  start: [number, number, number], 
-  end: [number, number, number], 
-  active: boolean 
-}) => {
-  const points = [new THREE.Vector3(...start), new THREE.Vector3(...end)];
-  
-  return (
-    <line>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={points.length}
-          array={new Float32Array(points.flatMap(p => [p.x, p.y, p.z]))}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <lineBasicMaterial color={active ? '#00ff00' : '#666666'} />
-    </line>
-  );
-};
-
 export const RecruitmentFlow3D = () => {
   const [activeStep, setActiveStep] = useState(0);
   
@@ -100,14 +78,6 @@ export const RecruitmentFlow3D = () => {
             active={index === activeStep}
           />
         ))}
-        
-        {/* Connection lines */}
-        <ConnectionLine start={[-6, 2, 0]} end={[-2, 2, 0]} active={activeStep >= 1} />
-        <ConnectionLine start={[-2, 2, 0]} end={[2, 2, 0]} active={activeStep >= 2} />
-        <ConnectionLine start={[2, 2, 0]} end={[6, 2, 0]} active={activeStep >= 3} />
-        <ConnectionLine start={[6, 2, 0]} end={[4, -2, 0]} active={activeStep >= 6} />
-        <ConnectionLine start={[4, -2, 0]} end={[0, -2, 0]} active={activeStep >= 5} />
-        <ConnectionLine start={[0, -2, 0]} end={[-4, -2, 0]} active={activeStep >= 4} />
         
         <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={1} />
       </Canvas>
