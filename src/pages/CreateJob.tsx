@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, Wand2, FileText, ArrowLeft, Loader2, Sparkles } from "lucide-react";
+import { Upload, ArrowLeft, Loader2, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -14,6 +14,7 @@ const CreateJob = () => {
   const navigate = useNavigate();
   const [isGenerating, setIsGenerating] = useState<{[key: string]: boolean}>({});
   const [isUploading, setIsUploading] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   
   const [jobData, setJobData] = useState({
     title: "",
@@ -153,16 +154,63 @@ const CreateJob = () => {
     }
   };
 
-  const handleSaveJob = () => {
+  const generateUUID = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
+
+  const handlePublishJob = async () => {
     if (!jobData.title || !jobData.description) {
       toast.error("Please fill in at least the job title and description");
       return;
     }
 
-    // Here you would typically save to your backend
-    console.log("Saving job:", jobData);
-    toast.success("Job created successfully!");
-    navigate("/dashboard/jobs");
+    setIsPublishing(true);
+    try {
+      // Get JWT token from localStorage (assuming it's stored there after login)
+      const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
+      
+      if (!token) {
+        toast.error("Please login to publish a job");
+        navigate("/login");
+        return;
+      }
+
+      const jobPayload = {
+        id: generateUUID(),
+        title: jobData.title,
+        description: jobData.description,
+        skill_condition: jobData.skillConditions
+      };
+
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/jobs`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(jobPayload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to publish job');
+      }
+
+      const result = await response.json();
+      console.log("Job published:", result);
+      
+      toast.success("Job published successfully!");
+      navigate("/dashboard/jobs");
+    } catch (error) {
+      console.error("Publish failed:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to publish job. Please try again.");
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   return (
@@ -184,18 +232,15 @@ const CreateJob = () => {
               <p className="text-sm text-gray-500">Create job posting with AI assistance</p>
             </div>
           </div>
-          <Button onClick={handleSaveJob} className="bg-blue-600 hover:bg-blue-700">
-            Save Job
-          </Button>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto p-6 space-y-6">
         {/* PDF Upload Section */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center">
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center text-lg">
               <Upload className="h-5 w-5 mr-2" />
               Quick Upload
             </CardTitle>
@@ -249,16 +294,13 @@ const CreateJob = () => {
 
         {/* Job Details Form */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <FileText className="h-5 w-5 mr-2" />
-              Job Details
-            </CardTitle>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Job Details</CardTitle>
             <CardDescription>
               Fill in the job information below. Use AI suggestions for each field.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4">
             {/* Job Title */}
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -268,7 +310,7 @@ const CreateJob = () => {
                   size="sm"
                   onClick={() => generateFieldSuggestion('title', jobData.title)}
                   disabled={isGenerating.title}
-                  className="text-blue-600 hover:text-blue-700"
+                  className="text-blue-600 hover:text-blue-700 h-8"
                 >
                   {isGenerating.title ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -283,7 +325,7 @@ const CreateJob = () => {
                 value={jobData.title}
                 onChange={(e) => setJobData(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="e.g., Senior Frontend Developer"
-                className="h-11"
+                className="h-10"
               />
             </div>
 
@@ -296,7 +338,7 @@ const CreateJob = () => {
                   size="sm"
                   onClick={() => generateFieldSuggestion('description', jobData.description)}
                   disabled={isGenerating.description}
-                  className="text-blue-600 hover:text-blue-700"
+                  className="text-blue-600 hover:text-blue-700 h-8"
                 >
                   {isGenerating.description ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -311,7 +353,7 @@ const CreateJob = () => {
                 value={jobData.description}
                 onChange={(e) => setJobData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Detailed job description including responsibilities, requirements, and benefits..."
-                className="min-h-[200px]"
+                className="min-h-[150px]"
               />
             </div>
 
@@ -329,7 +371,7 @@ const CreateJob = () => {
                   size="sm"
                   onClick={() => generateFieldSuggestion('skillConditions', jobData.skillConditions)}
                   disabled={isGenerating.skillConditions}
-                  className="text-blue-600 hover:text-blue-700"
+                  className="text-blue-600 hover:text-blue-700 h-8"
                 >
                   {isGenerating.skillConditions ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -344,8 +386,26 @@ const CreateJob = () => {
                 value={jobData.skillConditions}
                 onChange={(e) => setJobData(prev => ({ ...prev, skillConditions: e.target.value }))}
                 placeholder="e.g., Minimum 5+ years React experience, Bachelor's degree in Computer Science, Experience with TypeScript..."
-                className="min-h-[120px]"
+                className="min-h-[100px]"
               />
+            </div>
+
+            {/* Publish Button */}
+            <div className="pt-4 border-t">
+              <Button 
+                onClick={handlePublishJob} 
+                disabled={isPublishing || !jobData.title || !jobData.description}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                {isPublishing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Publishing Job...
+                  </>
+                ) : (
+                  "Publish Job"
+                )}
+              </Button>
             </div>
           </CardContent>
         </Card>
