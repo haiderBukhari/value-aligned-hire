@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { 
@@ -10,7 +9,8 @@ import {
   Trash2,
   Eye,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  Copy
 } from "lucide-react";
 import { 
   Card,
@@ -127,6 +127,12 @@ const Jobs = () => {
 
   const handleToggleStatus = (jobId: string) => {
     toggleStatusMutation.mutate(jobId);
+  };
+
+  const handleCopyApplicationLink = (jobId: string) => {
+    const applicationUrl = `${window.location.origin}/apply/${jobId}`;
+    navigator.clipboard.writeText(applicationUrl);
+    toast.success('Application link copied to clipboard');
   };
 
   if (error) {
@@ -248,6 +254,14 @@ const Jobs = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              className="cursor-pointer"
+                              onClick={() => handleCopyApplicationLink(job.id)}
+                            >
+                              <Copy className="mr-2 h-4 w-4" />
+                              <span>Copy Application Link</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem className="cursor-pointer">
                               <Eye className="mr-2 h-4 w-4" />
                               <span>View Details</span>

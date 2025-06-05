@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { Users, Briefcase, TrendingUp, Calendar, Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2 } from "lucide-react";
+import { Users, Briefcase, TrendingUp, Calendar, Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, Home, Settings, LogOut } from "lucide-react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 
 const Dashboard = () => {
@@ -96,72 +97,129 @@ const Dashboard = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <div className="w-64 bg-white shadow-sm border-r border-gray-200">
-        <div className="p-6">
-          <h1 className="text-2xl font-bold text-gray-900">wilds</h1>
-          <p className="text-sm text-gray-500 mt-1">AI Recruitment</p>
+      {/* Enhanced Sidebar */}
+      <div className="w-72 bg-white shadow-xl border-r border-gray-200">
+        {/* Logo Section */}
+        <div className="p-6 border-b border-gray-200">
+          <button 
+            onClick={() => navigate('/')}
+            className="flex items-center hover:opacity-80 transition-opacity w-full"
+          >
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mr-3">
+              <Briefcase className="h-6 w-6 text-white" />
+            </div>
+            <div className="text-left">
+              <h1 className="text-xl font-bold text-gray-900">Talo HR</h1>
+              <p className="text-sm text-gray-500">AI Recruitment</p>
+            </div>
+          </button>
         </div>
         
-        <nav className="mt-6">
-          <div className="px-3">
+        {/* Navigation */}
+        <nav className="mt-6 px-4">
+          <div className="space-y-2">
             <Button
               variant={isDashboardHome ? "default" : "ghost"}
-              className="w-full justify-start mb-1"
+              className={`w-full justify-start h-12 text-left font-medium transition-all duration-200 ${
+                isDashboardHome 
+                  ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm hover:bg-blue-100" 
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+              }`}
               onClick={() => navigate("/dashboard")}
             >
-              <TrendingUp className="mr-2 h-4 w-4" />
+              <Home className="mr-3 h-5 w-5" />
               Dashboard
             </Button>
+            
             <Button
               variant="ghost"
-              className="w-full justify-start mb-1"
+              className="w-full justify-start h-12 text-left font-medium transition-all duration-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               onClick={() => navigate("/dashboard/create-job")}
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-3 h-5 w-5" />
               Create Job
             </Button>
+            
             <Button
               variant={location.pathname === "/dashboard/jobs" ? "default" : "ghost"}
-              className="w-full justify-start mb-1"
+              className={`w-full justify-start h-12 text-left font-medium transition-all duration-200 ${
+                location.pathname === "/dashboard/jobs"
+                  ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm hover:bg-blue-100" 
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+              }`}
               onClick={() => navigate("/dashboard/jobs")}
             >
-              <Briefcase className="mr-2 h-4 w-4" />
+              <Briefcase className="mr-3 h-5 w-5" />
               Jobs
             </Button>
+            
             <Button
               variant="ghost"
-              className="w-full justify-start mb-1"
+              className="w-full justify-start h-12 text-left font-medium transition-all duration-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50"
             >
-              <Users className="mr-2 h-4 w-4" />
-              Candidates
-            </Button>
-            <Button
-              variant="ghost"
-              className="w-full justify-start mb-1"
-            >
-              <Calendar className="mr-2 h-4 w-4" />
+              <Calendar className="mr-3 h-5 w-5" />
               Interviews
             </Button>
           </div>
+          
+          {/* Divider */}
+          <div className="my-6 border-t border-gray-200"></div>
+          
+          {/* Secondary Navigation */}
+          <div className="space-y-2">
+            <Button
+              variant="ghost"
+              className="w-full justify-start h-12 text-left font-medium transition-all duration-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+            >
+              <Settings className="mr-3 h-5 w-5" />
+              Settings
+            </Button>
+          </div>
         </nav>
+        
+        {/* Bottom Section */}
+        <div className="absolute w-60 bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
+          <div className="flex items-center space-x-3 mb-4">
+            <Avatar className="h-10 w-10 ring-2 ring-blue-200">
+              <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold">
+                AD
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">Admin User</p>
+              <p className="text-xs text-gray-500 truncate">admin@talehr.com</p>
+            </div>
+          </div>
+          
+          <Button
+            variant="ghost"
+            className="w-full justify-start h-10 text-left font-medium transition-all duration-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+            onClick={() => navigate('/')}
+          >
+            <LogOut className="mr-3 h-4 w-4" />
+            Sign Out
+          </Button>
+        </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+        {/* Enhanced Header */}
+        <header className="bg-white shadow-sm border-b border-gray-200 px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-semibold text-gray-900">
+              <h2 className="text-3xl font-bold text-gray-900 mb-1">
                 {isDashboardHome ? "Dashboard" : location.pathname === "/dashboard/create-job" ? "Create Job" : "Jobs Management"}
               </h2>
-              <p className="text-sm text-gray-500 mt-1">
-                {isDashboardHome ? "Welcome back! Here's what's happening." : location.pathname === "/dashboard/create-job" ? "Create a new job posting with AI assistance" : "Manage your job postings and applications"}
+              <p className="text-sm text-gray-600">
+                {isDashboardHome ? "Welcome back! Here's what's happening with your recruitment." : location.pathname === "/dashboard/create-job" ? "Create a new job posting with AI assistance" : "Manage your job postings and applications"}
               </p>
             </div>
             <div className="flex items-center space-x-4">
-              <Button onClick={() => navigate("/dashboard/create-job")}>
+              <Button 
+                onClick={() => navigate("/dashboard/create-job")}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-6 py-2 shadow-lg"
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Create Job
               </Button>
@@ -170,7 +228,7 @@ const Dashboard = () => {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-8">
           {isDashboardHome ? (
             <>
               {/* Stats Grid */}
