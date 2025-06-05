@@ -1,6 +1,6 @@
 
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Sphere, MeshDistortMaterial, Text3D, Center } from '@react-three/drei';
+import { OrbitControls, Sphere, MeshDistortMaterial } from '@react-three/drei';
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -17,10 +17,9 @@ const AnimatedSphere = ({ position, color }: { position: [number, number, number
   });
 
   return (
-    <Sphere ref={meshRef} args={[1, 100, 200]} position={position}>
+    <Sphere ref={meshRef} args={[1, 32, 32]} position={position}>
       <MeshDistortMaterial
         color={color}
-        attach="material"
         distort={0.3}
         speed={1.5}
         roughness={0}

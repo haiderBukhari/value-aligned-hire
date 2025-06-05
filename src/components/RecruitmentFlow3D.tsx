@@ -1,6 +1,6 @@
 
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Box, Sphere, Text, OrbitControls } from '@react-three/drei';
+import { Box, Text, OrbitControls, Line } from '@react-three/drei';
 import { useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
 
@@ -43,12 +43,13 @@ const ConnectionLine = ({ start, end, active }: {
   active: boolean 
 }) => {
   const points = [new THREE.Vector3(...start), new THREE.Vector3(...end)];
-  const geometry = new THREE.BufferGeometry().setFromPoints(points);
   
   return (
-    <line geometry={geometry}>
-      <lineBasicMaterial color={active ? '#00ff00' : '#666666'} linewidth={3} />
-    </line>
+    <Line
+      points={points}
+      color={active ? '#00ff00' : '#666666'}
+      lineWidth={3}
+    />
   );
 };
 
