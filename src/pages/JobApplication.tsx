@@ -137,23 +137,6 @@ const JobApplication = () => {
     );
   }
 
-  if (job.status === 'inactive') {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <Card className="w-full max-w-md mx-4 shadow-xl">
-          <CardContent className="p-8 text-center">
-            <Briefcase className="h-16 w-16 text-orange-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">{job.title}</h2>
-            <p className="text-gray-600 mb-4">{job.description}</p>
-            <div className="bg-orange-100 text-orange-800 px-4 py-2 rounded-full inline-block border border-orange-300">
-              Job is Currently Inactive
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -173,7 +156,7 @@ const JobApplication = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Job Details */}
+          {/* Job Details - Same for both active and inactive */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -185,8 +168,12 @@ const JobApplication = () => {
                   <h2 className="text-3xl font-bold text-gray-900 mb-4 leading-tight">
                     {job.title}
                   </h2>
-                  <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full inline-block text-sm font-medium border border-green-300">
-                    Active Position
+                  <div className={`px-3 py-1 rounded-full inline-block text-sm font-medium border ${
+                    job.status === 'active' 
+                      ? 'bg-green-100 text-green-800 border-green-300' 
+                      : 'bg-orange-100 text-orange-800 border-orange-300'
+                  }`}>
+                    {job.status === 'active' ? 'Active Position' : 'Currently Inactive'}
                   </div>
                 </div>
                 
@@ -200,7 +187,7 @@ const JobApplication = () => {
             </Card>
           </motion.div>
 
-          {/* Application Form */}
+          {/* Application Form or Inactive Message */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -208,114 +195,132 @@ const JobApplication = () => {
           >
             <Card className="shadow-xl border border-gray-200 bg-white">
               <CardContent className="p-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-6">Apply for this Position</h3>
-                
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Name Field */}
-                  <div>
-                    <Label htmlFor="name" className="text-gray-700 font-medium mb-2 block">
-                      Full Name *
-                    </Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <Input
-                        id="name"
-                        type="text"
-                        className="pl-10 h-12 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
-                        placeholder="Enter your full name"
-                        value={formData.applicant_name}
-                        onChange={(e) => setFormData(prev => ({ ...prev, applicant_name: e.target.value }))}
-                        required
-                      />
-                    </div>
+                {job.status === 'inactive' ? (
+                  <div className="text-center">
+                    <Briefcase className="h-16 w-16 text-orange-400 mx-auto mb-4" />
+                    <h3 className="text-2xl font-bold text-gray-900 mb-4">Job Currently Inactive</h3>
+                    <p className="text-gray-600 mb-6">
+                      This position is not currently accepting applications. Please check back later or explore other opportunities.
+                    </p>
+                    <Button 
+                      onClick={() => navigate('/')}
+                      className="bg-[#374151] hover:bg-[#2d343f] text-white"
+                    >
+                      Browse Other Jobs
+                    </Button>
                   </div>
+                ) : (
+                  <>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-6">Apply for this Position</h3>
+                    
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                      {/* Name Field */}
+                      <div>
+                        <Label htmlFor="name" className="text-gray-700 font-medium mb-2 block">
+                          Full Name *
+                        </Label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                          <Input
+                            id="name"
+                            type="text"
+                            className="pl-10 h-12 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
+                            placeholder="Enter your full name"
+                            value={formData.applicant_name}
+                            onChange={(e) => setFormData(prev => ({ ...prev, applicant_name: e.target.value }))}
+                            required
+                          />
+                        </div>
+                      </div>
 
-                  {/* Email Field */}
-                  <div>
-                    <Label htmlFor="email" className="text-gray-700 font-medium mb-2 block">
-                      Email Address *
-                    </Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <Input
-                        id="email"
-                        type="email"
-                        className="pl-10 h-12 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
-                        placeholder="Enter your email address"
-                        value={formData.email}
-                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                        required
-                      />
-                    </div>
-                  </div>
+                      {/* Email Field */}
+                      <div>
+                        <Label htmlFor="email" className="text-gray-700 font-medium mb-2 block">
+                          Email Address *
+                        </Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                          <Input
+                            id="email"
+                            type="email"
+                            className="pl-10 h-12 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
+                            placeholder="Enter your email address"
+                            value={formData.email}
+                            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                            required
+                          />
+                        </div>
+                      </div>
 
-                  {/* CV Upload */}
-                  <div>
-                    <Label className="text-gray-700 font-medium mb-2 block">
-                      CV/Resume *
-                    </Label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors bg-gray-50">
-                      <FileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600 mb-2">
-                        {cvFile ? cvFile.name : 'Upload your CV/Resume'}
-                      </p>
-                      <Input
-                        type="file"
-                        accept=".pdf,.doc,.docx"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleFileUpload(file, 'cv');
-                        }}
-                        className="hidden"
-                        id="cv-upload"
-                      />
-                      <Label htmlFor="cv-upload" className="cursor-pointer">
-                        <Button type="button" variant="outline" size="sm" disabled={uploading} className="border-gray-300 text-gray-700 hover:bg-gray-100">
-                          <Upload className="h-4 w-4 mr-2" />
-                          Choose File
-                        </Button>
-                      </Label>
-                    </div>
-                  </div>
+                      {/* CV Upload */}
+                      <div>
+                        <Label className="text-gray-700 font-medium mb-2 block">
+                          CV/Resume *
+                        </Label>
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors bg-gray-50">
+                          <FileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-sm text-gray-600 mb-2">
+                            {cvFile ? cvFile.name : 'Upload your CV/Resume'}
+                          </p>
+                          <Input
+                            type="file"
+                            accept=".pdf,.doc,.docx"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleFileUpload(file, 'cv');
+                            }}
+                            className="hidden"
+                            id="cv-upload"
+                          />
+                          <Label htmlFor="cv-upload" className="cursor-pointer">
+                            <Button type="button" variant="outline" size="sm" disabled={uploading} className="border-gray-300 text-gray-700 hover:bg-gray-100">
+                              <Upload className="h-4 w-4 mr-2" />
+                              Choose File
+                            </Button>
+                          </Label>
+                        </div>
+                      </div>
 
-                  {/* Cover Letter Upload */}
-                  <div>
-                    <Label className="text-gray-700 font-medium mb-2 block">
-                      Cover Letter (Optional)
-                    </Label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors bg-gray-50">
-                      <FileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600 mb-2">
-                        {coverLetterFile ? coverLetterFile.name : 'Upload your cover letter'}
-                      </p>
-                      <Input
-                        type="file"
-                        accept=".pdf,.doc,.docx"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleFileUpload(file, 'coverletter');
-                        }}
-                        className="hidden"
-                        id="cover-letter-upload"
-                      />
-                      <Label htmlFor="cover-letter-upload" className="cursor-pointer">
-                        <Button type="button" variant="outline" size="sm" disabled={uploading} className="border-gray-300 text-gray-700 hover:bg-gray-100">
-                          <Upload className="h-4 w-4 mr-2" />
-                          Choose File
-                        </Button>
-                      </Label>
-                    </div>
-                  </div>
+                      {/* Cover Letter Upload */}
+                      <div>
+                        <Label className="text-gray-700 font-medium mb-2 block">
+                          Cover Letter (Optional)
+                        </Label>
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors bg-gray-50">
+                          <FileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-sm text-gray-600 mb-2">
+                            {coverLetterFile ? coverLetterFile.name : 'Upload your cover letter'}
+                          </p>
+                          <Input
+                            type="file"
+                            accept=".pdf,.doc,.docx"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleFileUpload(file, 'coverletter');
+                            }}
+                            className="hidden"
+                            id="cover-letter-upload"
+                          />
+                          <Label htmlFor="cover-letter-upload" className="cursor-pointer">
+                            <Button type="button" variant="outline" size="sm" disabled={uploading} className="border-gray-300 text-gray-700 hover:bg-gray-100">
+                              <Upload className="h-4 w-4 mr-2" />
+                              Choose File
+                            </Button>
+                          </Label>
+                        </div>
+                      </div>
 
-                  {/* Submit Button */}
-                  <Button
-                    type="submit"
-                    className="w-full h-12 bg-[#374151] hover:bg-[#2d343f] text-white font-semibold text-lg border-0"
-                    disabled={submitApplicationMutation.isPending || uploading}
-                  >
-                    {submitApplicationMutation.isPending ? 'Submitting...' : 'Submit Application'}
-                  </Button>
-                </form>
+                      {/* Submit Button */}
+                      <Button
+                        type="submit"
+                        className="w-full h-12 bg-[#374151] hover:bg-[#2d343f] text-white font-semibold text-lg border-0"
+                        disabled={submitApplicationMutation.isPending || uploading}
+                      >
+                        {submitApplicationMutation.isPending ? 'Submitting...' : 'Submit Application'}
+                      </Button>
+                    </form>
+                  </>
+                )}
               </CardContent>
             </Card>
           </motion.div>
