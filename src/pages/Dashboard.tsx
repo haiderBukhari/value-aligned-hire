@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { Users, Briefcase, TrendingUp, Calendar, Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, Home, Settings, LogOut, Bell } from "lucide-react";
+import { Users, Briefcase, TrendingUp, Calendar, Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, Home, Settings, LogOut } from "lucide-react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 
 const Dashboard = () => {
@@ -96,34 +96,34 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="flex min-h-screen bg-gray-50">
       {/* Enhanced Sidebar */}
-      <div className="w-72 bg-gradient-to-b from-slate-900 to-slate-800 shadow-2xl border-r border-slate-700">
+      <div className="w-72 bg-white shadow-xl border-r border-gray-200">
         {/* Logo Section */}
-        <div className="p-8 border-b border-slate-700">
+        <div className="p-6 border-b border-gray-200">
           <button 
             onClick={() => navigate('/')}
             className="flex items-center hover:opacity-80 transition-opacity w-full"
           >
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mr-4">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mr-3">
               <Briefcase className="h-6 w-6 text-white" />
             </div>
             <div className="text-left">
-              <h1 className="text-xl font-bold text-white">Talo HR</h1>
-              <p className="text-sm text-slate-400">AI Recruitment</p>
+              <h1 className="text-xl font-bold text-gray-900">Talo HR</h1>
+              <p className="text-sm text-gray-500">AI Recruitment</p>
             </div>
           </button>
         </div>
         
         {/* Navigation */}
-        <nav className="mt-8 px-4">
+        <nav className="mt-6 px-4">
           <div className="space-y-2">
             <Button
               variant={isDashboardHome ? "default" : "ghost"}
               className={`w-full justify-start h-12 text-left font-medium transition-all duration-200 ${
                 isDashboardHome 
-                  ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg" 
-                  : "text-slate-300 hover:text-white hover:bg-slate-700/50"
+                  ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm hover:bg-blue-100" 
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
               onClick={() => navigate("/dashboard")}
             >
@@ -133,7 +133,7 @@ const Dashboard = () => {
             
             <Button
               variant="ghost"
-              className="w-full justify-start h-12 text-left font-medium transition-all duration-200 text-slate-300 hover:text-white hover:bg-slate-700/50"
+              className="w-full justify-start h-12 text-left font-medium transition-all duration-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               onClick={() => navigate("/dashboard/create-job")}
             >
               <Plus className="mr-3 h-5 w-5" />
@@ -144,8 +144,8 @@ const Dashboard = () => {
               variant={location.pathname === "/dashboard/jobs" ? "default" : "ghost"}
               className={`w-full justify-start h-12 text-left font-medium transition-all duration-200 ${
                 location.pathname === "/dashboard/jobs"
-                  ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg" 
-                  : "text-slate-300 hover:text-white hover:bg-slate-700/50"
+                  ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm hover:bg-blue-100" 
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
               onClick={() => navigate("/dashboard/jobs")}
             >
@@ -155,15 +155,7 @@ const Dashboard = () => {
             
             <Button
               variant="ghost"
-              className="w-full justify-start h-12 text-left font-medium transition-all duration-200 text-slate-300 hover:text-white hover:bg-slate-700/50"
-            >
-              <Users className="mr-3 h-5 w-5" />
-              Candidates
-            </Button>
-            
-            <Button
-              variant="ghost"
-              className="w-full justify-start h-12 text-left font-medium transition-all duration-200 text-slate-300 hover:text-white hover:bg-slate-700/50"
+              className="w-full justify-start h-12 text-left font-medium transition-all duration-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50"
             >
               <Calendar className="mr-3 h-5 w-5" />
               Interviews
@@ -171,21 +163,13 @@ const Dashboard = () => {
           </div>
           
           {/* Divider */}
-          <div className="my-6 border-t border-slate-700"></div>
+          <div className="my-6 border-t border-gray-200"></div>
           
           {/* Secondary Navigation */}
           <div className="space-y-2">
             <Button
               variant="ghost"
-              className="w-full justify-start h-12 text-left font-medium transition-all duration-200 text-slate-300 hover:text-white hover:bg-slate-700/50"
-            >
-              <Bell className="mr-3 h-5 w-5" />
-              Notifications
-            </Button>
-            
-            <Button
-              variant="ghost"
-              className="w-full justify-start h-12 text-left font-medium transition-all duration-200 text-slate-300 hover:text-white hover:bg-slate-700/50"
+              className="w-full justify-start h-12 text-left font-medium transition-all duration-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50"
             >
               <Settings className="mr-3 h-5 w-5" />
               Settings
@@ -194,22 +178,22 @@ const Dashboard = () => {
         </nav>
         
         {/* Bottom Section */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-700">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
           <div className="flex items-center space-x-3 mb-4">
-            <Avatar className="h-10 w-10 ring-2 ring-blue-500">
+            <Avatar className="h-10 w-10 ring-2 ring-blue-200">
               <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold">
                 AD
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">Admin User</p>
-              <p className="text-xs text-slate-400 truncate">admin@talehr.com</p>
+              <p className="text-sm font-medium text-gray-900 truncate">Admin User</p>
+              <p className="text-xs text-gray-500 truncate">admin@talehr.com</p>
             </div>
           </div>
           
           <Button
             variant="ghost"
-            className="w-full justify-start h-10 text-left font-medium transition-all duration-200 text-slate-300 hover:text-white hover:bg-slate-700/50"
+            className="w-full justify-start h-10 text-left font-medium transition-all duration-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50"
             onClick={() => navigate('/')}
           >
             <LogOut className="mr-3 h-4 w-4" />

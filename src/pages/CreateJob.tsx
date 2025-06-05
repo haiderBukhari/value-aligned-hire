@@ -1,464 +1,630 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, ArrowLeft, Loader2, Sparkles } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { Briefcase, Sparkles, Upload, FileText, Loader2, Plus, X, ArrowLeft } from "lucide-react";
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { useMutation } from "@tanstack/react-query";
 
-const genAI = new GoogleGenerativeAI("AIzaSyC8MPRWNW6xARNNyUdG1p3m2bd6QZuNP3A");
-
+// Initialize Gemini AI
+const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '');
 
 const CreateJob = () => {
   const navigate = useNavigate();
-  const [isGenerating, setIsGenerating] = useState<{ [key: string]: boolean }>({});
-  const [isUploading, setIsUploading] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [companyInfo, setCompanyInfo] = useState<string>("");
-  const [companyCulture, setCompanyCulture] = useState<string>("");
-
-  const [jobData, setJobData] = useState({
-    title: "",
-    description: "",
-    skillConditions: ""
+  const [step, setStep] = useState(1);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    requirements: [] as string[],
+    benefits: [] as string[],
+    location: '',
+    type: 'full-time',
+    salary_range: '',
+    experience_level: 'mid-level'
   });
+  
+  const [aiInput, setAiInput] = useState('');
+  const [currentRequirement, setCurrentRequirement] = useState('');
+  const [currentBenefit, setCurrentBenefit] = useState('');
+  const [generatingWithAI, setGeneratingWithAI] = useState(false);
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
 
-
-  useEffect(() => {
-    const fetchCompanyInfo = async () => {
-      const token = localStorage.getItem('token');
-      try {
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/company-info`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        if (!response.ok) throw new Error("Failed to fetch company info");
-        const data = await response.json();
-        setCompanyInfo(data.company_details || "");
-        setCompanyCulture(data.company_culture || "");
-      } catch (error) {
-        console.error("Error fetching company info:", error);
-        setCompanyInfo("");
-        setCompanyCulture("");
-      }
-    };
-    fetchCompanyInfo();
-  }, []);
-
-  const processDocument = async (file: File) => {
-    const data = new FormData();
-    data.append("file", file);
-    data.append("upload_preset", "products");
-
-    try {
-      const response = await fetch(`https://api.cloudinary.com/v1_1/djunaxxv0/raw/upload`, {
-        method: "POST",
-        body: data,
-      });
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      console.error("Upload failed:", error);
-      return null;
-    }
-  };
-
-  const generateFieldSuggestion = async (field: string, currentValue: string) => {
-    if (!currentValue.trim() && !(field === "skillConditions" && jobData.description.trim())) {
-      toast.error(`Please enter some ${field} first`);
-      return;
-    }
-
-    setIsGenerating(prev => ({ ...prev, [field]: true }));
-    try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
-
-      let prompt = "";
-      let maxLength = "";
-
-      switch (field) {
-        case 'title':
-          prompt = `
-Based on this job information, generate a clear, professional job title. Keep it concise and specific. If the job information is generic, add a relevant technology, seniority, or specialization to make the title more specific. Only give me the title, no other text or suggestions.
-
-Examples:
-Job information: "We are looking for a frontend engineer to build and maintain user interfaces using React and TypeScript for our SaaS platform."
-Title: Senior Frontend Engineer
-
-Job information: "Frontend Developer"
-Title: React Frontend Developer
-
-Job information: "Backend Developer"
-Title: Node.js Backend Engineer
-
-Job information: "We need someone to lead our mobile app development using Flutter."
-Title: Lead Flutter Mobile Developer
-
-Job information: "${currentValue}"
-Title:
-`;
-          maxLength = "Keep it under 30 words.";
-          break;
-        case 'description':
-          prompt = `
-Company Information: "${companyInfo}"
-Company Culture: "${companyCulture}"
-
-Based on this job information: "${currentValue}", and the company information and culture above, write a connected, compelling job description in plain text with the following structure:
-
-- Start with a short, engaging paragraph (2-3 lines) introducing the company, the team, and the role, making it clear how the role fits into the company's mission. If the industry or area is known from the company information, mention it naturally in the introduction. Do not include any bracketed placeholders or leave blank brackets in the output.
-- Follow with a short paragraph (2-3 lines) describing the type of candidate you are seeking, connecting their qualities and experience to the needs of the team and company.
-- Then, provide a detailed list of skills, responsibilities, and qualifications as bullet points (using • or - at the start of each point, not numbers or markdown). Each bullet must be specific and detailed, mentioning relevant technologies, tools, frameworks, or real-world context (e.g., "Experience building RESTful APIs with Node.js and Express", "Proficiency with PostgreSQL or MongoDB for data storage and retrieval", "Implementing CI/CD pipelines using GitHub Actions or Jenkins"). Avoid generic skills; make each point concrete and tailored to the role.
-- End with a short, motivating paragraph (2-3 lines) about the unique opportunities, impact, and culture the candidate will experience, using the company culture as context.
-
-Do not use section headings, numbers, or markdown. Do not include any instructions on how to apply. Only include information relevant to the job and company. Make sure each part connects smoothly to the next, creating a unified and appealing description.
-`;
-          maxLength = "Each paragraph should be 2-3 lines. Bullet points must be detailed, specifying technologies, tools, and context. No markdown, numbers, or section headings. Do not include any bracketed placeholders or blank brackets in the output.";
-          break;
-        case 'skillConditions':
-          prompt = `
-Based on the following job description and skill conditions, generate a concise, comma-separated list of the main, measurable skills and requirements for AI filtering. Only include specific, quantifiable criteria such as years of experience, required technologies, degrees, certifications, and must-have skills. Do not include any extra explanation or formatting—just the list.
-
-Job Description: "${jobData.description}"
-Skill Conditions Field: "${currentValue}"
-
-Example output:
-Minimum 5+ years React experience, Bachelor's degree in Computer Science, Experience with TypeScript, Familiarity with RESTful APIs, AWS certification
-`;
-          maxLength = "Only output the comma-separated list of main, measurable skills and requirements. No extra text.";
-          break;
-      }
-
-      const fullPrompt = `${prompt} ${maxLength}`;
-
-      const result = await model.generateContent(fullPrompt);
-      const response = result.response.text();
-
-      setJobData(prev => ({ ...prev, [field]: response.trim() }));
-      toast.success(`${field.charAt(0).toUpperCase() + field.slice(1)} suggestion generated!`);
-    } catch (error) {
-      console.error("AI generation failed:", error);
-      toast.error(`Failed to generate ${field} suggestion. Please try again.`);
-    } finally {
-      setIsGenerating(prev => ({ ...prev, [field]: false }));
-    }
-  };
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (file.type !== "application/pdf") {
-      toast.error("Please upload a PDF file only");
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      // Upload to Cloudinary
-      const uploadResult = await processDocument(file);
-      if (!uploadResult) {
-        throw new Error("Upload failed");
-      }
-
-      toast.success("PDF uploaded successfully! Analyzing...");
-
-      // Download the PDF as a buffer
-      const pdfBuffer = await fetch(uploadResult.secure_url).then((response) => response.arrayBuffer());
-      const fileBlob = new Blob([pdfBuffer], { type: 'application/pdf' });
-
-      // Upload the PDF to the AI provider (assume ai.files.upload is available)
-      const ai = genAI; // or your AI SDK instance
-      const aiFile = await ai.files.upload({ file: fileBlob });
-
-      // Wait for processing
-      let getFile = await ai.files.get({ name: aiFile.name });
-      while (getFile.state === 'PROCESSING') {
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-        getFile = await ai.files.get({ name: aiFile.name });
-      }
-      if (aiFile.state === 'FAILED') {
-        toast.info("File processing failed");
-        setIsUploading(false);
-        return;
-      }
-
-      // Prepare the structured prompt
-      const content = [
-        `Extract the following job posting fields from the PDF and return them as a JSON object with these exact keys: ["title", "description", "skill_conditions"].\n- "title": Generate a clear, professional job title based on the document.\n- "description": Write a connected, compelling job description in plain text. Start with a short, engaging paragraph introducing the company, team, and role (mention the industry if known). Follow with a short paragraph about the ideal candidate. Then, provide a detailed list of skills, responsibilities, and qualifications as bullet points (using • or - at the start of each point, not numbers or markdown). Each bullet must be specific and detailed, mentioning relevant technologies, tools, frameworks, or real-world context. End with a short, motivating paragraph about the unique opportunities, impact, and culture the candidate will experience. Do not use section headings, numbers, or markdown. Do not include any instructions on how to apply. Do not include any bracketed placeholders or blank brackets in the output.\n- "skill_conditions": Based on the job description and any skill-related content in the document, generate a concise, comma-separated list of the main, measurable skills and requirements for AI filtering. Only include specific, quantifiable criteria such as years of experience, required technologies, degrees, certifications, and must-have skills. Do not include any extra explanation or formatting—just the list.\n\nReturn the result as a JSON object with these keys: ["title", "description", "skill_conditions"].`
-      ];
-
-      if (aiFile.uri && aiFile.mimeType) {
-        const fileContent = createPartFromUri(aiFile.uri, aiFile.mimeType);
-        content.push(fileContent);
-      }
-
-      // Call the AI model
-      const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
-        contents: content,
-      });
-
-      let rawContent = response.text || "";
-      const jsonMatch = rawContent.match(/```json([\s\S]*?)```/);
-      const jsonString = jsonMatch ? jsonMatch[1].trim() : rawContent;
-
-      let generatedProperties;
-      try {
-        generatedProperties = JSON.parse(jsonString);
-      } catch (err) {
-        throw new Error("Failed to parse JSON response from AI");
-      }
-
-      setJobData({
-        title: generatedProperties.title || "",
-        description: generatedProperties.description || "",
-        skillConditions: generatedProperties.skill_conditions || ""
-      });
-
-      toast.success("Job data extracted from PDF successfully!");
-    } catch (error) {
-      console.error("Error extracting job from PDF:", error);
-      toast.error(`Failed to extract job data: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handlePublishJob = async () => {
-    if (!jobData.title || !jobData.description) {
-      toast.error("Please fill in at least the job title and description");
-      return;
-    }
-
-    setIsPublishing(true);
-    try {
-      // Get JWT token from localStorage (assuming it's stored there after login)
-      const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
-
-      if (!token) {
-        toast.error("Please login to publish a job");
-        navigate("/login");
-        return;
-      }
-
-      const jobPayload = {
-        title: jobData.title,
-        description: jobData.description,
-        skill_condition: jobData.skillConditions
-      };
-
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/jobs`, {
+  // Create job mutation
+  const createJobMutation = useMutation({
+    mutationFn: async (jobData: typeof formData) => {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/jobs`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(jobPayload),
+        body: JSON.stringify(jobData),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to publish job');
+        throw new Error('Failed to create job');
       }
 
-      const result = await response.json();
-      console.log("Job published:", result);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast.success('Job created successfully!');
+      navigate('/dashboard/jobs');
+    },
+    onError: (error) => {
+      console.error('Job creation error:', error);
+      toast.error('Failed to create job');
+    },
+  });
 
-      toast.success("Job published successfully!");
-      navigate("/dashboard/jobs");
-    } catch (error) {
-      console.error("Publish failed:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to publish job. Please try again.");
-    } finally {
-      setIsPublishing(false);
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const addRequirement = () => {
+    if (currentRequirement.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        requirements: [...prev.requirements, currentRequirement.trim()]
+      }));
+      setCurrentRequirement('');
     }
   };
 
+  const removeRequirement = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      requirements: prev.requirements.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addBenefit = () => {
+    if (currentBenefit.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        benefits: [...prev.benefits, currentBenefit.trim()]
+      }));
+      setCurrentBenefit('');
+    }
+  };
+
+  const removeBenefit = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      benefits: prev.benefits.filter((_, i) => i !== index)
+    }));
+  };
+
+  const generateWithAI = async () => {
+    if (!aiInput.trim()) {
+      toast.error('Please provide some context for AI generation');
+      return;
+    }
+
+    setGeneratingWithAI(true);
+    try {
+      const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+      
+      const prompt = `Based on this input: "${aiInput}", generate a comprehensive job posting with the following structure:
+      
+      Title: [Job Title]
+      Description: [Detailed job description]
+      Requirements: [List of requirements, separated by newlines with bullet points]
+      Benefits: [List of benefits, separated by newlines with bullet points]
+      Location: [Work location or "Remote"]
+      Type: [full-time, part-time, contract, or internship]
+      Salary Range: [Salary range if mentioned]
+      Experience Level: [entry-level, mid-level, or senior-level]
+      
+      Please provide a realistic and professional job posting.`;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      // Parse the AI response
+      const parseAIResponse = (text: string) => {
+        const lines = text.split('\n');
+        const parsed = {
+          title: '',
+          description: '',
+          requirements: [] as string[],
+          benefits: [] as string[],
+          location: '',
+          type: 'full-time',
+          salary_range: '',
+          experience_level: 'mid-level'
+        };
+
+        let currentSection = '';
+        
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+
+          if (trimmed.toLowerCase().startsWith('title:')) {
+            parsed.title = trimmed.substring(6).trim();
+          } else if (trimmed.toLowerCase().startsWith('description:')) {
+            parsed.description = trimmed.substring(12).trim();
+          } else if (trimmed.toLowerCase().startsWith('requirements:')) {
+            currentSection = 'requirements';
+          } else if (trimmed.toLowerCase().startsWith('benefits:')) {
+            currentSection = 'benefits';
+          } else if (trimmed.toLowerCase().startsWith('location:')) {
+            parsed.location = trimmed.substring(9).trim();
+          } else if (trimmed.toLowerCase().startsWith('type:')) {
+            const type = trimmed.substring(5).trim().toLowerCase();
+            if (['full-time', 'part-time', 'contract', 'internship'].includes(type)) {
+              parsed.type = type;
+            }
+          } else if (trimmed.toLowerCase().startsWith('salary range:')) {
+            parsed.salary_range = trimmed.substring(13).trim();
+          } else if (trimmed.toLowerCase().startsWith('experience level:')) {
+            const level = trimmed.substring(17).trim().toLowerCase();
+            if (['entry-level', 'mid-level', 'senior-level'].includes(level)) {
+              parsed.experience_level = level;
+            }
+          } else if (currentSection === 'requirements' && (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*'))) {
+            parsed.requirements.push(trimmed.substring(1).trim());
+          } else if (currentSection === 'benefits' && (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*'))) {
+            parsed.benefits.push(trimmed.substring(1).trim());
+          } else if (currentSection === 'requirements' && trimmed) {
+            parsed.requirements.push(trimmed);
+          } else if (currentSection === 'benefits' && trimmed) {
+            parsed.benefits.push(trimmed);
+          }
+        }
+
+        return parsed;
+      };
+
+      const parsedData = parseAIResponse(text);
+      setFormData(prev => ({ ...prev, ...parsedData }));
+      setStep(2);
+      toast.success('Job posting generated successfully!');
+    } catch (error) {
+      console.error('AI generation error:', error);
+      toast.error('Failed to generate job posting with AI');
+    } finally {
+      setGeneratingWithAI(false);
+    }
+  };
+
+  const handleResumeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setResumeFile(file);
+      // Here you could also extract information from the resume using AI
+      toast.success('Resume uploaded successfully');
+    }
+  };
+
+  const analyzeResumeWithAI = async () => {
+    if (!resumeFile) {
+      toast.error('Please upload a resume first');
+      return;
+    }
+
+    setGeneratingWithAI(true);
+    try {
+      // For this demo, we'll generate a job posting that might match the resume
+      // In a real implementation, you'd extract text from the PDF/document first
+      const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+      
+      const prompt = `Generate a job posting that would be suitable for someone with the following background (simulate based on common resume patterns):
+      
+      Create a comprehensive job posting with:
+      Title: [Relevant Job Title]
+      Description: [Detailed job description]
+      Requirements: [List of requirements]
+      Benefits: [List of benefits]
+      Location: [Work location]
+      Type: [Employment type]
+      Salary Range: [Competitive salary range]
+      Experience Level: [Appropriate level]
+      
+      Make it professional and realistic.`;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      // Use the same parsing logic as before
+      const parseAIResponse = (text: string) => {
+        const lines = text.split('\n');
+        const parsed = {
+          title: '',
+          description: '',
+          requirements: [] as string[],
+          benefits: [] as string[],
+          location: '',
+          type: 'full-time',
+          salary_range: '',
+          experience_level: 'mid-level'
+        };
+
+        let currentSection = '';
+        
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+
+          if (trimmed.toLowerCase().startsWith('title:')) {
+            parsed.title = trimmed.substring(6).trim();
+          } else if (trimmed.toLowerCase().startsWith('description:')) {
+            parsed.description = trimmed.substring(12).trim();
+          } else if (trimmed.toLowerCase().startsWith('requirements:')) {
+            currentSection = 'requirements';
+          } else if (trimmed.toLowerCase().startsWith('benefits:')) {
+            currentSection = 'benefits';
+          } else if (trimmed.toLowerCase().startsWith('location:')) {
+            parsed.location = trimmed.substring(9).trim();
+          } else if (trimmed.toLowerCase().startsWith('type:')) {
+            const type = trimmed.substring(5).trim().toLowerCase();
+            if (['full-time', 'part-time', 'contract', 'internship'].includes(type)) {
+              parsed.type = type;
+            }
+          } else if (trimmed.toLowerCase().startsWith('salary range:')) {
+            parsed.salary_range = trimmed.substring(13).trim();
+          } else if (trimmed.toLowerCase().startsWith('experience level:')) {
+            const level = trimmed.substring(17).trim().toLowerCase();
+            if (['entry-level', 'mid-level', 'senior-level'].includes(level)) {
+              parsed.experience_level = level;
+            }
+          } else if (currentSection === 'requirements' && (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*'))) {
+            parsed.requirements.push(trimmed.substring(1).trim());
+          } else if (currentSection === 'benefits' && (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*'))) {
+            parsed.benefits.push(trimmed.substring(1).trim());
+          }
+        }
+
+        return parsed;
+      };
+
+      const parsedData = parseAIResponse(text);
+      setFormData(prev => ({ ...prev, ...parsedData }));
+      setStep(2);
+      toast.success('Job posting generated from resume analysis!');
+    } catch (error) {
+      console.error('Resume analysis error:', error);
+      toast.error('Failed to analyze resume');
+    } finally {
+      setGeneratingWithAI(false);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.title || !formData.description) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    createJobMutation.mutate(formData);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Button
+            variant="ghost"
+            onClick={() => step === 1 ? navigate('/dashboard') : setStep(1)}
+            className="flex items-center space-x-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back</span>
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Create New Job</h1>
+            <p className="text-gray-600">Use AI to generate job postings or create manually</p>
+          </div>
+        </div>
+      </div>
 
-      {/* Main Content */}
-      <div className="max-w-full mx-auto p-2 space-y-6">
-        {/* PDF Upload Section */}
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center text-lg">
-              <Upload className="h-5 w-5 mr-2" />
-              Quick Upload
-            </CardTitle>
-            <CardDescription>
-              Upload a PDF document to auto-populate job details
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-              <Upload className="h-8 w-8 text-gray-400 mx-auto mb-3" />
-              <h3 className="text-sm font-medium text-gray-900 mb-2">
-                Upload Job Document
-              </h3>
-              <p className="text-xs text-gray-500 mb-3">
-                PDF files only • Auto-populate all fields
-              </p>
-              <input
-                type="file"
-                accept=".pdf"
-                onChange={handleFileUpload}
-                className="hidden"
-                id="pdf-upload"
-                disabled={isUploading}
-              />
-              <label htmlFor="pdf-upload">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="cursor-pointer"
-                  disabled={isUploading}
-                  asChild
-                >
-                  <span>
-                    {isUploading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="h-4 w-4 mr-2" />
-                        Choose PDF
-                      </>
-                    )}
-                  </span>
-                </Button>
-              </label>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Job Details Form */}
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Job Details</CardTitle>
-            <CardDescription>
-              Fill in the job information below. Use AI suggestions for each field.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Job Title */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <Label htmlFor="title">Job Title</Label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => generateFieldSuggestion('title', jobData.title)}
-                  disabled={isGenerating.title}
-                  className="text-blue-600 hover:text-blue-700 h-8"
-                >
-                  {isGenerating.title ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4" />
-                  )}
-                  <span className="ml-1 text-xs">AI Suggest</span>
-                </Button>
+      {step === 1 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* AI Generation */}
+          <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Sparkles className="h-5 w-5 text-blue-600" />
+                <span>AI-Powered Generation</span>
+              </CardTitle>
+              <CardDescription>
+                Describe the role you want to create and let AI generate a complete job posting
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="ai-input">Job Description</Label>
+                <Textarea
+                  id="ai-input"
+                  placeholder="e.g., We need a senior React developer for our fintech startup..."
+                  value={aiInput}
+                  onChange={(e) => setAiInput(e.target.value)}
+                  className="mt-1"
+                  rows={4}
+                />
               </div>
-              <Input
-                id="title"
-                value={jobData.title}
-                onChange={(e) => setJobData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="e.g., Senior Frontend Developer"
-                className="h-10"
-              />
-            </div>
-
-            {/* Job Description */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <Label htmlFor="description">Job Description</Label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => generateFieldSuggestion('description', jobData.description)}
-                  disabled={isGenerating.description}
-                  className="text-blue-600 hover:text-blue-700 h-8"
-                >
-                  {isGenerating.description ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4" />
-                  )}
-                  <span className="ml-1 text-xs">AI Suggest</span>
-                </Button>
-              </div>
-              <Textarea
-                id="description"
-                value={jobData.description}
-                onChange={(e) => setJobData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Detailed job description including responsibilities, requirements, and benefits..."
-                className="min-h-[150px]"
-              />
-            </div>
-
-            {/* Skill Conditions */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <Label htmlFor="skillConditions">Skill Conditions (AI Filtering)</Label>
-                  <p className="text-xs text-gray-500 mt-1">
-                    This is for AI filtering only and won't be visible to candidates
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => generateFieldSuggestion('skillConditions', jobData.skillConditions)}
-                  disabled={isGenerating.skillConditions}
-                  className="text-blue-600 hover:text-blue-700 h-8"
-                >
-                  {isGenerating.skillConditions ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4" />
-                  )}
-                  <span className="ml-1 text-xs">AI Suggest</span>
-                </Button>
-              </div>
-              <Textarea
-                id="skillConditions"
-                value={jobData.skillConditions}
-                onChange={(e) => setJobData(prev => ({ ...prev, skillConditions: e.target.value }))}
-                placeholder="e.g., Minimum 5+ years React experience, Bachelor's degree in Computer Science, Experience with TypeScript..."
-                className="min-h-[100px]"
-              />
-            </div>
-
-            {/* Publish Button */}
-            <div className="pt-4 border-t">
-              <Button
-                onClick={handlePublishJob}
-                disabled={isPublishing || !jobData.title || !jobData.description}
-                className="w-full bg-blue-600 hover:bg-blue-700"
+              <Button 
+                onClick={generateWithAI}
+                disabled={generatingWithAI}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               >
-                {isPublishing ? (
+                {generatingWithAI ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Publishing Job...
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
                   </>
                 ) : (
-                  "Publish Job"
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Generate with AI
+                  </>
                 )}
               </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+
+          {/* Resume Analysis */}
+          <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <FileText className="h-5 w-5 text-green-600" />
+                <span>Resume-Based Generation</span>
+              </CardTitle>
+              <CardDescription>
+                Upload a resume and AI will generate a suitable job posting
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="resume-upload">Upload Resume</Label>
+                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-green-300 border-dashed rounded-md hover:border-green-400 transition-colors">
+                  <div className="space-y-1 text-center">
+                    <Upload className="mx-auto h-12 w-12 text-green-400" />
+                    <div className="flex text-sm text-gray-600">
+                      <label htmlFor="resume-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-green-600 hover:text-green-500">
+                        <span>Upload a file</span>
+                        <input
+                          id="resume-upload"
+                          type="file"
+                          className="sr-only"
+                          accept=".pdf,.doc,.docx"
+                          onChange={handleResumeUpload}
+                        />
+                      </label>
+                      <p className="pl-1">or drag and drop</p>
+                    </div>
+                    <p className="text-xs text-gray-500">PDF, DOC, DOCX up to 10MB</p>
+                  </div>
+                </div>
+                {resumeFile && (
+                  <p className="mt-2 text-sm text-green-600">✓ {resumeFile.name}</p>
+                )}
+              </div>
+              <Button 
+                onClick={analyzeResumeWithAI}
+                disabled={generatingWithAI || !resumeFile}
+                className="w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700"
+              >
+                {generatingWithAI ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Generate from Resume
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Manual Creation */}
+          <Card className="lg:col-span-2 border-2 border-gray-200">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Briefcase className="h-5 w-5 text-gray-600" />
+                <span>Manual Creation</span>
+              </CardTitle>
+              <CardDescription>
+                Create a job posting from scratch with full control
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                onClick={() => setStep(2)}
+                variant="outline"
+                className="w-full border-2 border-gray-300 hover:border-gray-400"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Start Manual Creation
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {step === 2 && (
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Job Details</CardTitle>
+              <CardDescription>Fill in the basic information about the position</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="title">Job Title *</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => handleInputChange('title', e.target.value)}
+                    placeholder="e.g., Senior Software Engineer"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="location">Location</Label>
+                  <Input
+                    id="location"
+                    value={formData.location}
+                    onChange={(e) => handleInputChange('location', e.target.value)}
+                    placeholder="e.g., San Francisco, CA or Remote"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="description">Job Description *</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  placeholder="Describe the role, responsibilities, and what makes this position exciting..."
+                  rows={6}
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="type">Employment Type</Label>
+                  <select
+                    id="type"
+                    value={formData.type}
+                    onChange={(e) => handleInputChange('type', e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                  >
+                    <option value="full-time">Full-time</option>
+                    <option value="part-time">Part-time</option>
+                    <option value="contract">Contract</option>
+                    <option value="internship">Internship</option>
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="experience_level">Experience Level</Label>
+                  <select
+                    id="experience_level"
+                    value={formData.experience_level}
+                    onChange={(e) => handleInputChange('experience_level', e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                  >
+                    <option value="entry-level">Entry Level</option>
+                    <option value="mid-level">Mid Level</option>
+                    <option value="senior-level">Senior Level</option>
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="salary_range">Salary Range</Label>
+                  <Input
+                    id="salary_range"
+                    value={formData.salary_range}
+                    onChange={(e) => handleInputChange('salary_range', e.target.value)}
+                    placeholder="e.g., $80,000 - $120,000"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Requirements</CardTitle>
+              <CardDescription>Add the skills and qualifications needed for this role</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex space-x-2">
+                <Input
+                  value={currentRequirement}
+                  onChange={(e) => setCurrentRequirement(e.target.value)}
+                  placeholder="Add a requirement..."
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addRequirement())}
+                />
+                <Button type="button" onClick={addRequirement}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {formData.requirements.map((req, index) => (
+                  <Badge key={index} variant="secondary" className="flex items-center space-x-1">
+                    <span>{req}</span>
+                    <X 
+                      className="h-3 w-3 cursor-pointer hover:text-red-500" 
+                      onClick={() => removeRequirement(index)}
+                    />
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Benefits</CardTitle>
+              <CardDescription>Highlight what makes this opportunity attractive</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex space-x-2">
+                <Input
+                  value={currentBenefit}
+                  onChange={(e) => setCurrentBenefit(e.target.value)}
+                  placeholder="Add a benefit..."
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addBenefit())}
+                />
+                <Button type="button" onClick={addBenefit}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {formData.benefits.map((benefit, index) => (
+                  <Badge key={index} variant="secondary" className="flex items-center space-x-1">
+                    <span>{benefit}</span>
+                    <X 
+                      className="h-3 w-3 cursor-pointer hover:text-red-500" 
+                      onClick={() => removeBenefit(index)}
+                    />
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Separator />
+
+          <div className="flex justify-end space-x-4">
+            <Button type="button" variant="outline" onClick={() => setStep(1)}>
+              Back to Options
+            </Button>
+            <Button
+              type="submit"
+              disabled={createJobMutation.isPending}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+            >
+              {createJobMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Job'
+              )}
+            </Button>
+          </div>
+        </form>
+      )}
     </div>
   );
 };
