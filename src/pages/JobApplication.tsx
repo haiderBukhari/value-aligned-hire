@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Upload, FileText, Mail, User, Briefcase } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +19,7 @@ interface Job {
 
 const JobApplication = () => {
   const { jobId } = useParams();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     applicant_name: '',
     email: '',
@@ -38,7 +39,7 @@ const JobApplication = () => {
         throw new Error('Job not found');
       }
       const data = await response.json();
-      return data; // Changed: API returns job data directly, not wrapped in { job: ... }
+      return data;
     },
   });
 
@@ -116,20 +117,20 @@ const JobApplication = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-        <div className="text-xl text-gray-600">Loading job details...</div>
+      <div className="min-h-screen bg-[#374151] flex items-center justify-center">
+        <div className="text-xl text-white">Loading job details...</div>
       </div>
     );
   }
 
   if (error || !job) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-        <Card className="w-full max-w-md mx-4">
+      <div className="min-h-screen bg-[#374151] flex items-center justify-center p-4">
+        <Card className="w-full max-w-md mx-4 bg-white/10 backdrop-blur-lg border-white/20">
           <CardContent className="p-8 text-center">
-            <Briefcase className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Job Not Found</h2>
-            <p className="text-gray-600">The job you're looking for doesn't exist or has been removed.</p>
+            <Briefcase className="h-16 w-16 text-white/60 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">Job Not Found</h2>
+            <p className="text-white/70">The job you're looking for doesn't exist or has been removed.</p>
           </CardContent>
         </Card>
       </div>
@@ -138,13 +139,13 @@ const JobApplication = () => {
 
   if (job.status === 'inactive') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-        <Card className="w-full max-w-md mx-4">
+      <div className="min-h-screen bg-[#374151] flex items-center justify-center p-4">
+        <Card className="w-full max-w-md mx-4 bg-white/10 backdrop-blur-lg border-white/20">
           <CardContent className="p-8 text-center">
             <Briefcase className="h-16 w-16 text-orange-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">{job.title}</h2>
-            <p className="text-gray-600 mb-4">{job.description}</p>
-            <div className="bg-orange-100 text-orange-800 px-4 py-2 rounded-full inline-block">
+            <h2 className="text-2xl font-bold text-white mb-2">{job.title}</h2>
+            <p className="text-white/70 mb-4">{job.description}</p>
+            <div className="bg-orange-100/20 text-orange-300 px-4 py-2 rounded-full inline-block border border-orange-300/30">
               Job is Currently Inactive
             </div>
           </CardContent>
@@ -154,18 +155,23 @@ const JobApplication = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-[#374151]">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="bg-[#374151] shadow-sm border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center">
-            <Briefcase className="h-8 w-8 text-blue-600 mr-3" />
-            <h1 className="text-2xl font-bold text-gray-900">Talo HR</h1>
+            <button 
+              onClick={() => navigate('/')}
+              className="flex items-center hover:opacity-80 transition-opacity"
+            >
+              <Briefcase className="h-8 w-8 text-white mr-3" />
+              <h1 className="text-2xl font-bold text-white">Talo HR</h1>
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Job Details */}
           <motion.div
@@ -173,20 +179,20 @@ const JobApplication = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Card className="h-fit shadow-lg border-0 bg-white">
+            <Card className="h-fit shadow-2xl border-0 bg-white/10 backdrop-blur-lg border-white/20">
               <CardContent className="p-8">
                 <div className="mb-6">
-                  <h2 className="text-3xl font-bold text-gray-900 mb-4 leading-tight">
+                  <h2 className="text-3xl font-bold text-white mb-4 leading-tight">
                     {job.title}
                   </h2>
-                  <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full inline-block text-sm font-medium">
+                  <div className="bg-green-500/20 text-green-300 px-3 py-1 rounded-full inline-block text-sm font-medium border border-green-300/30">
                     Active Position
                   </div>
                 </div>
                 
                 <div className="prose prose-gray max-w-none">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">Job Description</h3>
-                  <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">
+                  <h3 className="text-lg font-semibold text-white mb-3">Job Description</h3>
+                  <p className="text-white/80 leading-relaxed whitespace-pre-wrap">
                     {job.description}
                   </p>
                 </div>
@@ -200,22 +206,22 @@ const JobApplication = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <Card className="shadow-lg border-0 bg-white">
+            <Card className="shadow-2xl border-0 bg-white/10 backdrop-blur-lg border-white/20">
               <CardContent className="p-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-6">Apply for this Position</h3>
+                <h3 className="text-2xl font-bold text-white mb-6">Apply for this Position</h3>
                 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Name Field */}
                   <div>
-                    <Label htmlFor="name" className="text-gray-700 font-medium mb-2 block">
+                    <Label htmlFor="name" className="text-white font-medium mb-2 block">
                       Full Name *
                     </Label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/60" />
                       <Input
                         id="name"
                         type="text"
-                        className="pl-10 h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                        className="pl-10 h-12 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 focus:ring-white/20"
                         placeholder="Enter your full name"
                         value={formData.applicant_name}
                         onChange={(e) => setFormData(prev => ({ ...prev, applicant_name: e.target.value }))}
@@ -226,15 +232,15 @@ const JobApplication = () => {
 
                   {/* Email Field */}
                   <div>
-                    <Label htmlFor="email" className="text-gray-700 font-medium mb-2 block">
+                    <Label htmlFor="email" className="text-white font-medium mb-2 block">
                       Email Address *
                     </Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/60" />
                       <Input
                         id="email"
                         type="email"
-                        className="pl-10 h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                        className="pl-10 h-12 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 focus:ring-white/20"
                         placeholder="Enter your email address"
                         value={formData.email}
                         onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
@@ -245,12 +251,12 @@ const JobApplication = () => {
 
                   {/* CV Upload */}
                   <div>
-                    <Label className="text-gray-700 font-medium mb-2 block">
+                    <Label className="text-white font-medium mb-2 block">
                       CV/Resume *
                     </Label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                      <FileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600 mb-2">
+                    <div className="border-2 border-dashed border-white/30 rounded-lg p-6 text-center hover:border-white/50 transition-colors bg-white/5">
+                      <FileText className="h-8 w-8 text-white/60 mx-auto mb-2" />
+                      <p className="text-sm text-white/70 mb-2">
                         {cvFile ? cvFile.name : 'Upload your CV/Resume'}
                       </p>
                       <Input
@@ -264,7 +270,7 @@ const JobApplication = () => {
                         id="cv-upload"
                       />
                       <Label htmlFor="cv-upload" className="cursor-pointer">
-                        <Button type="button" variant="outline" size="sm" disabled={uploading}>
+                        <Button type="button" variant="outline" size="sm" disabled={uploading} className="bg-white/10 border-white/30 text-white hover:bg-white/20">
                           <Upload className="h-4 w-4 mr-2" />
                           Choose File
                         </Button>
@@ -274,12 +280,12 @@ const JobApplication = () => {
 
                   {/* Cover Letter Upload */}
                   <div>
-                    <Label className="text-gray-700 font-medium mb-2 block">
+                    <Label className="text-white font-medium mb-2 block">
                       Cover Letter (Optional)
                     </Label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                      <FileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600 mb-2">
+                    <div className="border-2 border-dashed border-white/30 rounded-lg p-6 text-center hover:border-white/50 transition-colors bg-white/5">
+                      <FileText className="h-8 w-8 text-white/60 mx-auto mb-2" />
+                      <p className="text-sm text-white/70 mb-2">
                         {coverLetterFile ? coverLetterFile.name : 'Upload your cover letter'}
                       </p>
                       <Input
@@ -293,7 +299,7 @@ const JobApplication = () => {
                         id="cover-letter-upload"
                       />
                       <Label htmlFor="cover-letter-upload" className="cursor-pointer">
-                        <Button type="button" variant="outline" size="sm" disabled={uploading}>
+                        <Button type="button" variant="outline" size="sm" disabled={uploading} className="bg-white/10 border-white/30 text-white hover:bg-white/20">
                           <Upload className="h-4 w-4 mr-2" />
                           Choose File
                         </Button>
@@ -304,7 +310,7 @@ const JobApplication = () => {
                   {/* Submit Button */}
                   <Button
                     type="submit"
-                    className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg"
+                    className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold text-lg border-0"
                     disabled={submitApplicationMutation.isPending || uploading}
                   >
                     {submitApplicationMutation.isPending ? 'Submitting...' : 'Submit Application'}
