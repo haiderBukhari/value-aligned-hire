@@ -1,6 +1,6 @@
 
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Sphere, MeshDistortMaterial } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -17,14 +17,10 @@ const AnimatedSphere = ({ position, color }: { position: [number, number, number
   });
 
   return (
-    <Sphere ref={meshRef} args={[1, 32, 32]} position={position}>
-      <MeshDistortMaterial
-        color={color}
-        distort={0.3}
-        speed={1.5}
-        roughness={0}
-      />
-    </Sphere>
+    <mesh ref={meshRef} position={position}>
+      <sphereGeometry args={[1, 32, 32]} />
+      <meshStandardMaterial color={color} roughness={0.5} metalness={0.1} />
+    </mesh>
   );
 };
 
@@ -43,12 +39,23 @@ const FloatingNodes = () => {
 export const HeroSection3D = () => {
   return (
     <div className="absolute inset-0 w-full h-full">
-      <Canvas camera={{ position: [0, 0, 8], fov: 75 }}>
+      <Canvas 
+        camera={{ position: [0, 0, 8], fov: 75 }}
+        onCreated={({ gl }) => {
+          gl.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        }}
+      >
         <ambientLight intensity={0.5} />
         <pointLight position={[10, 10, 10]} intensity={1} />
         <pointLight position={[-10, -10, -10]} intensity={0.5} />
         <FloatingNodes />
-        <OrbitControls enableZoom={false} enablePan={false} enableRotate={true} autoRotate autoRotateSpeed={0.5} />
+        <OrbitControls 
+          enableZoom={false} 
+          enablePan={false} 
+          enableRotate={true} 
+          autoRotate 
+          autoRotateSpeed={0.5} 
+        />
       </Canvas>
     </div>
   );

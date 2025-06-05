@@ -1,6 +1,6 @@
 
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Box, Text, OrbitControls, Line } from '@react-three/drei';
+import { Text, OrbitControls } from '@react-three/drei';
 import { useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
 
@@ -21,9 +21,10 @@ const FlowNode = ({ position, color, label, active }: {
 
   return (
     <group position={position}>
-      <Box ref={meshRef} args={[1.5, 1.5, 1.5]}>
+      <mesh ref={meshRef}>
+        <boxGeometry args={[1.5, 1.5, 1.5]} />
         <meshStandardMaterial color={active ? color : '#333333'} />
-      </Box>
+      </mesh>
       <Text
         position={[0, -1.5, 0]}
         fontSize={0.3}
@@ -45,11 +46,17 @@ const ConnectionLine = ({ start, end, active }: {
   const points = [new THREE.Vector3(...start), new THREE.Vector3(...end)];
   
   return (
-    <Line
-      points={points}
-      color={active ? '#00ff00' : '#666666'}
-      lineWidth={3}
-    />
+    <line>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={points.length}
+          array={new Float32Array(points.flatMap(p => [p.x, p.y, p.z]))}
+          itemSize={3}
+        />
+      </bufferGeometry>
+      <lineBasicMaterial color={active ? '#00ff00' : '#666666'} />
+    </line>
   );
 };
 
@@ -75,7 +82,12 @@ export const RecruitmentFlow3D = () => {
 
   return (
     <div className="w-full h-96 bg-black rounded-lg overflow-hidden">
-      <Canvas camera={{ position: [0, 0, 12], fov: 75 }}>
+      <Canvas 
+        camera={{ position: [0, 0, 12], fov: 75 }}
+        onCreated={({ gl }) => {
+          gl.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        }}
+      >
         <ambientLight intensity={0.6} />
         <pointLight position={[10, 10, 10]} intensity={1} />
         
