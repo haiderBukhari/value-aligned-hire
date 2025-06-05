@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,19 +9,40 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+const genAI = new GoogleGenerativeAI("AIzaSyC8MPRWNW6xARNNyUdG1p3m2bd6QZuNP3A");
+
+
 const CreateJob = () => {
   const navigate = useNavigate();
-  const [isGenerating, setIsGenerating] = useState<{[key: string]: boolean}>({});
+  const [isGenerating, setIsGenerating] = useState<{ [key: string]: boolean }>({});
   const [isUploading, setIsUploading] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  
+  const [companyInfo, setCompanyInfo] = useState<string>("");
+  const [companyCulture, setCompanyCulture] = useState<string>("");
+
   const [jobData, setJobData] = useState({
     title: "",
     description: "",
     skillConditions: ""
   });
 
-  const genAI = new GoogleGenerativeAI("AIzaSyC8MPRWNW6xARNNyUdG1p3m2bd6QZuNP3A");
+
+  useEffect(() => {
+    const fetchCompanyInfo = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/company-info`);
+        if (!response.ok) throw new Error("Failed to fetch company info");
+        const data = await response.json();
+        setCompanyInfo(data.company_details || "");
+        setCompanyCulture(data.company_culture || "");
+      } catch (error) {
+        console.error("Error fetching company info:", error);
+        setCompanyInfo("");
+        setCompanyCulture("");
+      }
+    };
+    fetchCompanyInfo();
+  }, []);
 
   const processDocument = async (file: File) => {
     const data = new FormData();
@@ -44,7 +64,7 @@ const CreateJob = () => {
   };
 
   const generateFieldSuggestion = async (field: string, currentValue: string) => {
-    if (!currentValue.trim()) {
+    if (!currentValue.trim() && !(field === "skillConditions" && jobData.description.trim())) {
       toast.error(`Please enter some ${field} first`);
       return;
     }
@@ -52,30 +72,68 @@ const CreateJob = () => {
     setIsGenerating(prev => ({ ...prev, [field]: true }));
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
-      
+
       let prompt = "";
       let maxLength = "";
-      
+
       switch (field) {
         case 'title':
-          prompt = `Based on this job information: "${currentValue}", generate a clear, professional job title. Keep it concise and specific.`;
-          maxLength = "Keep it under 10 words.";
+          prompt = `
+Based on this job information, generate a clear, professional job title. Keep it concise and specific. If the job information is generic, add a relevant technology, seniority, or specialization to make the title more specific. Only give me the title, no other text or suggestions.
+
+Examples:
+Job information: "We are looking for a frontend engineer to build and maintain user interfaces using React and TypeScript for our SaaS platform."
+Title: Senior Frontend Engineer
+
+Job information: "Frontend Developer"
+Title: React Frontend Developer
+
+Job information: "Backend Developer"
+Title: Node.js Backend Engineer
+
+Job information: "We need someone to lead our mobile app development using Flutter."
+Title: Lead Flutter Mobile Developer
+
+Job information: "${currentValue}"
+Title:
+`;
+          maxLength = "Keep it under 30 words.";
           break;
         case 'description':
-          prompt = `Based on this job information: "${currentValue}", create a comprehensive job description including role summary, key responsibilities, required qualifications, and what makes this role appealing. Make it engaging and professional.`;
-          maxLength = "Make it detailed but well-structured with clear sections.";
+          prompt = `
+Company Information: "${companyInfo}"
+Company Culture: "${companyCulture}"
+
+Based on this job information: "${currentValue}", and the company information and culture above, write a connected, compelling job description in plain text with the following structure:
+
+- Start with a short, engaging paragraph (2-3 lines) introducing the company, the team, and the role, making it clear how the role fits into the company's mission. If the industry or area is known from the company information, mention it naturally in the introduction. Do not include any bracketed placeholders or leave blank brackets in the output.
+- Follow with a short paragraph (2-3 lines) describing the type of candidate you are seeking, connecting their qualities and experience to the needs of the team and company.
+- Then, provide a detailed list of skills, responsibilities, and qualifications as bullet points (using • or - at the start of each point, not numbers or markdown). Each bullet must be specific and detailed, mentioning relevant technologies, tools, frameworks, or real-world context (e.g., "Experience building RESTful APIs with Node.js and Express", "Proficiency with PostgreSQL or MongoDB for data storage and retrieval", "Implementing CI/CD pipelines using GitHub Actions or Jenkins"). Avoid generic skills; make each point concrete and tailored to the role.
+- End with a short, motivating paragraph (2-3 lines) about the unique opportunities, impact, and culture the candidate will experience, using the company culture as context.
+
+Do not use section headings, numbers, or markdown. Do not include any instructions on how to apply. Only include information relevant to the job and company. Make sure each part connects smoothly to the next, creating a unified and appealing description.
+`;
+          maxLength = "Each paragraph should be 2-3 lines. Bullet points must be detailed, specifying technologies, tools, and context. No markdown, numbers, or section headings. Do not include any bracketed placeholders or blank brackets in the output.";
           break;
         case 'skillConditions':
-          prompt = `Based on this job information: "${currentValue}", create specific filtering criteria for AI screening. Include required years of experience, must-have technical skills, education requirements, certifications, etc. This is for internal AI filtering only and won't be visible to candidates.`;
-          maxLength = "Make it specific and measurable for AI filtering purposes.";
+          prompt = `
+Based on the following job description and skill conditions, generate a concise, comma-separated list of the main, measurable skills and requirements for AI filtering. Only include specific, quantifiable criteria such as years of experience, required technologies, degrees, certifications, and must-have skills. Do not include any extra explanation or formatting—just the list.
+
+Job Description: "${jobData.description}"
+Skill Conditions Field: "${currentValue}"
+
+Example output:
+Minimum 5+ years React experience, Bachelor's degree in Computer Science, Experience with TypeScript, Familiarity with RESTful APIs, AWS certification
+`;
+          maxLength = "Only output the comma-separated list of main, measurable skills and requirements. No extra text.";
           break;
       }
 
       const fullPrompt = `${prompt} ${maxLength}`;
-      
+
       const result = await model.generateContent(fullPrompt);
       const response = result.response.text();
-      
+
       setJobData(prev => ({ ...prev, [field]: response.trim() }));
       toast.success(`${field.charAt(0).toUpperCase() + field.slice(1)} suggestion generated!`);
     } catch (error) {
@@ -105,61 +163,66 @@ const CreateJob = () => {
 
       toast.success("PDF uploaded successfully! Analyzing...");
 
-      // Convert PDF URL to blob for Gemini AI
-      const pdfResponse = await fetch(uploadResult.secure_url);
-      const pdfBuffer = await pdfResponse.arrayBuffer();
+      // Download the PDF as a buffer
+      const pdfBuffer = await fetch(uploadResult.secure_url).then((response) => response.arrayBuffer());
       const fileBlob = new Blob([pdfBuffer], { type: 'application/pdf' });
 
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+      // Upload the PDF to the AI provider (assume ai.files.upload is available)
+      const ai = genAI; // or your AI SDK instance
+      const aiFile = await ai.files.upload({ file: fileBlob });
 
-      // Generate content from PDF using the correct API
-      const prompt = `
-        Analyze this document and extract job-related information to create a professional job posting. Please provide the response in this exact format:
+      // Wait for processing
+      let getFile = await ai.files.get({ name: aiFile.name });
+      while (getFile.state === 'PROCESSING') {
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        getFile = await ai.files.get({ name: aiFile.name });
+      }
+      if (aiFile.state === 'FAILED') {
+        toast.info("File processing failed");
+        setIsUploading(false);
+        return;
+      }
 
-        TITLE: [Generate a clear, professional job title based on the document]
+      // Prepare the structured prompt
+      const content = [
+        `Extract the following job posting fields from the PDF and return them as a JSON object with these exact keys: ["title", "description", "skill_conditions"].\n- "title": Generate a clear, professional job title based on the document.\n- "description": Write a connected, compelling job description in plain text. Start with a short, engaging paragraph introducing the company, team, and role (mention the industry if known). Follow with a short paragraph about the ideal candidate. Then, provide a detailed list of skills, responsibilities, and qualifications as bullet points (using • or - at the start of each point, not numbers or markdown). Each bullet must be specific and detailed, mentioning relevant technologies, tools, frameworks, or real-world context. End with a short, motivating paragraph about the unique opportunities, impact, and culture the candidate will experience. Do not use section headings, numbers, or markdown. Do not include any instructions on how to apply. Do not include any bracketed placeholders or blank brackets in the output.\n- "skill_conditions": Based on the job description and any skill-related content in the document, generate a concise, comma-separated list of the main, measurable skills and requirements for AI filtering. Only include specific, quantifiable criteria such as years of experience, required technologies, degrees, certifications, and must-have skills. Do not include any extra explanation or formatting—just the list.\n\nReturn the result as a JSON object with these keys: ["title", "description", "skill_conditions"].`
+      ];
 
-        DESCRIPTION: [Create a comprehensive job description including role summary, key responsibilities, required qualifications, and what makes this role appealing]
+      if (aiFile.uri && aiFile.mimeType) {
+        const fileContent = createPartFromUri(aiFile.uri, aiFile.mimeType);
+        content.push(fileContent);
+      }
 
-        SKILL_CONDITIONS: [List specific filtering criteria for AI screening - include required years of experience, must-have technical skills, education requirements, certifications, etc. This is for internal AI filtering only and won't be visible to candidates]
+      // Call the AI model
+      const response = await ai.models.generateContent({
+        model: 'gemini-1.5-flash',
+        contents: content,
+      });
 
-        Extract and interpret all relevant job-related information from the document to create these sections.
-      `;
+      let rawContent = response.text || "";
+      const jsonMatch = rawContent.match(/```json([\s\S]*?)```/);
+      const jsonString = jsonMatch ? jsonMatch[1].trim() : rawContent;
 
-      // For PDF processing, we'll use a simplified approach with the current API
-      const result = await model.generateContent([
-        prompt,
-        "Please analyze any job-related content and generate the job posting format above."
-      ]);
+      let generatedProperties;
+      try {
+        generatedProperties = JSON.parse(jsonString);
+      } catch (err) {
+        throw new Error("Failed to parse JSON response from AI");
+      }
 
-      const response = result.response.text();
-      
-      // Parse the AI response
-      const titleMatch = response.match(/TITLE:\s*(.*?)(?=\n\n|DESCRIPTION:)/s);
-      const descriptionMatch = response.match(/DESCRIPTION:\s*(.*?)(?=\n\n|SKILL_CONDITIONS:)/s);
-      const skillConditionsMatch = response.match(/SKILL_CONDITIONS:\s*(.*?)$/s);
+      setJobData({
+        title: generatedProperties.title || "",
+        description: generatedProperties.description || "",
+        skillConditions: generatedProperties.skill_conditions || ""
+      });
 
-      setJobData(prev => ({
-        ...prev,
-        title: titleMatch ? titleMatch[1].trim() : "",
-        description: descriptionMatch ? descriptionMatch[1].trim() : "",
-        skillConditions: skillConditionsMatch ? skillConditionsMatch[1].trim() : ""
-      }));
-
-      toast.success("Job details extracted from PDF successfully!");
+      toast.success("Job data extracted from PDF successfully!");
     } catch (error) {
-      console.error("PDF processing failed:", error);
-      toast.error("Failed to process PDF. Please try again.");
+      console.error("Error extracting job from PDF:", error);
+      toast.error(`Failed to extract job data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsUploading(false);
     }
-  };
-
-  const generateUUID = () => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0;
-      const v = c == 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
   };
 
   const handlePublishJob = async () => {
@@ -172,7 +235,7 @@ const CreateJob = () => {
     try {
       // Get JWT token from localStorage (assuming it's stored there after login)
       const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
-      
+
       if (!token) {
         toast.error("Please login to publish a job");
         navigate("/login");
@@ -180,7 +243,6 @@ const CreateJob = () => {
       }
 
       const jobPayload = {
-        id: generateUUID(),
         title: jobData.title,
         description: jobData.description,
         skill_condition: jobData.skillConditions
@@ -202,7 +264,7 @@ const CreateJob = () => {
 
       const result = await response.json();
       console.log("Job published:", result);
-      
+
       toast.success("Job published successfully!");
       navigate("/dashboard/jobs");
     } catch (error) {
@@ -215,28 +277,9 @@ const CreateJob = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => navigate("/dashboard")}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Create New Job</h1>
-              <p className="text-sm text-gray-500">Create job posting with AI assistance</p>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="max-w-full mx-auto p-2 space-y-6">
         {/* PDF Upload Section */}
         <Card>
           <CardHeader className="pb-4">
@@ -266,8 +309,8 @@ const CreateJob = () => {
                 disabled={isUploading}
               />
               <label htmlFor="pdf-upload">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   className="cursor-pointer"
                   disabled={isUploading}
@@ -392,8 +435,8 @@ const CreateJob = () => {
 
             {/* Publish Button */}
             <div className="pt-4 border-t">
-              <Button 
-                onClick={handlePublishJob} 
+              <Button
+                onClick={handlePublishJob}
                 disabled={isPublishing || !jobData.title || !jobData.description}
                 className="w-full bg-blue-600 hover:bg-blue-700"
               >
