@@ -38,7 +38,7 @@ const JobApplication = () => {
         throw new Error('Job not found');
       }
       const data = await response.json();
-      return data.job;
+      return data; // Changed: API returns job data directly, not wrapped in { job: ... }
     },
   });
 
