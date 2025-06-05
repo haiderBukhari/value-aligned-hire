@@ -7,7 +7,7 @@ export const ProcessSection = () => {
       description: "Upload documents or provide structured inputs to help AI understand your company's identity, goals, and culture."
     },
     {
-      number: "02",
+      number: "02", 
       title: "Smart Job Creation",
       description: "Create job descriptions using AI generation or upload drafts for AI enhancement and value alignment."
     },
@@ -18,7 +18,7 @@ export const ProcessSection = () => {
     },
     {
       number: "04",
-      title: "AI Analysis & Scoring",
+      title: "AI Analysis & Scoring", 
       description: "Advanced algorithms analyze qualifications, experience, cultural fit, and mission alignment."
     },
     {
@@ -34,50 +34,27 @@ export const ProcessSection = () => {
   ];
 
   return (
-    <section className="py-20 relative">
+    <section className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">
             How Our AI Recruitment Works
           </h2>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             A seamless, intelligent hiring journey that transforms recruitment into a strategic, values-driven process
           </p>
         </div>
         
-        <div className="relative">
-          {/* Connection line */}
-          <div className="hidden lg:block absolute left-1/2 transform -translate-x-1/2 w-px h-full bg-gradient-to-b from-purple-500 to-pink-500"></div>
-          
-          <div className="space-y-12">
-            {steps.map((step, index) => (
-              <div
-                key={index}
-                className={`flex items-center ${
-                  index % 2 === 0 ? 'lg:flex-row' : 'lg:flex-row-reverse'
-                } flex-col lg:space-x-12 space-y-8 lg:space-y-0 animate-fade-in`}
-                style={{ animationDelay: `${index * 300}ms` }}
-              >
-                <div className="lg:w-1/2 space-y-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold">
-                      {step.number}
-                    </div>
-                    <h3 className="text-2xl font-bold text-white">{step.title}</h3>
-                  </div>
-                  <p className="text-gray-300 text-lg leading-relaxed">{step.description}</p>
-                </div>
-                
-                <div className="lg:w-1/2 flex justify-center">
-                  <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 w-80 h-48 flex items-center justify-center">
-                    <div className="text-6xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                      {step.number}
-                    </div>
-                  </div>
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {steps.map((step, index) => (
+            <div key={index} className="text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-xl font-bold text-gray-900">{step.number}</span>
               </div>
-            ))}
-          </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">{step.title}</h3>
+              <p className="text-gray-600 leading-relaxed">{step.description}</p>
+            </div>
+          ))}
         </div>
       </div>
     </section>
