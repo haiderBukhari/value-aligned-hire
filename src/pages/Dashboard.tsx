@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -115,6 +114,14 @@ const Dashboard = () => {
               Dashboard
             </Button>
             <Button
+              variant="ghost"
+              className="w-full justify-start mb-1"
+              onClick={() => navigate("/dashboard/create-job")}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Create Job
+            </Button>
+            <Button
               variant={location.pathname === "/dashboard/jobs" ? "default" : "ghost"}
               className="w-full justify-start mb-1"
               onClick={() => navigate("/dashboard/jobs")}
@@ -147,14 +154,14 @@ const Dashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-semibold text-gray-900">
-                {isDashboardHome ? "Dashboard" : "Jobs Management"}
+                {isDashboardHome ? "Dashboard" : location.pathname === "/dashboard/create-job" ? "Create Job" : "Jobs Management"}
               </h2>
               <p className="text-sm text-gray-500 mt-1">
-                {isDashboardHome ? "Welcome back! Here's what's happening." : "Manage your job postings and applications"}
+                {isDashboardHome ? "Welcome back! Here's what's happening." : location.pathname === "/dashboard/create-job" ? "Create a new job posting with AI assistance" : "Manage your job postings and applications"}
               </p>
             </div>
             <div className="flex items-center space-x-4">
-              <Button onClick={() => navigate("/dashboard/jobs")}>
+              <Button onClick={() => navigate("/dashboard/create-job")}>
                 <Plus className="mr-2 h-4 w-4" />
                 Create Job
               </Button>

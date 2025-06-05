@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Jobs from "./pages/Jobs";
+import CreateJob from "./pages/CreateJob";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/signup" element={<Signup />} />
           <Route path="/dashboard" element={<Dashboard />}>
             <Route path="jobs" element={<Jobs />} />
+            <Route path="create-job" element={<CreateJob />} />
             {/* Add more dashboard routes as needed */}
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
