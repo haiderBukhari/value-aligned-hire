@@ -1,298 +1,304 @@
 
 import { useState } from "react";
-import { Link, Outlet } from "react-router-dom";
-import { motion } from "framer-motion";
-import { 
-  LayoutDashboard, 
-  Users, 
-  FileText, 
-  Settings, 
-  MessageSquare, 
-  PieChart, 
-  Calendar, 
-  Bell, 
-  Search, 
-  ChevronDown,
-  Plus
-} from "lucide-react";
-import { 
-  SidebarProvider,
-  Sidebar,
-  SidebarContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton
-} from "@/components/ui/sidebar";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-// Sample data for the chart
-const chartData = [
-  { name: 'Jan', value: 10 },
-  { name: 'Feb', value: 25 },
-  { name: 'Mar', value: 15 },
-  { name: 'Apr', value: 30 },
-  { name: 'May', value: 22 },
-  { name: 'Jun', value: 45 },
-  { name: 'Jul', value: 35 },
-];
-
-const recentJobs = [
-  { id: 1, title: "Senior React Developer", applicants: 24, new: true },
-  { id: 2, title: "Product Manager", applicants: 18, new: false },
-  { id: 3, title: "UX Designer", applicants: 12, new: false },
-];
-
-const recentApplicants = [
-  { id: 1, name: "Alex Johnson", role: "Frontend Developer", avatar: "/placeholder.svg" },
-  { id: 2, name: "Sarah Miller", role: "UI/UX Designer", avatar: "/placeholder.svg" },
-  { id: 3, name: "Robert Davis", role: "Product Manager", avatar: "/placeholder.svg" },
-];
-
-const DashboardHome = () => {
-  return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
-          <p className="text-gray-500">Welcome back, Jessica!</p>
-        </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="mr-2 h-4 w-4" /> Create Job
-        </Button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatsCard 
-          title="Total Jobs" 
-          value="07" 
-          bgColor="bg-blue-50" 
-          textColor="text-blue-600" 
-          borderColor="border-blue-200"
-        />
-        <StatsCard 
-          title="Total Applications" 
-          value="103" 
-          bgColor="bg-green-50" 
-          textColor="text-green-600" 
-          borderColor="border-green-200"
-        />
-        <StatsCard 
-          title="Interviews Scheduled" 
-          value="18" 
-          bgColor="bg-yellow-50" 
-          textColor="text-yellow-600" 
-          borderColor="border-yellow-200"
-        />
-        <StatsCard 
-          title="Positions Filled" 
-          value="04" 
-          bgColor="bg-purple-50" 
-          textColor="text-purple-600" 
-          borderColor="border-purple-200"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Chart Section */}
-        <Card className="lg:col-span-2 p-6 border border-gray-200 rounded-lg shadow-sm">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">Applications Overview</h2>
-            <div className="flex items-center">
-              <span className="text-sm text-gray-500 mr-2">This Month</span>
-              <ChevronDown className="h-4 w-4 text-gray-500" />
-            </div>
-          </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                <YAxis axisLine={false} tickLine={false} />
-                <Tooltip />
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#4ade80" 
-                  strokeWidth={2}
-                  dot={{ r: 4, strokeWidth: 2 }}
-                  activeDot={{ r: 6, stroke: "#fff", strokeWidth: 2 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        {/* Sidebar Sections */}
-        <div className="flex flex-col gap-6">
-          {/* Recent Jobs */}
-          <Card className="p-5 border border-gray-200 rounded-lg shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">Recent Jobs</h2>
-              <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700">View All</Button>
-            </div>
-            <div className="space-y-4">
-              {recentJobs.map(job => (
-                <div key={job.id} className="flex justify-between items-center">
-                  <div>
-                    <p className="font-medium text-gray-800">{job.title}</p>
-                    <p className="text-sm text-gray-500">{job.applicants} Applicants</p>
-                  </div>
-                  {job.new && (
-                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">New</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* Recent Applicants */}
-          <Card className="p-5 border border-gray-200 rounded-lg shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">Recent Applicants</h2>
-              <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700">View All</Button>
-            </div>
-            <div className="space-y-4">
-              {recentApplicants.map(applicant => (
-                <div key={applicant.id} className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarImage src={applicant.avatar} alt={applicant.name} />
-                    <AvatarFallback>{applicant.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium text-gray-800">{applicant.name}</p>
-                    <p className="text-sm text-gray-500">{applicant.role}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const StatsCard = ({ title, value, bgColor, textColor, borderColor }: { 
-  title: string; 
-  value: string; 
-  bgColor: string; 
-  textColor: string; 
-  borderColor: string;
-}) => {
-  return (
-    <Card className={`p-6 rounded-lg shadow-sm ${bgColor} border ${borderColor}`}>
-      <h3 className="text-gray-700 mb-2">{title}</h3>
-      <p className={`text-3xl font-bold ${textColor}`}>{value}</p>
-    </Card>
-  );
-}
+import { Progress } from "@/components/ui/progress";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { Users, Briefcase, TrendingUp, Calendar, Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2 } from "lucide-react";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 
 const Dashboard = () => {
-  const [active, setActive] = useState("dashboard");
-  
-  // Define navigation items
-  const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-    { id: "jobs", label: "Jobs", icon: FileText, path: "/dashboard/jobs" },
-    { id: "candidates", label: "Candidates", icon: Users, path: "/dashboard/candidates" },
-    { id: "calendar", label: "Calendar", icon: Calendar, path: "/dashboard/calendar" },
-    { id: "messages", label: "Messages", icon: MessageSquare, path: "/dashboard/messages" },
-    { id: "analytics", label: "Analytics", icon: PieChart, path: "/dashboard/analytics" },
-    { id: "settings", label: "Settings", icon: Settings, path: "/dashboard/settings" },
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState("overview");
+
+  const isDashboardHome = location.pathname === "/dashboard";
+
+  // Sample data for charts
+  const applicationData = [
+    { name: 'Jan', applications: 65, hired: 12 },
+    { name: 'Feb', applications: 59, hired: 15 },
+    { name: 'Mar', applications: 80, hired: 18 },
+    { name: 'Apr', applications: 81, hired: 22 },
+    { name: 'May', applications: 56, hired: 8 },
+    { name: 'Jun', applications: 95, hired: 25 },
   ];
 
+  const statusData = [
+    { name: 'Applied', value: 145, color: '#8884d8' },
+    { name: 'Screening', value: 89, color: '#82ca9d' },
+    { name: 'Interview', value: 45, color: '#ffc658' },
+    { name: 'Hired', value: 23, color: '#ff7300' },
+  ];
+
+  const recentJobs = [
+    { id: 1, title: "Senior Frontend Developer", applications: 45, status: "Active", posted: "2 days ago" },
+    { id: 2, title: "Product Manager", applications: 32, status: "Active", posted: "1 week ago" },
+    { id: 3, title: "UX Designer", applications: 28, status: "Closed", posted: "3 days ago" },
+    { id: 4, title: "Data Scientist", applications: 67, status: "Active", posted: "5 days ago" },
+  ];
+
+  const recentApplicants = [
+    { id: 1, name: "Sarah Johnson", position: "Frontend Developer", score: 92, status: "Interview" },
+    { id: 2, name: "Mike Chen", position: "Product Manager", score: 88, status: "Screening" },
+    { id: 3, name: "Emily Davis", position: "UX Designer", score: 95, status: "Hired" },
+    { id: 4, name: "Alex Rodriguez", position: "Data Scientist", score: 85, status: "Applied" },
+  ];
+
+  const stats = [
+    {
+      title: "Total Jobs",
+      value: "24",
+      change: "+12%",
+      icon: Briefcase,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50"
+    },
+    {
+      title: "Total Applications",
+      value: "1,234",
+      change: "+18%",
+      icon: Users,
+      color: "text-green-600",
+      bgColor: "bg-green-50"
+    },
+    {
+      title: "Hired This Month",
+      value: "23",
+      change: "+8%",
+      icon: TrendingUp,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50"
+    },
+    {
+      title: "Interviews Scheduled",
+      value: "15",
+      change: "+5%",
+      icon: Calendar,
+      color: "text-orange-600",
+      bgColor: "bg-orange-50"
+    }
+  ];
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'active': return 'bg-green-100 text-green-800';
+      case 'closed': return 'bg-red-100 text-red-800';
+      case 'hired': return 'bg-blue-100 text-blue-800';
+      case 'interview': return 'bg-purple-100 text-purple-800';
+      case 'screening': return 'bg-yellow-100 text-yellow-800';
+      case 'applied': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-gray-50">
-        {/* Sidebar */}
-        <Sidebar className="w-64 border-r border-gray-200 bg-white">
-          <div className="p-4 border-b border-gray-200">
-            <Link to="/" className="flex items-center">
-              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold mr-2">A</div>
-              <span className="text-xl font-bold text-gray-800">AI Recruit</span>
-            </Link>
-          </div>
-          
-          <SidebarContent>
-            <div className="px-3 py-4">
-              <Input placeholder="Search..." className="mb-4" prefix={<Search className="h-4 w-4 text-gray-500" />} />
-              
-              <SidebarMenu>
-                {navItems.map((item) => (
-                  <SidebarMenuItem key={item.id}>
-                    <SidebarMenuButton 
-                      asChild
-                      isActive={active === item.id}
-                      className="flex items-center gap-3 py-2 px-3 rounded-md text-gray-700 hover:bg-gray-100"
-                    >
-                      <Link 
-                        to={item.path}
-                        onClick={() => setActive(item.id)}
-                        className={`flex items-center gap-3 ${
-                          active === item.id ? 'font-medium text-blue-600' : ''
-                        }`}
-                      >
-                        <item.icon className={`h-5 w-5 ${
-                          active === item.id ? 'text-blue-600' : 'text-gray-500'
-                        }`} />
-                        <span>{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </div>
-          </SidebarContent>
-          
-          <div className="absolute bottom-0 w-full p-4 border-t border-gray-200">
-            <div className="flex items-center gap-3">
-              <Avatar>
-                <AvatarImage src="/placeholder.svg" />
-                <AvatarFallback>JD</AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-800 truncate">Jessica Doe</p>
-                <p className="text-sm text-gray-500 truncate">HR Manager</p>
-              </div>
-            </div>
-          </div>
-        </Sidebar>
-
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col min-h-screen">
-          {/* Header */}
-          <header className="bg-white border-b border-gray-200 py-4 px-6">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center">
-                {/* Mobile sidebar trigger would go here */}
-                <h2 className="text-lg font-semibold text-gray-800">AI Recruitment Platform</h2>
-              </div>
-              <div className="flex items-center gap-4">
-                <button className="relative">
-                  <Bell className="h-6 w-6 text-gray-600" />
-                  <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-                </button>
-                <Avatar className="h-9 w-9">
-                  <AvatarImage src="/placeholder.svg" />
-                  <AvatarFallback>JD</AvatarFallback>
-                </Avatar>
-              </div>
-            </div>
-          </header>
-
-          {/* Content */}
-          <main className="flex-1 overflow-auto">
-            <Outlet />
-            <DashboardHome />
-          </main>
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Sidebar */}
+      <div className="w-64 bg-white shadow-sm border-r border-gray-200">
+        <div className="p-6">
+          <h1 className="text-2xl font-bold text-gray-900">wilds</h1>
+          <p className="text-sm text-gray-500 mt-1">AI Recruitment</p>
         </div>
+        
+        <nav className="mt-6">
+          <div className="px-3">
+            <Button
+              variant={isDashboardHome ? "default" : "ghost"}
+              className="w-full justify-start mb-1"
+              onClick={() => navigate("/dashboard")}
+            >
+              <TrendingUp className="mr-2 h-4 w-4" />
+              Dashboard
+            </Button>
+            <Button
+              variant={location.pathname === "/dashboard/jobs" ? "default" : "ghost"}
+              className="w-full justify-start mb-1"
+              onClick={() => navigate("/dashboard/jobs")}
+            >
+              <Briefcase className="mr-2 h-4 w-4" />
+              Jobs
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start mb-1"
+            >
+              <Users className="mr-2 h-4 w-4" />
+              Candidates
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start mb-1"
+            >
+              <Calendar className="mr-2 h-4 w-4" />
+              Interviews
+            </Button>
+          </div>
+        </nav>
       </div>
-    </SidebarProvider>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-900">
+                {isDashboardHome ? "Dashboard" : "Jobs Management"}
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {isDashboardHome ? "Welcome back! Here's what's happening." : "Manage your job postings and applications"}
+              </p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Button onClick={() => navigate("/dashboard/jobs")}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Job
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 p-6">
+          {isDashboardHome ? (
+            <>
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                {stats.map((stat, index) => (
+                  <Card key={index}>
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">{stat.title}</p>
+                          <p className="text-3xl font-bold text-gray-900 mt-2">{stat.value}</p>
+                          <p className="text-sm text-green-600 mt-1">{stat.change} from last month</p>
+                        </div>
+                        <div className={`p-3 rounded-lg ${stat.bgColor}`}>
+                          <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Charts Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Application Trends</CardTitle>
+                    <CardDescription>Monthly applications and hiring statistics</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={applicationData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="applications" fill="#8884d8" name="Applications" />
+                        <Bar dataKey="hired" fill="#82ca9d" name="Hired" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Application Status</CardTitle>
+                    <CardDescription>Current distribution of application statuses</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={statusData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {statusData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Recent Activity */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recent Jobs</CardTitle>
+                    <CardDescription>Latest job postings and their performance</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {recentJobs.map((job) => (
+                        <div key={job.id} className="flex items-center justify-between p-4 rounded-lg border border-gray-100">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-gray-900">{job.title}</h4>
+                            <p className="text-sm text-gray-500">{job.applications} applications • {job.posted}</p>
+                          </div>
+                          <Badge className={getStatusColor(job.status)}>
+                            {job.status}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Top Applicants</CardTitle>
+                    <CardDescription>Highest scoring candidates this week</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {recentApplicants.map((applicant) => (
+                        <div key={applicant.id} className="flex items-center justify-between p-4 rounded-lg border border-gray-100">
+                          <div className="flex items-center space-x-3">
+                            <Avatar>
+                              <AvatarFallback>{applicant.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <h4 className="font-medium text-gray-900">{applicant.name}</h4>
+                              <p className="text-sm text-gray-500">{applicant.position}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm font-medium">{applicant.score}%</span>
+                              <Badge className={getStatusColor(applicant.status)}>
+                                {applicant.status}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          ) : (
+            <Outlet />
+          )}
+        </main>
+      </div>
+    </div>
   );
 };
 

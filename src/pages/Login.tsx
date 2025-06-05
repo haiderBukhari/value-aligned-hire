@@ -3,69 +3,59 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { WorkflowAnimation } from "@/components/WorkflowAnimation";
 import { Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const Login = () => {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Login form state
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  
-  // Sign up form state
-  const [signUpData, setSignUpData] = useState({
-    name: "",
-    companyEmail: "",
-    companyName: "",
-    companyDetails: "",
-    companyCulture: "",
+  const [loginData, setLoginData] = useState({
+    email: "",
     password: ""
   });
 
-  const [emailError, setEmailError] = useState("");
-
-  const validateCompanyEmail = (email: string) => {
-    const personalDomains = ['gmail.com', 'hotmail.com', 'yahoo.com', 'outlook.com', 'live.com'];
-    const domain = email.split('@')[1]?.toLowerCase();
-    
-    if (personalDomains.includes(domain)) {
-      setEmailError("Please use your company email address");
-      return false;
-    }
-    setEmailError("");
-    return true;
-  };
-
-  const handleSignUpEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSignUpData(prev => ({ ...prev, companyEmail: value }));
-    if (value) {
-      validateCompanyEmail(value);
-    } else {
-      setEmailError("");
-    }
-  };
-
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Login attempt:", { email, password });
-  };
+    setIsLoading(true);
 
-  const handleSignUp = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateCompanyEmail(signUpData.companyEmail)) {
-      return;
+    try {
+      const response = await fetch('https://talo-recruitment.vercel.app/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(loginData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Store token and user ID
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('userId', data.id);
+        
+        toast.success("Login successful!");
+        navigate('/dashboard');
+      } else {
+        toast.error(data.error || "Invalid credentials");
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error("Network error. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-    console.log("Sign up attempt:", signUpData);
   };
 
   return (
     <div className="min-h-screen bg-white flex">
-      {/* Left Side - Login/Sign Up Form */}
+      {/* Left Side - Login Form */}
       <div className="flex-1 flex items-center justify-center p-8">
         <motion.div 
           initial={{ opacity: 0, x: -50 }}
@@ -80,7 +70,7 @@ const Login = () => {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-3xl font-bold text-gray-800 mb-2"
             >
-              {isSignUp ? "Create Account" : "Welcome Back"}
+              Welcome Back
             </motion.h1>
             <motion.p 
               initial={{ opacity: 0, y: -20 }}
@@ -88,7 +78,7 @@ const Login = () => {
               transition={{ duration: 0.6, delay: 0.3 }}
               className="text-gray-500"
             >
-              {isSignUp ? "Join our AI recruitment platform" : "Access your AI recruitment dashboard"}
+              Access your AI recruitment dashboard
             </motion.p>
           </div>
 
@@ -97,160 +87,64 @@ const Login = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            {isSignUp ? (
-              // Sign Up Form
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div>
-                  <Label htmlFor="name" className="text-gray-700">Full Name</Label>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <Label htmlFor="email" className="text-gray-700">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={loginData.email}
+                  onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))}
+                  className="border-gray-300 focus:border-blue-500 bg-white text-gray-800"
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="password" className="text-gray-700">Password</Label>
+                <div className="relative">
                   <Input
-                    id="name"
-                    type="text"
-                    value={signUpData.name}
-                    onChange={(e) => setSignUpData(prev => ({ ...prev, name: e.target.value }))}
-                    className="border-gray-300 focus:border-blue-500 bg-white text-gray-800"
-                    placeholder="Enter your full name"
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={loginData.password}
+                    onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
+                    className="border-gray-300 focus:border-blue-500 bg-white text-gray-800 pr-10"
+                    placeholder="Enter your password"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-800"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
                 </div>
+              </div>
 
-                <div>
-                  <Label htmlFor="companyEmail" className="text-gray-700">Company Email</Label>
-                  <Input
-                    id="companyEmail"
-                    type="email"
-                    value={signUpData.companyEmail}
-                    onChange={handleSignUpEmailChange}
-                    className={`border-gray-300 focus:border-blue-500 bg-white text-gray-800 ${
-                      emailError ? 'border-red-500' : ''
-                    }`}
-                    placeholder="your.name@company.com"
-                    required
-                  />
-                  {emailError && (
-                    <p className="text-red-500 text-sm mt-1">{emailError}</p>
-                  )}
-                </div>
+              <Button 
+                type="submit" 
+                className="w-full bg-blue-600 text-white hover:bg-blue-700"
+                disabled={isLoading}
+              >
+                {isLoading ? "Signing In..." : "Sign In"}
+              </Button>
 
-                <div>
-                  <Label htmlFor="companyName" className="text-gray-700">Company Name</Label>
-                  <Input
-                    id="companyName"
-                    type="text"
-                    value={signUpData.companyName}
-                    onChange={(e) => setSignUpData(prev => ({ ...prev, companyName: e.target.value }))}
-                    className="border-gray-300 focus:border-blue-500 bg-white text-gray-800"
-                    placeholder="Your company name"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="companyDetails" className="text-gray-700">Company Details</Label>
-                  <Textarea
-                    id="companyDetails"
-                    value={signUpData.companyDetails}
-                    onChange={(e) => setSignUpData(prev => ({ ...prev, companyDetails: e.target.value }))}
-                    className="border-gray-300 focus:border-blue-500 bg-white text-gray-800 min-h-[80px]"
-                    placeholder="Brief description of your company, industry, size..."
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="companyCulture" className="text-gray-700">Company Culture & Values</Label>
-                  <Textarea
-                    id="companyCulture"
-                    value={signUpData.companyCulture}
-                    onChange={(e) => setSignUpData(prev => ({ ...prev, companyCulture: e.target.value }))}
-                    className="border-gray-300 focus:border-blue-500 bg-white text-gray-800 min-h-[80px]"
-                    placeholder="Describe your company culture, values, work environment..."
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="signUpPassword" className="text-gray-700">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="signUpPassword"
-                      type={showPassword ? "text" : "password"}
-                      value={signUpData.password}
-                      onChange={(e) => setSignUpData(prev => ({ ...prev, password: e.target.value }))}
-                      className="border-gray-300 focus:border-blue-500 bg-white text-gray-800 pr-10"
-                      placeholder="Create a password"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-800"
-                    >
-                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
-                  </div>
-                </div>
-
-                <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700">
-                  Create Account
-                </Button>
-              </form>
-            ) : (
-              // Login Form
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <Label htmlFor="email" className="text-gray-700">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="border-gray-300 focus:border-blue-500 bg-white text-gray-800"
-                    placeholder="Enter your email"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="password" className="text-gray-700">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="border-gray-300 focus:border-blue-500 bg-white text-gray-800 pr-10"
-                      placeholder="Enter your password"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-800"
-                    >
-                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
-                  </div>
-                </div>
-
-                <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700">
-                  Sign In
-                </Button>
-
-                <div className="text-center mt-4">
-                  <a href="#" className="text-blue-600 hover:text-blue-800 text-sm">
-                    Forgot Password?
-                  </a>
-                </div>
-              </form>
-            )}
+              <div className="text-center mt-4">
+                <a href="#" className="text-blue-600 hover:text-blue-800 text-sm">
+                  Forgot Password?
+                </a>
+              </div>
+            </form>
 
             <div className="text-center mt-6 text-gray-600">
-              {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+              Don't have an account?{" "}
               <button
-                onClick={() => setIsSignUp(!isSignUp)}
+                onClick={() => navigate('/signup')}
                 className="text-blue-600 hover:text-blue-800 underline"
               >
-                {isSignUp ? "Sign In" : "Sign Up"}
+                Sign Up
               </button>
             </div>
           </motion.div>
