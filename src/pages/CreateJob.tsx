@@ -29,8 +29,14 @@ const CreateJob = () => {
 
   useEffect(() => {
     const fetchCompanyInfo = async () => {
+      const token = localStorage.getItem('token');
       try {
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/company-info`);
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/company-info`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         if (!response.ok) throw new Error("Failed to fetch company info");
         const data = await response.json();
         setCompanyInfo(data.company_details || "");
