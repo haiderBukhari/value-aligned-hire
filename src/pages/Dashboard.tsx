@@ -132,8 +132,12 @@ const Dashboard = () => {
             </Button>
             
             <Button
-              variant="ghost"
-              className="w-full justify-start h-12 text-left font-medium transition-all duration-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+              variant={location.pathname === "/dashboard/create-job" ? "default" : "ghost"}
+              className={`w-full justify-start h-12 text-left font-medium transition-all duration-200 ${
+                location.pathname === "/dashboard/create-job"
+                  ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm hover:bg-blue-100" 
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+              }`}
               onClick={() => navigate("/dashboard/create-job")}
             >
               <Plus className="mr-3 h-5 w-5" />

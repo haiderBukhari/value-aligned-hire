@@ -146,10 +146,10 @@ const Jobs = () => {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-2">
 
       {/* Search and Filter */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between w-full items-center mb-6">
         <div className="relative w-80">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
           <Input 
