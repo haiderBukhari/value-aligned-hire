@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { 
   Users, Briefcase, TrendingUp, Calendar, Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, 
-  Home, Settings, LogOut, Building2, UserCheck, ClipboardList, FileText, Target, Bell
+  Home, LogOut, Building2, UserCheck, ClipboardList, FileText, Target, Bell
 } from "lucide-react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 
@@ -131,12 +131,6 @@ const Dashboard = () => {
       label: "Company Config",
       path: "/dashboard/company",
       count: null
-    },
-    {
-      icon: Settings,
-      label: "Settings",
-      path: "/dashboard/settings",
-      count: null
     }
   ];
 
@@ -180,8 +174,8 @@ const Dashboard = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Enhanced Sidebar */}
-      <div className="w-80 bg-white shadow-xl border-r border-gray-200">
+      {/* Fixed Width Sidebar */}
+      <div className="w-80 bg-white shadow-xl border-r border-gray-200 fixed left-0 top-0 h-full z-30">
         {/* Logo Section */}
         <div className="p-6 border-b border-gray-200">
           <button 
@@ -294,7 +288,7 @@ const Dashboard = () => {
         </div>
         
         {/* Bottom Section */}
-        <div className="absolute w-72 bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
+        <div className="absolute w-80 bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
           <div className="flex items-center space-x-3 mb-4">
             <Avatar className="h-10 w-10 ring-2 ring-blue-200">
               <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold">
@@ -318,8 +312,8 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      {/* Main Content with left margin to account for fixed sidebar */}
+      <div className="flex-1 flex flex-col ml-80">
         {/* Enhanced Header */}
         <header className="bg-white shadow-sm border-b border-gray-200 px-8 py-6">
           <div className="flex items-center justify-between">

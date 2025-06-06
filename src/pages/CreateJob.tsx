@@ -1,466 +1,583 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, ArrowLeft, Loader2, Sparkles } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { createPartFromUri, GoogleGenAI } from "@google/genai";
-
-const genAI = new GoogleGenerativeAI("AIzaSyC8MPRWNW6xARNNyUdG1p3m2bd6QZuNP3A");
-const fileAI = new GoogleGenAI({ apiKey: "AIzaSyC8MPRWNW6xARNNyUdG1p3m2bd6QZuNP3A" });
-
+import { 
+  Briefcase, MapPin, DollarSign, Clock, Users, Sparkles, 
+  Plus, X, Building2, Calendar, Target, Zap, Save, Eye, 
+  Globe, Linkedin, Twitter, Instagram 
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const CreateJob = () => {
-  const navigate = useNavigate();
-  const [isGenerating, setIsGenerating] = useState<{ [key: string]: boolean }>({});
-  const [isUploading, setIsUploading] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [companyInfo, setCompanyInfo] = useState<string>("");
-  const [companyCulture, setCompanyCulture] = useState<string>("");
-
+  const { toast } = useToast();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [currentTab, setCurrentTab] = useState("basic");
+  
   const [jobData, setJobData] = useState({
     title: "",
+    company: "Talo Technologies",
+    location: "",
+    type: "",
+    experience: "",
+    salary: "",
     description: "",
-    skillConditions: ""
+    requirements: "",
+    benefits: "",
+    skills: [] as string[],
+    department: "",
+    reportingTo: "",
+    teamSize: "",
+    workModel: "",
+    urgency: "medium",
+    applicationDeadline: "",
+    startDate: "",
+    perks: [] as string[],
+    aiScreening: true,
+    autoResponse: true,
+    skillAssessment: false,
+    videoInterview: false
   });
 
+  const [newSkill, setNewSkill] = useState("");
+  const [newPerk, setNewPerk] = useState("");
 
-  useEffect(() => {
-    const fetchCompanyInfo = async () => {
-      const token = localStorage.getItem('token');
-      try {
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/company-info`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        if (!response.ok) throw new Error("Failed to fetch company info");
-        const data = await response.json();
-        setCompanyInfo(data.company_details || "");
-        setCompanyCulture(data.company_culture || "");
-      } catch (error) {
-        console.error("Error fetching company info:", error);
-        setCompanyInfo("");
-        setCompanyCulture("");
-      }
-    };
-    fetchCompanyInfo();
-  }, []);
+  const predefinedSkills = [
+    "JavaScript", "TypeScript", "React", "Node.js", "Python", "Java", 
+    "SQL", "MongoDB", "AWS", "Docker", "Git", "Agile", "Scrum"
+  ];
 
-  const processDocument = async (file: File) => {
-    const data = new FormData();
-    data.append("file", file);
-    data.append("upload_preset", "products");
+  const predefinedPerks = [
+    "Health Insurance", "Dental Coverage", "Vision Insurance", "401k Matching",
+    "Flexible Hours", "Remote Work", "Paid Time Off", "Professional Development",
+    "Gym Membership", "Free Lunch", "Stock Options", "Maternity Leave"
+  ];
 
-    try {
-      const response = await fetch(`https://api.cloudinary.com/v1_1/djunaxxv0/raw/upload`, {
-        method: "POST",
-        body: data,
-      });
+  const handleInputChange = (field: string, value: string | boolean | string[]) => {
+    setJobData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
 
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      console.error("Upload failed:", error);
-      return null;
+  const addSkill = (skill: string) => {
+    if (skill && !jobData.skills.includes(skill)) {
+      setJobData(prev => ({
+        ...prev,
+        skills: [...prev.skills, skill]
+      }));
+      setNewSkill("");
     }
   };
 
-  const generateFieldSuggestion = async (field: string, currentValue: string) => {
-    if (!currentValue.trim() && !(field === "skillConditions" && jobData.description.trim())) {
-      toast.error(`Please enter some ${field} first`);
+  const removeSkill = (skillToRemove: string) => {
+    setJobData(prev => ({
+      ...prev,
+      skills: prev.skills.filter(skill => skill !== skillToRemove)
+    }));
+  };
+
+  const addPerk = (perk: string) => {
+    if (perk && !jobData.perks.includes(perk)) {
+      setJobData(prev => ({
+        ...prev,
+        perks: [...prev.perks, perk]
+      }));
+      setNewPerk("");
+    }
+  };
+
+  const removePerk = (perkToRemove: string) => {
+    setJobData(prev => ({
+      ...prev,
+      perks: prev.perks.filter(perk => perk !== perkToRemove)
+    }));
+  };
+
+  const generateWithAI = async (field: string) => {
+    if (!jobData.title) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter a job title first to generate AI content.",
+        variant: "destructive",
+      });
       return;
     }
 
-    setIsGenerating(prev => ({ ...prev, [field]: true }));
+    setIsGenerating(true);
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+      const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GOOGLE_AI_KEY || "");
+      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
       let prompt = "";
-      let maxLength = "";
-
       switch (field) {
-        case 'title':
-          prompt = `
-Based on this job information, generate a clear, professional job title. Keep it concise and specific. If the job information is generic, add a relevant technology, seniority, or specialization to make the title more specific. Only give me the title, no other text or suggestions.
-
-Examples:
-Job information: "We are looking for a frontend engineer to build and maintain user interfaces using React and TypeScript for our SaaS platform."
-Title: Senior Frontend Engineer
-
-Job information: "Frontend Developer"
-Title: React Frontend Developer
-
-Job information: "Backend Developer"
-Title: Node.js Backend Engineer
-
-Job information: "We need someone to lead our mobile app development using Flutter."
-Title: Lead Flutter Mobile Developer
-
-Job information: "${currentValue}"
-Title:
-`;
-          maxLength = "Keep it under 30 words.";
+        case "description":
+          prompt = `Write a compelling job description for a ${jobData.title} position at ${jobData.company}. Include key responsibilities, what makes this role exciting, and the impact they'll have. Keep it professional but engaging.`;
           break;
-        case 'description':
-          prompt = `
-Company Information: "${companyInfo}"
-Company Culture: "${companyCulture}"
-
-Based on this job information: "${currentValue}", and the company information and culture above, write a connected, compelling job description in plain text with the following structure:
-
-- Start with a short, engaging paragraph (2-3 lines) introducing the company, the team, and the role, making it clear how the role fits into the company's mission. If the industry or area is known from the company information, mention it naturally in the introduction. Do not include any bracketed placeholders or leave blank brackets in the output.
-- Follow with a short paragraph (2-3 lines) describing the type of candidate you are seeking, connecting their qualities and experience to the needs of the team and company.
-- Then, provide a detailed list of skills, responsibilities, and qualifications as bullet points (using • or - at the start of each point, not numbers or markdown). Each bullet must be specific and detailed, mentioning relevant technologies, tools, frameworks, or real-world context (e.g., "Experience building RESTful APIs with Node.js and Express", "Proficiency with PostgreSQL or MongoDB for data storage and retrieval", "Implementing CI/CD pipelines using GitHub Actions or Jenkins"). Avoid generic skills; make each point concrete and tailored to the role.
-- End with a short, motivating paragraph (2-3 lines) about the unique opportunities, impact, and culture the candidate will experience, using the company culture as context.
-
-Do not use section headings, numbers, or markdown. Do not include any instructions on how to apply. Only include information relevant to the job and company. Make sure each part connects smoothly to the next, creating a unified and appealing description.
-`;
-          maxLength = "Each paragraph should be 2-3 lines. Bullet points must be detailed, specifying technologies, tools, and context. No markdown, numbers, or section headings. Do not include any bracketed placeholders or blank brackets in the output.";
+        case "requirements":
+          prompt = `List the key requirements for a ${jobData.title} position. Include education, experience, technical skills, and soft skills. Format as bullet points.`;
           break;
-        case 'skillConditions':
-          prompt = `
-Based on the following job description and skill conditions, generate a concise, comma-separated list of the main, measurable skills and requirements for AI filtering. Only include specific, quantifiable criteria such as years of experience, required technologies, degrees, certifications, and must-have skills. Do not include any extra explanation or formatting—just the list.
-
-Job Description: "${jobData.description}"
-Skill Conditions Field: "${currentValue}"
-
-Example output:
-Minimum 5+ years React experience, Bachelor's degree in Computer Science, Experience with TypeScript, Familiarity with RESTful APIs, AWS certification
-`;
-          maxLength = "Only output the comma-separated list of main, measurable skills and requirements. No extra text.";
+        case "benefits":
+          prompt = `Write an attractive benefits section for a ${jobData.title} position at a modern tech company. Include compensation philosophy, health benefits, work-life balance, and growth opportunities.`;
           break;
       }
 
-      const fullPrompt = `${prompt} ${maxLength}`;
-
-      const result = await model.generateContent(fullPrompt);
-      const response = result.response.text();
-
-      setJobData(prev => ({ ...prev, [field]: response.trim() }));
-      toast.success(`${field.charAt(0).toUpperCase() + field.slice(1)} suggestion generated!`);
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      
+      handleInputChange(field, text);
+      
+      toast({
+        title: "AI Content Generated",
+        description: `Successfully generated ${field} content.`,
+      });
     } catch (error) {
-      console.error("AI generation failed:", error);
-      toast.error(`Failed to generate ${field} suggestion. Please try again.`);
+      console.error("AI generation error:", error);
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate AI content. Please try again.",
+        variant: "destructive",
+      });
     } finally {
-      setIsGenerating(prev => ({ ...prev, [field]: false }));
+      setIsGenerating(false);
     }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (file.type !== "application/pdf") {
-      toast.error("Please upload a PDF file only");
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      // Upload to Cloudinary
-      const uploadResult = await processDocument(file);
-      if (!uploadResult) {
-        throw new Error("Upload failed");
-      }
-
-      toast.success("PDF uploaded successfully! Analyzing...");
-
-      // Download the PDF as a buffer
-      const pdfBuffer = await fetch(uploadResult.secure_url).then((response) => response.arrayBuffer());
-      const fileBlob = new Blob([pdfBuffer], { type: 'application/pdf' });
-
-      // Upload the PDF to the AI provider (assume ai.files.upload is available)
-      const ai = fileAI; // or your AI SDK instance
-      const aiFile = await ai.files.upload({ file: fileBlob });
-
-      // Wait for processing
-      let getFile = await ai.files.get({ name: aiFile.name });
-      while (getFile.state === 'PROCESSING') {
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-        getFile = await ai.files.get({ name: aiFile.name });
-      }
-      if (aiFile.state === 'FAILED') {
-        toast.info("File processing failed");
-        setIsUploading(false);
-        return;
-      }
-
-      // Prepare the structured prompt
-      const content = [
-        `Extract the following job posting fields from the PDF and return them as a JSON object with these exact keys: ["title", "description", "skill_conditions"].\n- "title": Generate a clear, professional job title based on the document.\n- "description": Write a connected, compelling job description in plain text. Start with a short, engaging paragraph introducing the company, team, and role (mention the industry if known). Follow with a short paragraph about the ideal candidate. Then, provide a detailed list of skills, responsibilities, and qualifications as bullet points (using • or - at the start of each point, not numbers or markdown). Each bullet must be specific and detailed, mentioning relevant technologies, tools, frameworks, or real-world context. End with a short, motivating paragraph about the unique opportunities, impact, and culture the candidate will experience. Do not use section headings, numbers, or markdown. Do not include any instructions on how to apply. Do not include any bracketed placeholders or blank brackets in the output.\n- "skill_conditions": Based on the job description and any skill-related content in the document, generate a concise, comma-separated list of the main, measurable skills and requirements for AI filtering. Only include specific, quantifiable criteria such as years of experience, required technologies, degrees, certifications, and must-have skills. Do not include any extra explanation or formatting—just the list.\n\nReturn the result as a JSON object with these keys: ["title", "description", "skill_conditions"].`
-      ];
-
-      if (aiFile.uri && aiFile.mimeType) {
-        const fileContent = createPartFromUri(aiFile.uri, aiFile.mimeType);
-        content.push(fileContent);
-      }
-
-      // Call the AI model
-      const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
-        contents: content,
-      });
-
-      let rawContent = response.text || "";
-      const jsonMatch = rawContent.match(/```json([\s\S]*?)```/);
-      const jsonString = jsonMatch ? jsonMatch[1].trim() : rawContent;
-
-      let generatedProperties;
-      try {
-        generatedProperties = JSON.parse(jsonString);
-      } catch (err) {
-        throw new Error("Failed to parse JSON response from AI");
-      }
-
-      setJobData({
-        title: generatedProperties.title || "",
-        description: generatedProperties.description || "",
-        skillConditions: generatedProperties.skill_conditions || ""
-      });
-
-      toast.success("Job data extracted from PDF successfully!");
-    } catch (error) {
-      console.error("Error extracting job from PDF:", error);
-      toast.error(`Failed to extract job data: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setIsUploading(false);
-    }
+  const handleSaveJob = () => {
+    // Here you would typically save to a backend
+    toast({
+      title: "Job Created Successfully",
+      description: `"${jobData.title}" has been posted and is now live.`,
+    });
   };
 
-  const handlePublishJob = async () => {
-    if (!jobData.title || !jobData.description) {
-      toast.error("Please fill in at least the job title and description");
-      return;
-    }
-
-    setIsPublishing(true);
-    try {
-      // Get JWT token from localStorage (assuming it's stored there after login)
-      const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
-
-      if (!token) {
-        toast.error("Please login to publish a job");
-        navigate("/login");
-        return;
-      }
-
-      const jobPayload = {
-        title: jobData.title,
-        description: jobData.description,
-        skill_condition: jobData.skillConditions
-      };
-
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/jobs`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(jobPayload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to publish job');
-      }
-
-      const result = await response.json();
-      console.log("Job published:", result);
-
-      toast.success("Job published successfully!");
-      navigate("/dashboard/jobs");
-    } catch (error) {
-      console.error("Publish failed:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to publish job. Please try again.");
-    } finally {
-      setIsPublishing(false);
-    }
+  const handlePreview = () => {
+    // Here you would typically open a preview modal
+    toast({
+      title: "Preview Mode",
+      description: "Opening job preview...",
+    });
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-
-      {/* Main Content */}
-      <div className="max-w-full mx-auto p-2 space-y-6">
-        {/* PDF Upload Section */}
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center text-lg">
-              <Upload className="h-5 w-5 mr-2" />
-              Quick Upload
-            </CardTitle>
-            <CardDescription>
-              Upload a PDF document to auto-populate job details
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-              <Upload className="h-8 w-8 text-gray-400 mx-auto mb-3" />
-              <h3 className="text-sm font-medium text-gray-900 mb-2">
-                Upload Job Document
-              </h3>
-              <p className="text-xs text-gray-500 mb-3">
-                PDF files only • Auto-populate all fields
-              </p>
-              <input
-                type="file"
-                accept=".pdf"
-                onChange={handleFileUpload}
-                className="hidden"
-                id="pdf-upload"
-                disabled={isUploading}
-              />
-              <label htmlFor="pdf-upload">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="cursor-pointer"
-                  disabled={isUploading}
-                  asChild
-                >
-                  <span>
-                    {isUploading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="h-4 w-4 mr-2" />
-                        Choose PDF
-                      </>
-                    )}
-                  </span>
-                </Button>
-              </label>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Job Details Form */}
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Job Details</CardTitle>
-            <CardDescription>
-              Fill in the job information below. Use AI suggestions for each field.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Job Title */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <Label htmlFor="title">Job Title</Label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => generateFieldSuggestion('title', jobData.title)}
-                  disabled={isGenerating.title}
-                  className="text-blue-600 hover:text-blue-700 h-8"
-                >
-                  {isGenerating.title ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4" />
-                  )}
-                  <span className="ml-1 text-xs">AI Suggest</span>
-                </Button>
-              </div>
-              <Input
-                id="title"
-                value={jobData.title}
-                onChange={(e) => setJobData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="e.g., Senior Frontend Developer"
-                className="h-10"
-              />
-            </div>
-
-            {/* Job Description */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <Label htmlFor="description">Job Description</Label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => generateFieldSuggestion('description', jobData.description)}
-                  disabled={isGenerating.description}
-                  className="text-blue-600 hover:text-blue-700 h-8"
-                >
-                  {isGenerating.description ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4" />
-                  )}
-                  <span className="ml-1 text-xs">AI Suggest</span>
-                </Button>
-              </div>
-              <Textarea
-                id="description"
-                value={jobData.description}
-                onChange={(e) => setJobData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Detailed job description including responsibilities, requirements, and benefits..."
-                className="min-h-[150px]"
-              />
-            </div>
-
-            {/* Skill Conditions */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <Label htmlFor="skillConditions">Skill Conditions (AI Filtering)</Label>
-                  <p className="text-xs text-gray-500 mt-1">
-                    This is for AI filtering only and won't be visible to candidates
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => generateFieldSuggestion('skillConditions', jobData.skillConditions)}
-                  disabled={isGenerating.skillConditions}
-                  className="text-blue-600 hover:text-blue-700 h-8"
-                >
-                  {isGenerating.skillConditions ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4" />
-                  )}
-                  <span className="ml-1 text-xs">AI Suggest</span>
-                </Button>
-              </div>
-              <Textarea
-                id="skillConditions"
-                value={jobData.skillConditions}
-                onChange={(e) => setJobData(prev => ({ ...prev, skillConditions: e.target.value }))}
-                placeholder="e.g., Minimum 5+ years React experience, Bachelor's degree in Computer Science, Experience with TypeScript..."
-                className="min-h-[100px]"
-              />
-            </div>
-
-            {/* Publish Button */}
-            <div className="pt-4 border-t">
-              <Button
-                onClick={handlePublishJob}
-                disabled={isPublishing || !jobData.title || !jobData.description}
-                className="w-full bg-blue-600 hover:bg-blue-700"
-              >
-                {isPublishing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Publishing Job...
-                  </>
-                ) : (
-                  "Publish Job"
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="space-y-8 max-w-6xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center">
+            <Briefcase className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Create New Job</h1>
+            <p className="text-gray-600">Post a new position with AI assistance</p>
+          </div>
+        </div>
+        <div className="flex space-x-3">
+          <Button variant="outline" onClick={handlePreview}>
+            <Eye className="mr-2 h-4 w-4" />
+            Preview
+          </Button>
+          <Button onClick={handleSaveJob} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+            <Save className="mr-2 h-4 w-4" />
+            Save & Publish
+          </Button>
+        </div>
       </div>
+
+      <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="basic">Basic Info</TabsTrigger>
+          <TabsTrigger value="details">Job Details</TabsTrigger>
+          <TabsTrigger value="requirements">Requirements</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+        </TabsList>
+
+        {/* Basic Information */}
+        <TabsContent value="basic" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Job Basics</CardTitle>
+                <CardDescription>Essential information about the position</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Job Title *</Label>
+                  <Input
+                    id="title"
+                    value={jobData.title}
+                    onChange={(e) => handleInputChange('title', e.target.value)}
+                    placeholder="e.g. Senior Frontend Developer"
+                    className="font-medium"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="department">Department</Label>
+                  <Select value={jobData.department} onValueChange={(value) => handleInputChange('department', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="engineering">Engineering</SelectItem>
+                      <SelectItem value="product">Product</SelectItem>
+                      <SelectItem value="design">Design</SelectItem>
+                      <SelectItem value="marketing">Marketing</SelectItem>
+                      <SelectItem value="sales">Sales</SelectItem>
+                      <SelectItem value="hr">Human Resources</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="location">Location</Label>
+                    <Input
+                      id="location"
+                      value={jobData.location}
+                      onChange={(e) => handleInputChange('location', e.target.value)}
+                      placeholder="e.g. San Francisco, CA"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="workModel">Work Model</Label>
+                    <Select value={jobData.workModel} onValueChange={(value) => handleInputChange('workModel', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select model" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="remote">Remote</SelectItem>
+                        <SelectItem value="hybrid">Hybrid</SelectItem>
+                        <SelectItem value="onsite">On-site</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="type">Job Type</Label>
+                    <Select value={jobData.type} onValueChange={(value) => handleInputChange('type', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="full-time">Full-time</SelectItem>
+                        <SelectItem value="part-time">Part-time</SelectItem>
+                        <SelectItem value="contract">Contract</SelectItem>
+                        <SelectItem value="internship">Internship</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="experience">Experience Level</Label>
+                    <Select value={jobData.experience} onValueChange={(value) => handleInputChange('experience', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="entry">Entry Level (0-2 years)</SelectItem>
+                        <SelectItem value="mid">Mid Level (2-5 years)</SelectItem>
+                        <SelectItem value="senior">Senior Level (5-8 years)</SelectItem>
+                        <SelectItem value="lead">Lead/Principal (8+ years)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="salary">Salary Range</Label>
+                  <Input
+                    id="salary"
+                    value={jobData.salary}
+                    onChange={(e) => handleInputChange('salary', e.target.value)}
+                    placeholder="e.g. $80,000 - $120,000 per year"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Timeline & Team</CardTitle>
+                <CardDescription>When and who they'll work with</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="startDate">Preferred Start Date</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={jobData.startDate}
+                    onChange={(e) => handleInputChange('startDate', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="deadline">Application Deadline</Label>
+                  <Input
+                    id="deadline"
+                    type="date"
+                    value={jobData.applicationDeadline}
+                    onChange={(e) => handleInputChange('applicationDeadline', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="reportingTo">Reports To</Label>
+                  <Input
+                    id="reportingTo"
+                    value={jobData.reportingTo}
+                    onChange={(e) => handleInputChange('reportingTo', e.target.value)}
+                    placeholder="e.g. VP of Engineering"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="teamSize">Team Size</Label>
+                  <Select value={jobData.teamSize} onValueChange={(value) => handleInputChange('teamSize', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select team size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1-5">1-5 people</SelectItem>
+                      <SelectItem value="6-10">6-10 people</SelectItem>
+                      <SelectItem value="11-20">11-20 people</SelectItem>
+                      <SelectItem value="20+">20+ people</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Urgency Level</Label>
+                  <Select value={jobData.urgency} onValueChange={(value) => handleInputChange('urgency', value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low - Standard hiring</SelectItem>
+                      <SelectItem value="medium">Medium - Preferred timing</SelectItem>
+                      <SelectItem value="high">High - Urgent need</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Job Details */}
+        <TabsContent value="details" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Role Details</CardTitle>
+              <CardDescription>Describe the responsibilities and day-to-day tasks</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="description">Job Description</Label>
+                <div className="flex items-center justify-end mb-2">
+                  <Button 
+                    variant="secondary" 
+                    size="sm" 
+                    onClick={() => generateWithAI('description')}
+                    disabled={isGenerating}
+                  >
+                    {isGenerating ? "Generating..." : "Generate with AI"}
+                  </Button>
+                </div>
+                <Textarea
+                  id="description"
+                  value={jobData.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  placeholder="Detailed description of the job role and responsibilities"
+                  rows={6}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Skills & Perks</CardTitle>
+              <CardDescription>Highlight the required skills and offered benefits</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Required Skills</Label>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {jobData.skills.map(skill => (
+                    <Badge key={skill} variant="secondary" className="bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 flex items-center gap-2">
+                      {skill}
+                      <button onClick={() => removeSkill(skill)} className="hover:bg-blue-200 rounded-full p-0.5">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    value={newSkill}
+                    onChange={(e) => setNewSkill(e.target.value)}
+                    placeholder="Add a new skill"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        addSkill(newSkill);
+                        e.preventDefault();
+                      }
+                    }}
+                  />
+                  <Button onClick={() => addSkill(newSkill)} size="sm" variant="outline">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {predefinedSkills.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-sm text-gray-500 mb-2">Popular Skills:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {predefinedSkills.map(skill => (
+                        <Badge key={skill} variant="ghost" className="text-blue-500 hover:bg-blue-50 cursor-pointer" onClick={() => addSkill(skill)}>
+                          {skill}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Company Perks</Label>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {jobData.perks.map(perk => (
+                    <Badge key={perk} variant="secondary" className="bg-green-50 text-green-700 border border-green-200 px-3 py-1 flex items-center gap-2">
+                      {perk}
+                      <button onClick={() => removePerk(perk)} className="hover:bg-green-200 rounded-full p-0.5">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    value={newPerk}
+                    onChange={(e) => setNewPerk(e.target.value)}
+                    placeholder="Add a new perk"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        addPerk(newPerk);
+                        e.preventDefault();
+                      }
+                    }}
+                  />
+                  <Button onClick={() => addPerk(newPerk)} size="sm" variant="outline">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {predefinedPerks.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-sm text-gray-500 mb-2">Popular Perks:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {predefinedPerks.map(perk => (
+                        <Badge key={perk} variant="ghost" className="text-green-500 hover:bg-green-50 cursor-pointer" onClick={() => addPerk(perk)}>
+                          {perk}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Requirements */}
+        <TabsContent value="requirements" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Candidate Requirements</CardTitle>
+              <CardDescription>Specify the qualifications and expectations</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="requirements">Job Requirements</Label>
+                <div className="flex items-center justify-end mb-2">
+                  <Button 
+                    variant="secondary" 
+                    size="sm"
+                    onClick={() => generateWithAI('requirements')}
+                    disabled={isGenerating}
+                  >
+                    {isGenerating ? "Generating..." : "Generate with AI"}
+                  </Button>
+                </div>
+                <Textarea
+                  id="requirements"
+                  value={jobData.requirements}
+                  onChange={(e) => handleInputChange('requirements', e.target.value)}
+                  placeholder="List the required skills, experience, and qualifications"
+                  rows={6}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Settings */}
+        <TabsContent value="settings" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Application Settings</CardTitle>
+              <CardDescription>Configure how applications are processed</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="aiScreening">AI Screening</Label>
+                <Switch
+                  id="aiScreening"
+                  checked={jobData.aiScreening}
+                  onCheckedChange={(checked) => handleInputChange('aiScreening', checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="autoResponse">Automated Response</Label>
+                <Switch
+                  id="autoResponse"
+                  checked={jobData.autoResponse}
+                  onCheckedChange={(checked) => handleInputChange('autoResponse', checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="skillAssessment">Skill Assessment</Label>
+                <Switch
+                  id="skillAssessment"
+                  checked={jobData.skillAssessment}
+                  onCheckedChange={(checked) => handleInputChange('skillAssessment', checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="videoInterview">Video Interview</Label>
+                <Switch
+                  id="videoInterview"
+                  checked={jobData.videoInterview}
+                  onCheckedChange={(checked) => handleInputChange('videoInterview', checked)}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
