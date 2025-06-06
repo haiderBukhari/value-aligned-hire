@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Download, ExternalLink, Star, Award, Brain, Users } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, Star, Award, Brain, Users, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
 
 interface Resume {
@@ -31,6 +33,11 @@ interface Resume {
 const ResumeDetails = () => {
   const { jobId, resumeId } = useParams<{ jobId: string; resumeId: string }>();
   const navigate = useNavigate();
+  const [documentModal, setDocumentModal] = useState<{ isOpen: boolean; type: 'cv' | 'cover' | null; url: string }>({
+    isOpen: false,
+    type: null,
+    url: ''
+  });
 
   const { data: resumes = [], isLoading } = useQuery({
     queryKey: ['resumes', jobId],
@@ -98,6 +105,17 @@ const ResumeDetails = () => {
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const openDocumentModal = (type: 'cv' | 'cover', url: string) => {
+    if (!url || url.trim() === '') {
+      return;
+    }
+    setDocumentModal({ isOpen: true, type, url });
+  };
+
+  const closeDocumentModal = () => {
+    setDocumentModal({ isOpen: false, type: null, url: '' });
   };
 
   if (isLoading) {
@@ -182,15 +200,31 @@ const ResumeDetails = () => {
                     <div className="bg-gray-100 rounded-lg h-24 mb-4 flex items-center justify-center">
                       <span className="text-xs text-gray-500">PDF Preview</span>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => window.open(resume.cv_link, '_blank')}
-                      className="w-full hover:bg-red-50 hover:border-red-300"
-                    >
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      View CV
-                    </Button>
+                    {resume.cv_link && resume.cv_link.trim() !== '' ? (
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openDocumentModal('cv', resume.cv_link)}
+                          className="flex-1 hover:bg-red-50 hover:border-red-300"
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          View CV
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(resume.cv_link, '_blank')}
+                          className="hover:bg-red-50 hover:border-red-300"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-center py-2">
+                        <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">Not Attached</span>
+                      </div>
+                    )}
                   </div>
                   <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-blue-300 hover:bg-blue-50 transition-all duration-300 group">
                     <div className="bg-gradient-to-br from-blue-100 to-blue-200 w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
@@ -200,15 +234,31 @@ const ResumeDetails = () => {
                     <div className="bg-gray-100 rounded-lg h-24 mb-4 flex items-center justify-center">
                       <span className="text-xs text-gray-500">PDF Preview</span>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => window.open(resume.coverletter_link, '_blank')}
-                      className="w-full hover:bg-blue-50 hover:border-blue-300"
-                    >
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      View Letter
-                    </Button>
+                    {resume.coverletter_link && resume.coverletter_link.trim() !== '' ? (
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openDocumentModal('cover', resume.coverletter_link)}
+                          className="flex-1 hover:bg-blue-50 hover:border-blue-300"
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          View Letter
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(resume.coverletter_link, '_blank')}
+                          className="hover:bg-blue-50 hover:border-blue-300"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-center py-2">
+                        <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">Not Attached</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -343,6 +393,43 @@ const ResumeDetails = () => {
           </div>
         </div>
       </div>
+
+      {/* Document Modal */}
+      <Dialog open={documentModal.isOpen} onOpenChange={closeDocumentModal}>
+        <DialogContent className="max-w-4xl w-full h-[80vh] p-0">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle className="flex items-center gap-2">
+              {documentModal.type === 'cv' ? (
+                <>
+                  <Download className="h-5 w-5 text-red-600" />
+                  CV / Resume - {resume?.applicant_name}
+                </>
+              ) : (
+                <>
+                  <Download className="h-5 w-5 text-blue-600" />
+                  Cover Letter - {resume?.applicant_name}
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 p-6 pt-2">
+            {documentModal.url ? (
+              <iframe
+                src={documentModal.url}
+                className="w-full h-full border-0 rounded-lg"
+                title={documentModal.type === 'cv' ? 'CV Preview' : 'Cover Letter Preview'}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                <div className="text-center">
+                  <Download className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <p>Document not available</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
