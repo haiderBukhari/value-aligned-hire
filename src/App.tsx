@@ -13,6 +13,10 @@ import JobDetails from "./pages/JobDetails";
 import ResumeDetails from "./pages/ResumeDetails";
 import CreateJob from "./pages/CreateJob";
 import JobApplication from "./pages/JobApplication";
+import CompanyConfiguration from "./pages/CompanyConfiguration";
+import InterviewManagement from "./pages/InterviewManagement";
+import AssessmentCenter from "./pages/AssessmentCenter";
+import HiringPipeline from "./pages/HiringPipeline";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,7 +37,10 @@ const App = () => (
             <Route path="jobs/:jobId" element={<JobDetails />} />
             <Route path="jobs/:jobId/resume/:resumeId" element={<ResumeDetails />} />
             <Route path="create-job" element={<CreateJob />} />
-            {/* Add more dashboard routes as needed */}
+            <Route path="company" element={<CompanyConfiguration />} />
+            <Route path="interviews" element={<InterviewManagement />} />
+            <Route path="assessments" element={<AssessmentCenter />} />
+            <Route path="pipeline" element={<HiringPipeline />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

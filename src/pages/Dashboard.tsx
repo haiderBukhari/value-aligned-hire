@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { Users, Briefcase, TrendingUp, Calendar, Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, Home, Settings, LogOut } from "lucide-react";
+import { 
+  Users, Briefcase, TrendingUp, Calendar, Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, 
+  Home, Settings, LogOut, Building2, UserCheck, ClipboardList, FileText, Target, Bell
+} from "lucide-react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 
 const Dashboard = () => {
@@ -83,6 +85,61 @@ const Dashboard = () => {
     }
   ];
 
+  // Navigation items with dummy data
+  const navigationItems = [
+    {
+      icon: Home,
+      label: "Dashboard",
+      path: "/dashboard",
+      count: null
+    },
+    {
+      icon: Plus,
+      label: "Create Job",
+      path: "/dashboard/create-job",
+      count: null
+    },
+    {
+      icon: Briefcase,
+      label: "Jobs",
+      path: "/dashboard/jobs",
+      count: 24
+    },
+    {
+      icon: Calendar,
+      label: "Interviews",
+      path: "/dashboard/interviews",
+      count: 8
+    },
+    {
+      icon: ClipboardList,
+      label: "Assessments",
+      path: "/dashboard/assessments",
+      count: 12
+    },
+    {
+      icon: Target,
+      label: "Hiring Pipeline",
+      path: "/dashboard/pipeline",
+      count: 91
+    }
+  ];
+
+  const secondaryItems = [
+    {
+      icon: Building2,
+      label: "Company Config",
+      path: "/dashboard/company",
+      count: null
+    },
+    {
+      icon: Settings,
+      label: "Settings",
+      path: "/dashboard/settings",
+      count: null
+    }
+  ];
+
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'active': return 'bg-green-100 text-green-800';
@@ -95,75 +152,98 @@ const Dashboard = () => {
     }
   };
 
+  const getPageTitle = () => {
+    switch (location.pathname) {
+      case "/dashboard": return "Dashboard";
+      case "/dashboard/create-job": return "Create Job";
+      case "/dashboard/jobs": return "Jobs Management";
+      case "/dashboard/interviews": return "Interview Management";
+      case "/dashboard/assessments": return "Assessment Center";
+      case "/dashboard/pipeline": return "Hiring Pipeline";
+      case "/dashboard/company": return "Company Configuration";
+      default: return "Dashboard";
+    }
+  };
+
+  const getPageDescription = () => {
+    switch (location.pathname) {
+      case "/dashboard": return "Welcome back! Here's what's happening with your recruitment.";
+      case "/dashboard/create-job": return "Create a new job posting with AI assistance";
+      case "/dashboard/jobs": return "Manage your job postings and applications";
+      case "/dashboard/interviews": return "Schedule and manage candidate interviews";
+      case "/dashboard/assessments": return "Manage candidate assessments and home tasks";
+      case "/dashboard/pipeline": return "Track candidates through hiring stages";
+      case "/dashboard/company": return "Manage your company profile and branding";
+      default: return "Welcome to your recruitment dashboard";
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Enhanced Sidebar */}
-      <div className="w-72 bg-white shadow-xl border-r border-gray-200">
+      <div className="w-80 bg-white shadow-xl border-r border-gray-200">
         {/* Logo Section */}
         <div className="p-6 border-b border-gray-200">
           <button 
             onClick={() => navigate('/')}
             className="flex items-center hover:opacity-80 transition-opacity w-full"
           >
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mr-3">
-              <Briefcase className="h-6 w-6 text-white" />
+            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mr-4">
+              <Briefcase className="h-7 w-7 text-white" />
             </div>
             <div className="text-left">
               <h1 className="text-xl font-bold text-gray-900">Talo HR</h1>
-              <p className="text-sm text-gray-500">AI Recruitment</p>
+              <p className="text-sm text-gray-500">AI Recruitment Platform</p>
             </div>
           </button>
+        </div>
+        
+        {/* Quick Stats */}
+        <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+              <p className="text-lg font-bold text-gray-900">24</p>
+              <p className="text-xs text-gray-600">Active Jobs</p>
+            </div>
+            <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+              <p className="text-lg font-bold text-gray-900">156</p>
+              <p className="text-xs text-gray-600">Candidates</p>
+            </div>
+          </div>
         </div>
         
         {/* Navigation */}
         <nav className="mt-6 px-4">
           <div className="space-y-2">
-            <Button
-              variant={isDashboardHome ? "default" : "ghost"}
-              className={`w-full justify-start h-12 text-left font-medium transition-all duration-200 ${
-                isDashboardHome 
-                  ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm hover:bg-blue-100" 
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-              }`}
-              onClick={() => navigate("/dashboard")}
-            >
-              <Home className="mr-3 h-5 w-5" />
-              Dashboard
-            </Button>
-            
-            <Button
-              variant={location.pathname === "/dashboard/create-job" ? "default" : "ghost"}
-              className={`w-full justify-start h-12 text-left font-medium transition-all duration-200 ${
-                location.pathname === "/dashboard/create-job"
-                  ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm hover:bg-blue-100" 
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-              }`}
-              onClick={() => navigate("/dashboard/create-job")}
-            >
-              <Plus className="mr-3 h-5 w-5" />
-              Create Job
-            </Button>
-            
-            <Button
-              variant={location.pathname === "/dashboard/jobs" ? "default" : "ghost"}
-              className={`w-full justify-start h-12 text-left font-medium transition-all duration-200 ${
-                location.pathname === "/dashboard/jobs"
-                  ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm hover:bg-blue-100" 
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-              }`}
-              onClick={() => navigate("/dashboard/jobs")}
-            >
-              <Briefcase className="mr-3 h-5 w-5" />
-              Jobs
-            </Button>
-            
-            <Button
-              variant="ghost"
-              className="w-full justify-start h-12 text-left font-medium transition-all duration-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-            >
-              <Calendar className="mr-3 h-5 w-5" />
-              Interviews
-            </Button>
+            {navigationItems.map((item) => (
+              <Button
+                key={item.path}
+                variant={location.pathname === item.path ? "default" : "ghost"}
+                className={`w-full justify-between h-12 text-left font-medium transition-all duration-200 ${
+                  location.pathname === item.path
+                    ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm hover:bg-blue-100" 
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                }`}
+                onClick={() => navigate(item.path)}
+              >
+                <div className="flex items-center">
+                  <item.icon className="mr-3 h-5 w-5" />
+                  {item.label}
+                </div>
+                {item.count && (
+                  <Badge 
+                    variant="secondary" 
+                    className={`${
+                      location.pathname === item.path 
+                        ? "bg-blue-100 text-blue-700" 
+                        : "bg-gray-100 text-gray-600"
+                    } text-xs px-2 py-1`}
+                  >
+                    {item.count}
+                  </Badge>
+                )}
+              </Button>
+            ))}
           </div>
           
           {/* Divider */}
@@ -171,18 +251,50 @@ const Dashboard = () => {
           
           {/* Secondary Navigation */}
           <div className="space-y-2">
-            <Button
-              variant="ghost"
-              className="w-full justify-start h-12 text-left font-medium transition-all duration-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-            >
-              <Settings className="mr-3 h-5 w-5" />
-              Settings
-            </Button>
+            {secondaryItems.map((item) => (
+              <Button
+                key={item.path}
+                variant={location.pathname === item.path ? "default" : "ghost"}
+                className={`w-full justify-start h-12 text-left font-medium transition-all duration-200 ${
+                  location.pathname === item.path
+                    ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm hover:bg-blue-100" 
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                }`}
+                onClick={() => navigate(item.path)}
+              >
+                <item.icon className="mr-3 h-5 w-5" />
+                {item.label}
+              </Button>
+            ))}
           </div>
         </nav>
         
+        {/* Recent Activity */}
+        <div className="mt-8 px-4">
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+              <Bell className="mr-2 h-4 w-4" />
+              Recent Activity
+            </h3>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <p className="text-xs text-gray-600">New application for Senior Developer</p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <p className="text-xs text-gray-600">Interview scheduled with Sarah J.</p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                <p className="text-xs text-gray-600">Assessment completed by Alex R.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
         {/* Bottom Section */}
-        <div className="absolute w-60 bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
+        <div className="absolute w-72 bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
           <div className="flex items-center space-x-3 mb-4">
             <Avatar className="h-10 w-10 ring-2 ring-blue-200">
               <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold">
@@ -213,10 +325,10 @@ const Dashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-3xl font-bold text-gray-900 mb-1">
-                {isDashboardHome ? "Dashboard" : location.pathname === "/dashboard/create-job" ? "Create Job" : "Jobs Management"}
+                {getPageTitle()}
               </h2>
               <p className="text-sm text-gray-600">
-                {isDashboardHome ? "Welcome back! Here's what's happening with your recruitment." : location.pathname === "/dashboard/create-job" ? "Create a new job posting with AI assistance" : "Manage your job postings and applications"}
+                {getPageDescription()}
               </p>
             </div>
             <div className="flex items-center space-x-4">
