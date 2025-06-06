@@ -86,16 +86,6 @@ const InterviewManagement = () => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Interview Management</h1>
-          <p className="text-gray-600">Schedule and manage candidate interviews</p>
-        </div>
-        <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold">
-          <Plus className="mr-2 h-4 w-4" />
-          Schedule Interview
-        </Button>
-      </div>
 
       {/* Search and Filter */}
       <div className="flex flex-col sm:flex-row gap-4">

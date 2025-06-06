@@ -133,16 +133,7 @@ const AssessmentCenter = () => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Assessment Center</h1>
-          <p className="text-gray-600">Manage candidate assessments and home tasks</p>
-        </div>
-        <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold">
-          <Plus className="mr-2 h-4 w-4" />
-          Create Assessment
-        </Button>
-      </div>
+
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
