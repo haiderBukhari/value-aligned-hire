@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { 
@@ -151,7 +150,7 @@ const Jobs = () => {
   }
 
   return (
-    <div className="max-w-full overflow-hidden">
+    <div className="max-w-full ">
       {/* Search and Filter */}
       <div className="flex justify-between w-full items-center mb-6 px-2">
         <div className="relative w-80">
@@ -177,10 +176,10 @@ const Jobs = () => {
               <table className="w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Job Title
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[300px]">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Description
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
@@ -219,7 +218,7 @@ const Jobs = () => {
                         transition={{ duration: 0.3 }}
                       >
                         <td className="px-6 py-4">
-                          <div className="text-sm font-medium text-gray-900 truncate max-w-[180px]">{job.title}</div>
+                          <div className="text-sm font-medium text-gray-900 truncate max-w-[180px">{job.title}</div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-500 truncate max-w-[280px]">

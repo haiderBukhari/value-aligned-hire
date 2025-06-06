@@ -81,8 +81,14 @@ const JobDetails = () => {
     return 'text-red-600';
   };
 
-  const handleResumeClick = (resumeId: string) => {
-    navigate(`/dashboard/jobs/${jobId}/resume/${resumeId}`);
+  const handleResumeClick = (resume: Resume) => {
+    if (resume.evaluated) {
+      navigate(`/dashboard/jobs/${jobId}/resume/${resume.id}`);
+    } else {
+      toast.info("This resume is currently being evaluated by our AI.", {
+        description: "Please check back in a few moments. Scores will appear here automatically.",
+      });
+    }
   };
 
   // Sort resumes by total_weighted_score descending
@@ -216,10 +222,17 @@ const JobDetails = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.08 }}
-                onClick={() => handleResumeClick(resume.id)}
-                className="cursor-pointer"
+                onClick={() => handleResumeClick(resume)}
+                className={`relative ${resume.evaluated ? 'cursor-pointer' : 'cursor-not-allowed'}`}
               >
-                <Card className={`relative border border-gray-200 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 group ${index === 0 ? 'ring-2 ring-blue-400' : ''}`}>
+                {!resume.evaluated && (
+                  <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex flex-col items-center justify-center z-20 rounded-2xl p-4 text-center">
+                    <div className="w-8 h-8 border-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
+                    <p className="mt-3 font-semibold text-gray-800">AI Evaluation in Progress</p>
+                    <p className="mt-1 text-xs text-gray-600">Scores will appear here soon.</p>
+                  </div>
+                )}
+                <Card className={`border border-gray-200 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 group ${index === 0 ? 'ring-2 ring-blue-400' : ''}`}>
                   {/* Rank Badge */}
                   <div className="absolute top-[-10px] right-0 z-10">
                     <span className={`px-3 py-1 rounded-full text-xs font-bold ${index === 0 ? 'bg-gradient-to-r from-blue-500 to-green-400 text-white shadow-md' : 'bg-gray-200 text-gray-700'}`}>

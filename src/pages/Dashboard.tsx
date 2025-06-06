@@ -263,7 +263,7 @@ const Dashboard = () => {
         </div>
         
         {/* Bottom Section */}
-        <div className="absolute w-80 bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
+        {/* <div className="absolute w-80 bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
           <div className="flex items-center space-x-3 mb-4">
             <Avatar className="h-10 w-10 ring-2 ring-blue-200">
               <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold">
@@ -284,7 +284,7 @@ const Dashboard = () => {
             <LogOut className="mr-3 h-4 w-4" />
             Sign Out
           </Button>
-        </div>
+        </div> */}
       </div>
 
       {/* Main Content with left margin to account for fixed sidebar */}

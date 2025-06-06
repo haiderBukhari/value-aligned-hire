@@ -64,15 +64,6 @@ const CompanyConfiguration = () => {
   return (
     <div className="space-y-8">
       {/* Header Section */}
-      <div className="flex items-center space-x-4 mb-8">
-        <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center">
-          <Building2 className="h-8 w-8 text-white" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Company Configuration</h1>
-          <p className="text-gray-600">Manage your company profile and branding</p>
-        </div>
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Company Basic Information */}
