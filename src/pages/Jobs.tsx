@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { 
@@ -135,6 +136,10 @@ const Jobs = () => {
     toast.success('Application link copied to clipboard');
   };
 
+  const handleViewDetails = (jobId: string) => {
+    navigate(`/dashboard/jobs/${jobId}`);
+  };
+
   if (error) {
     return (
       <div className="p-6">
@@ -147,7 +152,6 @@ const Jobs = () => {
 
   return (
     <div className="p-2">
-
       {/* Search and Filter */}
       <div className="flex justify-between w-full items-center mb-6">
         <div className="relative w-80">
@@ -188,7 +192,7 @@ const Jobs = () => {
                     Status
                   </th>
                   <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Action
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -233,55 +237,68 @@ const Jobs = () => {
                         </Badge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Open menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem 
-                              className="cursor-pointer"
-                              onClick={() => handleCopyApplicationLink(job.id)}
-                            >
-                              <Copy className="mr-2 h-4 w-4" />
-                              <span>Copy Application Link</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="cursor-pointer">
-                              <Eye className="mr-2 h-4 w-4" />
-                              <span>View Details</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer">
-                              <Edit className="mr-2 h-4 w-4" />
-                              <span>Edit Job</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem 
-                              className="cursor-pointer"
-                              onClick={() => handleToggleStatus(job.id)}
-                              disabled={toggleStatusMutation.isPending}
-                            >
-                              {job.status === 'active' ? (
-                                <>
-                                  <ToggleLeft className="mr-2 h-4 w-4" />
-                                  <span>Set Inactive</span>
-                                </>
-                              ) : (
-                                <>
-                                  <ToggleRight className="mr-2 h-4 w-4" />
-                                  <span>Set Active</span>
-                                </>
-                              )}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="cursor-pointer text-red-600">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              <span>Delete Job</span>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleViewDetails(job.id)}
+                            className="h-8 w-8"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Open menu</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem 
+                                className="cursor-pointer"
+                                onClick={() => handleCopyApplicationLink(job.id)}
+                              >
+                                <Copy className="mr-2 h-4 w-4" />
+                                <span>Copy Application Link</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                className="cursor-pointer"
+                                onClick={() => handleViewDetails(job.id)}
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                <span>View Details</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="cursor-pointer">
+                                <Edit className="mr-2 h-4 w-4" />
+                                <span>Edit Job</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                className="cursor-pointer"
+                                onClick={() => handleToggleStatus(job.id)}
+                                disabled={toggleStatusMutation.isPending}
+                              >
+                                {job.status === 'active' ? (
+                                  <>
+                                    <ToggleLeft className="mr-2 h-4 w-4" />
+                                    <span>Set Inactive</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <ToggleRight className="mr-2 h-4 w-4" />
+                                    <span>Set Active</span>
+                                  </>
+                                )}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="cursor-pointer text-red-600">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                <span>Delete Job</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </td>
                     </motion.tr>
                   ))

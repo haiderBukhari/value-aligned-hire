@@ -9,6 +9,8 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Jobs from "./pages/Jobs";
+import JobDetails from "./pages/JobDetails";
+import ResumeDetails from "./pages/ResumeDetails";
 import CreateJob from "./pages/CreateJob";
 import JobApplication from "./pages/JobApplication";
 import NotFound from "./pages/NotFound";
@@ -28,6 +30,8 @@ const App = () => (
           <Route path="/apply/:jobId" element={<JobApplication />} />
           <Route path="/dashboard" element={<Dashboard />}>
             <Route path="jobs" element={<Jobs />} />
+            <Route path="jobs/:jobId" element={<JobDetails />} />
+            <Route path="jobs/:jobId/resume/:resumeId" element={<ResumeDetails />} />
             <Route path="create-job" element={<CreateJob />} />
             {/* Add more dashboard routes as needed */}
           </Route>
