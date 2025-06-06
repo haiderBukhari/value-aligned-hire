@@ -122,10 +122,7 @@ const Dashboard = () => {
       label: "Hiring Pipeline",
       path: "/dashboard/pipeline",
       count: 91
-    }
-  ];
-
-  const secondaryItems = [
+    },
     {
       icon: Building2,
       label: "Company Config",
@@ -236,28 +233,6 @@ const Dashboard = () => {
                     {item.count}
                   </Badge>
                 )}
-              </Button>
-            ))}
-          </div>
-          
-          {/* Divider */}
-          <div className="my-6 border-t border-gray-200"></div>
-          
-          {/* Secondary Navigation */}
-          <div className="space-y-2">
-            {secondaryItems.map((item) => (
-              <Button
-                key={item.path}
-                variant={location.pathname === item.path ? "default" : "ghost"}
-                className={`w-full justify-start h-12 text-left font-medium transition-all duration-200 ${
-                  location.pathname === item.path
-                    ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm hover:bg-blue-100" 
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                }`}
-                onClick={() => navigate(item.path)}
-              >
-                <item.icon className="mr-3 h-5 w-5" />
-                {item.label}
               </Button>
             ))}
           </div>
