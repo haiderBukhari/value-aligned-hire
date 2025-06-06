@@ -86,7 +86,7 @@ export const StatsSection = () => {
           className="text-center mb-16"
         >
           <h2 className="text-5xl font-bold mb-6 tracking-tight">
-            Why Choose WILDS AI?
+            Why Choose Talo AI?
           </h2>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
             See how our AI recruitment platform transforms hiring outcomes with data-driven insights, 

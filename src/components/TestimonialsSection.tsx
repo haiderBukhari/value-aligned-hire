@@ -5,7 +5,7 @@ export const TestimonialsSection = () => {
       name: "Sarah Johnson",
       role: "VP of Talent Acquisition", 
       company: "TechFlow",
-      quote: "WILDS has revolutionized our hiring process. We're finding better cultural fits and reducing our time-to-hire by 60%. The AI insights are incredibly accurate.",
+      quote: "Talo has revolutionized our hiring process. We're finding better cultural fits and reducing our time-to-hire by 60%. The AI insights are incredibly accurate.",
       image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=300&fit=crop&crop=face"
     },
     {

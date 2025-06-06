@@ -1,301 +1,467 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ArrowLeft, Building2, MapPin, Users, Clock, DollarSign, FileText, Sparkles } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Upload, ArrowLeft, Loader2, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { createPartFromUri, GoogleGenAI } from "@google/genai";
+
+const genAI = new GoogleGenerativeAI("AIzaSyC8MPRWNW6xARNNyUdG1p3m2bd6QZuNP3A");
+const fileAI = new GoogleGenAI({ apiKey: "AIzaSyC8MPRWNW6xARNNyUdG1p3m2bd6QZuNP3A" });
+
 
 const CreateJob = () => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [formData, setFormData] = useState({
+  const [isGenerating, setIsGenerating] = useState<{ [key: string]: boolean }>({});
+  const [isUploading, setIsUploading] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [companyInfo, setCompanyInfo] = useState<string>("");
+  const [companyCulture, setCompanyCulture] = useState<string>("");
+
+  const [jobData, setJobData] = useState({
     title: "",
-    location: "",
-    department: "",
-    experience_level: "",
-    salary_range: "",
     description: "",
-    requirements: "",
-    company_description: "",
-    company_values: ""
+    skillConditions: ""
   });
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  useEffect(() => {
+    const fetchCompanyInfo = async () => {
+      const token = localStorage.getItem('token');
+      try {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/company-info`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (!response.ok) throw new Error("Failed to fetch company info");
+        const data = await response.json();
+        setCompanyInfo(data.company_details || "");
+        setCompanyCulture(data.company_culture || "");
+      } catch (error) {
+        console.error("Error fetching company info:", error);
+        setCompanyInfo("");
+        setCompanyCulture("");
+      }
+    };
+    fetchCompanyInfo();
+  }, []);
+
+  const processDocument = async (file: File) => {
+    const data = new FormData();
+    data.append("file", file);
+    data.append("upload_preset", "products");
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
+      const response = await fetch(`https://api.cloudinary.com/v1_1/djunaxxv0/raw/upload`, {
+        method: "POST",
+        body: data,
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error("Upload failed:", error);
+      return null;
+    }
+  };
+
+  const generateFieldSuggestion = async (field: string, currentValue: string) => {
+    if (!currentValue.trim() && !(field === "skillConditions" && jobData.description.trim())) {
+      toast.error(`Please enter some ${field} first`);
+      return;
+    }
+
+    setIsGenerating(prev => ({ ...prev, [field]: true }));
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+
+      let prompt = "";
+      let maxLength = "";
+
+      switch (field) {
+        case 'title':
+          prompt = `
+Based on this job information, generate a clear, professional job title. Keep it concise and specific. If the job information is generic, add a relevant technology, seniority, or specialization to make the title more specific. Only give me the title, no other text or suggestions.
+
+Examples:
+Job information: "We are looking for a frontend engineer to build and maintain user interfaces using React and TypeScript for our SaaS platform."
+Title: Senior Frontend Engineer
+
+Job information: "Frontend Developer"
+Title: React Frontend Developer
+
+Job information: "Backend Developer"
+Title: Node.js Backend Engineer
+
+Job information: "We need someone to lead our mobile app development using Flutter."
+Title: Lead Flutter Mobile Developer
+
+Job information: "${currentValue}"
+Title:
+`;
+          maxLength = "Keep it under 30 words.";
+          break;
+        case 'description':
+          prompt = `
+Company Information: "${companyInfo}"
+Company Culture: "${companyCulture}"
+
+Based on this job information: "${currentValue}", and the company information and culture above, write a connected, compelling job description in plain text with the following structure:
+
+- Start with a short, engaging paragraph (2-3 lines) introducing the company, the team, and the role, making it clear how the role fits into the company's mission. If the industry or area is known from the company information, mention it naturally in the introduction. Do not include any bracketed placeholders or leave blank brackets in the output.
+- Follow with a short paragraph (2-3 lines) describing the type of candidate you are seeking, connecting their qualities and experience to the needs of the team and company.
+- Then, provide a detailed list of skills, responsibilities, and qualifications as bullet points (using • or - at the start of each point, not numbers or markdown). Each bullet must be specific and detailed, mentioning relevant technologies, tools, frameworks, or real-world context (e.g., "Experience building RESTful APIs with Node.js and Express", "Proficiency with PostgreSQL or MongoDB for data storage and retrieval", "Implementing CI/CD pipelines using GitHub Actions or Jenkins"). Avoid generic skills; make each point concrete and tailored to the role.
+- End with a short, motivating paragraph (2-3 lines) about the unique opportunities, impact, and culture the candidate will experience, using the company culture as context.
+
+Do not use section headings, numbers, or markdown. Do not include any instructions on how to apply. Only include information relevant to the job and company. Make sure each part connects smoothly to the next, creating a unified and appealing description.
+`;
+          maxLength = "Each paragraph should be 2-3 lines. Bullet points must be detailed, specifying technologies, tools, and context. No markdown, numbers, or section headings. Do not include any bracketed placeholders or blank brackets in the output.";
+          break;
+        case 'skillConditions':
+          prompt = `
+Based on the following job description and skill conditions, generate a concise, comma-separated list of the main, measurable skills and requirements for AI filtering. Only include specific, quantifiable criteria such as years of experience, required technologies, degrees, certifications, and must-have skills. Do not include any extra explanation or formatting—just the list.
+
+Job Description: "${jobData.description}"
+Skill Conditions Field: "${currentValue}"
+
+Example output:
+Minimum 5+ years React experience, Bachelor's degree in Computer Science, Experience with TypeScript, Familiarity with RESTful APIs, AWS certification
+`;
+          maxLength = "Only output the comma-separated list of main, measurable skills and requirements. No extra text.";
+          break;
       }
 
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/jobs`, {
+      const fullPrompt = `${prompt} ${maxLength}`;
+
+      const result = await model.generateContent(fullPrompt);
+      const response = result.response.text();
+
+      setJobData(prev => ({ ...prev, [field]: response.trim() }));
+      toast.success(`${field.charAt(0).toUpperCase() + field.slice(1)} suggestion generated!`);
+    } catch (error) {
+      console.error("AI generation failed:", error);
+      toast.error(`Failed to generate ${field} suggestion. Please try again.`);
+    } finally {
+      setIsGenerating(prev => ({ ...prev, [field]: false }));
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== "application/pdf") {
+      toast.error("Please upload a PDF file only");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      // Upload to Cloudinary
+      const uploadResult = await processDocument(file);
+      if (!uploadResult) {
+        throw new Error("Upload failed");
+      }
+
+      toast.success("PDF uploaded successfully! Analyzing...");
+
+      // Download the PDF as a buffer
+      const pdfBuffer = await fetch(uploadResult.secure_url).then((response) => response.arrayBuffer());
+      const fileBlob = new Blob([pdfBuffer], { type: 'application/pdf' });
+
+      // Upload the PDF to the AI provider (assume ai.files.upload is available)
+      const ai = fileAI; // or your AI SDK instance
+      const aiFile = await ai.files.upload({ file: fileBlob });
+
+      // Wait for processing
+      let getFile = await ai.files.get({ name: aiFile.name });
+      while (getFile.state === 'PROCESSING') {
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        getFile = await ai.files.get({ name: aiFile.name });
+      }
+      if (aiFile.state === 'FAILED') {
+        toast.info("File processing failed");
+        setIsUploading(false);
+        return;
+      }
+
+      // Prepare the structured prompt
+      const content = [
+        `Extract the following job posting fields from the PDF and return them as a JSON object with these exact keys: ["title", "description", "skill_conditions"].\n- "title": Generate a clear, professional job title based on the document.\n- "description": Write a connected, compelling job description in plain text. Start with a short, engaging paragraph introducing the company, team, and role (mention the industry if known). Follow with a short paragraph about the ideal candidate. Then, provide a detailed list of skills, responsibilities, and qualifications as bullet points (using • or - at the start of each point, not numbers or markdown). Each bullet must be specific and detailed, mentioning relevant technologies, tools, frameworks, or real-world context. End with a short, motivating paragraph about the unique opportunities, impact, and culture the candidate will experience. Do not use section headings, numbers, or markdown. Do not include any instructions on how to apply. Do not include any bracketed placeholders or blank brackets in the output.\n- "skill_conditions": Based on the job description and any skill-related content in the document, generate a concise, comma-separated list of the main, measurable skills and requirements for AI filtering. Only include specific, quantifiable criteria such as years of experience, required technologies, degrees, certifications, and must-have skills. Do not include any extra explanation or formatting—just the list.\n\nReturn the result as a JSON object with these keys: ["title", "description", "skill_conditions"].`
+      ];
+
+      if (aiFile.uri && aiFile.mimeType) {
+        const fileContent = createPartFromUri(aiFile.uri, aiFile.mimeType);
+        content.push(fileContent);
+      }
+
+      // Call the AI model
+      const response = await ai.models.generateContent({
+        model: 'gemini-1.5-flash',
+        contents: content,
+      });
+
+      let rawContent = response.text || "";
+      const jsonMatch = rawContent.match(/```json([\s\S]*?)```/);
+      const jsonString = jsonMatch ? jsonMatch[1].trim() : rawContent;
+
+      let generatedProperties;
+      try {
+        generatedProperties = JSON.parse(jsonString);
+      } catch (err) {
+        throw new Error("Failed to parse JSON response from AI");
+      }
+
+      setJobData({
+        title: generatedProperties.title || "",
+        description: generatedProperties.description || "",
+        skillConditions: generatedProperties.skill_conditions || ""
+      });
+
+      toast.success("Job data extracted from PDF successfully!");
+    } catch (error) {
+      console.error("Error extracting job from PDF:", error);
+      toast.error(`Failed to extract job data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handlePublishJob = async () => {
+    if (!jobData.title || !jobData.description) {
+      toast.error("Please fill in at least the job title and description");
+      return;
+    }
+
+    setIsPublishing(true);
+    try {
+      // Get JWT token from localStorage (assuming it's stored there after login)
+      const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
+
+      if (!token) {
+        toast.error("Please login to publish a job");
+        navigate("/login");
+        return;
+      }
+
+      const jobPayload = {
+        title: jobData.title,
+        description: jobData.description,
+        skill_condition: jobData.skillConditions
+      };
+
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/jobs`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(jobPayload),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create job');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to publish job');
       }
 
-      toast.success('Job created successfully!');
-      navigate('/dashboard/jobs');
+      const result = await response.json();
+      console.log("Job published:", result);
+
+      toast.success("Job published successfully!");
+      navigate("/dashboard/jobs");
     } catch (error) {
-      console.error('Error creating job:', error);
-      toast.error('Failed to create job. Please try again.');
+      console.error("Publish failed:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to publish job. Please try again.");
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const generateJobDescription = async () => {
-    if (!formData.title) {
-      toast.error('Please enter a job title first');
-      return;
-    }
-
-    setIsGenerating(true);
-    try {
-      const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-      const prompt = `Generate a comprehensive job description for a ${formData.title} position. Include:
-      1. A compelling job summary (2-3 sentences)
-      2. Key responsibilities (5-7 bullet points)
-      3. Required qualifications and skills
-      4. Preferred qualifications
-      5. What we offer/benefits
-
-      Make it professional, engaging, and suitable for attracting top talent.`;
-
-      const result = await model.generateContent(prompt);
-      const response = result.response;
-      const text = response.text();
-
-      setFormData(prev => ({
-        ...prev,
-        description: text
-      }));
-
-      toast.success('Job description generated successfully!');
-    } catch (error) {
-      console.error('Error generating job description:', error);
-      toast.error('Failed to generate job description. Please try again.');
-    } finally {
-      setIsGenerating(false);
+      setIsPublishing(false);
     }
   };
 
   return (
-    <motion.div
-      className="flex flex-col min-h-screen bg-gray-50 p-6"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <div className="max-w-4xl mx-auto w-full">
-        {/* Back Button */}
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/dashboard/jobs')}
-          className="mb-6 text-gray-600 hover:text-gray-900"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Jobs
-        </Button>
+    <div className="min-h-screen bg-gray-50">
 
-        {/* Create Job Card */}
-        <Card className="border-0 shadow-md bg-white">
+      {/* Main Content */}
+      <div className="max-w-full mx-auto p-2 space-y-6">
+        {/* PDF Upload Section */}
+        <Card>
           <CardHeader className="pb-4">
-            <CardTitle className="text-2xl font-bold text-gray-900">
-              Create a New Job
+            <CardTitle className="flex items-center text-lg">
+              <Upload className="h-5 w-5 mr-2" />
+              Quick Upload
             </CardTitle>
+            <CardDescription>
+              Upload a PDF document to auto-populate job details
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Job Title */}
-              <div>
-                <Label htmlFor="title" className="text-gray-700">
-                  Job Title
-                </Label>
-                <Input
-                  type="text"
-                  id="title"
-                  placeholder="e.g., Software Engineer"
-                  value={formData.title}
-                  onChange={(e) => handleInputChange('title', e.target.value)}
-                  required
-                />
-              </div>
-
-              {/* Location */}
-              <div>
-                <Label htmlFor="location" className="text-gray-700">
-                  Location
-                </Label>
-                <Input
-                  type="text"
-                  id="location"
-                  placeholder="e.g., New York, NY"
-                  value={formData.location}
-                  onChange={(e) => handleInputChange('location', e.target.value)}
-                />
-              </div>
-
-              {/* Department */}
-              <div>
-                <Label htmlFor="department" className="text-gray-700">
-                  Department
-                </Label>
-                <Input
-                  type="text"
-                  id="department"
-                  placeholder="e.g., Engineering"
-                  value={formData.department}
-                  onChange={(e) => handleInputChange('department', e.target.value)}
-                />
-              </div>
-
-              {/* Experience Level */}
-              <div>
-                <Label htmlFor="experience_level" className="text-gray-700">
-                  Experience Level
-                </Label>
-                <Input
-                  type="text"
-                  id="experience_level"
-                  placeholder="e.g., Mid-Level"
-                  value={formData.experience_level}
-                  onChange={(e) => handleInputChange('experience_level', e.target.value)}
-                />
-              </div>
-
-              {/* Salary Range */}
-              <div>
-                <Label htmlFor="salary_range" className="text-gray-700">
-                  Salary Range
-                </Label>
-                <Input
-                  type="text"
-                  id="salary_range"
-                  placeholder="e.g., $80,000 - $120,000"
-                  value={formData.salary_range}
-                  onChange={(e) => handleInputChange('salary_range', e.target.value)}
-                />
-              </div>
-
-              {/* Job Description */}
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <Label htmlFor="description" className="text-gray-700">
-                    Job Description
-                  </Label>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={generateJobDescription}
-                    disabled={isGenerating}
-                  >
-                    {isGenerating ? (
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+              <Upload className="h-8 w-8 text-gray-400 mx-auto mb-3" />
+              <h3 className="text-sm font-medium text-gray-900 mb-2">
+                Upload Job Document
+              </h3>
+              <p className="text-xs text-gray-500 mb-3">
+                PDF files only • Auto-populate all fields
+              </p>
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={handleFileUpload}
+                className="hidden"
+                id="pdf-upload"
+                disabled={isUploading}
+              />
+              <label htmlFor="pdf-upload">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="cursor-pointer"
+                  disabled={isUploading}
+                  asChild
+                >
+                  <span>
+                    {isUploading ? (
                       <>
-                        <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-t-2 border-white mr-2"></div>
-                        Generating...
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Processing...
                       </>
                     ) : (
                       <>
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        Generate with AI
+                        <Upload className="h-4 w-4 mr-2" />
+                        Choose PDF
                       </>
                     )}
-                  </Button>
+                  </span>
+                </Button>
+              </label>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Job Details Form */}
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Job Details</CardTitle>
+            <CardDescription>
+              Fill in the job information below. Use AI suggestions for each field.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Job Title */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="title">Job Title</Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => generateFieldSuggestion('title', jobData.title)}
+                  disabled={isGenerating.title}
+                  className="text-blue-600 hover:text-blue-700 h-8"
+                >
+                  {isGenerating.title ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                  <span className="ml-1 text-xs">AI Suggest</span>
+                </Button>
+              </div>
+              <Input
+                id="title"
+                value={jobData.title}
+                onChange={(e) => setJobData(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="e.g., Senior Frontend Developer"
+                className="h-10"
+              />
+            </div>
+
+            {/* Job Description */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="description">Job Description</Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => generateFieldSuggestion('description', jobData.description)}
+                  disabled={isGenerating.description}
+                  className="text-blue-600 hover:text-blue-700 h-8"
+                >
+                  {isGenerating.description ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                  <span className="ml-1 text-xs">AI Suggest</span>
+                </Button>
+              </div>
+              <Textarea
+                id="description"
+                value={jobData.description}
+                onChange={(e) => setJobData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Detailed job description including responsibilities, requirements, and benefits..."
+                className="min-h-[150px]"
+              />
+            </div>
+
+            {/* Skill Conditions */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <Label htmlFor="skillConditions">Skill Conditions (AI Filtering)</Label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    This is for AI filtering only and won't be visible to candidates
+                  </p>
                 </div>
-                <Textarea
-                  id="description"
-                  placeholder="Describe the job responsibilities and requirements"
-                  rows={4}
-                  value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  required
-                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => generateFieldSuggestion('skillConditions', jobData.skillConditions)}
+                  disabled={isGenerating.skillConditions}
+                  className="text-blue-600 hover:text-blue-700 h-8"
+                >
+                  {isGenerating.skillConditions ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                  <span className="ml-1 text-xs">AI Suggest</span>
+                </Button>
               </div>
+              <Textarea
+                id="skillConditions"
+                value={jobData.skillConditions}
+                onChange={(e) => setJobData(prev => ({ ...prev, skillConditions: e.target.value }))}
+                placeholder="e.g., Minimum 5+ years React experience, Bachelor's degree in Computer Science, Experience with TypeScript..."
+                className="min-h-[100px]"
+              />
+            </div>
 
-              {/* Requirements */}
-              <div>
-                <Label htmlFor="requirements" className="text-gray-700">
-                  Requirements
-                </Label>
-                <Textarea
-                  id="requirements"
-                  placeholder="List the job requirements"
-                  rows={3}
-                  value={formData.requirements}
-                  onChange={(e) => handleInputChange('requirements', e.target.value)}
-                />
-              </div>
-
-              {/* Company Description */}
-              <div>
-                <Label htmlFor="company_description" className="text-gray-700">
-                  Company Description
-                </Label>
-                <Textarea
-                  id="company_description"
-                  placeholder="Describe your company"
-                  rows={3}
-                  value={formData.company_description}
-                  onChange={(e) => handleInputChange('company_description', e.target.value)}
-                />
-              </div>
-
-              {/* Company Values */}
-              <div>
-                <Label htmlFor="company_values" className="text-gray-700">
-                  Company Values
-                </Label>
-                <Textarea
-                  id="company_values"
-                  placeholder="List your company values"
-                  rows={3}
-                  value={formData.company_values}
-                  onChange={(e) => handleInputChange('company_values', e.target.value)}
-                />
-              </div>
-
-              {/* Submit Button */}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
+            {/* Publish Button */}
+            <div className="pt-4 border-t">
+              <Button
+                onClick={handlePublishJob}
+                disabled={isPublishing || !jobData.title || !jobData.description}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                {isPublishing ? (
                   <>
-                    <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-t-2 border-white mr-2"></div>
-                    Creating Job...
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Publishing Job...
                   </>
                 ) : (
-                  "Create Job"
+                  "Publish Job"
                 )}
               </Button>
-            </form>
+            </div>
           </CardContent>
         </Card>
       </div>
-    </motion.div>
+    </div>
   );
 };
 

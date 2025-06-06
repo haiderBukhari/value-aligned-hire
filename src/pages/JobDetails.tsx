@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, FileText, Download, Star, Award, TrendingUp } from "lucide-react";
+import { ArrowLeft, FileText, Download, Star, Award, TrendingUp, CheckCircle, AlertTriangle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -54,7 +54,7 @@ const JobDetails = () => {
   });
 
   const getRecommendationColor = (recommendation: string) => {
-    switch (recommendation.toLowerCase()) {
+    switch (recommendation?.toLowerCase()) {
       case 'strong match':
         return 'bg-gradient-to-r from-green-500 to-emerald-500 text-white border-green-300 shadow-lg transform rotate-1';
       case 'good match':
@@ -85,6 +85,33 @@ const JobDetails = () => {
     navigate(`/dashboard/jobs/${jobId}/resume/${resumeId}`);
   };
 
+  // Sort resumes by total_weighted_score descending
+  const sortedResumes = [...resumes].sort((a, b) => b.total_weighted_score - a.total_weighted_score);
+
+  // Helper to parse skills markdown into sections
+  function parseSkills(skillsText: string) {
+    const positive: string[] = [];
+    const potential: string[] = [];
+    const further: string[] = [];
+    const recency: string[] = [];
+    let current: string | null = null;
+    skillsText.split(/\r?\n/).forEach(line => {
+      if (/^\*+\s*\*\*Positive Matches:?/.test(line)) current = 'positive';
+      else if (/^\*+\s*\*\*Potential Matches:?/.test(line)) current = 'potential';
+      else if (/^\*+\s*\*\*Areas for Further Exploration:?/.test(line)) current = 'further';
+      else if (/^\*+\s*\*\*Recency:?/.test(line) || /^\*+\s*\*\*Continuous Learning:?/.test(line)) current = 'recency';
+      else if (/^\*+\s*\*\*/.test(line)) current = null;
+      else if (/^\*\s+/.test(line) && current) {
+        const clean = line.replace(/^\*\s+/, '').replace(/\*\*/g, '').trim();
+        if (current === 'positive') positive.push(clean);
+        else if (current === 'potential') potential.push(clean);
+        else if (current === 'further') further.push(clean);
+        else if (current === 'recency') recency.push(clean);
+      }
+    });
+    return { positive, potential, further, recency };
+  }
+
   if (error) {
     return (
       <div className="p-6">
@@ -96,13 +123,13 @@ const JobDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Back Button Only */}
-        <div className="mb-8">
+    <div className="min-h-screen bg-gray-50 p-6 pt-0">
+      <div className="max-w-full mx-auto">
+
+        <div className="mb-3">
           <Button
             variant="ghost"
-            onClick={() => navigate('/dashboard/jobs')}
+            onClick={() => navigate(`/dashboard/jobs`)}
             className="mb-4 text-gray-600 hover:text-gray-900"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -110,56 +137,62 @@ const JobDetails = () => {
           </Button>
         </div>
 
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           {[
             {
               title: "Strong Matches",
-              count: resumes.filter(r => r.final_recommendation?.toLowerCase() === 'strong match').length,
-              icon: Star,
-              color: "text-green-600 bg-green-100"
+              count: resumes.filter(r => r.final_recommendation?.toLowerCase() === 'strong match.').length,
+              icon: <Star className="h-7 w-7" />,
+              iconBg: "bg-green-100 text-green-500",
+              cardBg: "bg-gradient-to-br from-green-50 to-white",
             },
             {
-              title: "Good Matches",
-              count: resumes.filter(r => r.final_recommendation?.toLowerCase() === 'good match').length,
-              icon: Award,
-              color: "text-blue-600 bg-blue-100"
+              title: "Moderate Fit",
+              count: resumes.filter(r => r.final_recommendation?.toLowerCase() === 'moderate fit.').length,
+              icon: <Award className="h-7 w-7" />,
+              iconBg: "bg-yellow-100 text-yellow-500",
+              cardBg: "bg-gradient-to-br from-yellow-50 to-white",
             },
             {
-              title: "Evaluated",
-              count: resumes.filter(r => r.evaluated).length,
-              icon: TrendingUp,
-              color: "text-purple-600 bg-purple-100"
+              title: "Not a Fit",
+              count: resumes.filter(r => r.final_recommendation?.toLowerCase() === 'not a fit.').length,
+              icon: <FileText className="h-7 w-7" />,
+              iconBg: "bg-red-100 text-red-500",
+              cardBg: "bg-gradient-to-br from-red-50 to-white",
             },
             {
-              title: "Total Applications",
+              title: "Total Applicants",
               count: resumes.length,
-              icon: FileText,
-              color: "text-orange-600 bg-orange-100"
+              icon: <FileText className="h-7 w-7" />,
+              iconBg: "bg-orange-100 text-orange-500",
+              cardBg: "bg-gradient-to-br from-orange-50 to-white",
             }
           ].map((stat, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
+              whileHover={{ scale: 1.05 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="border-0 shadow-sm bg-white hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                      <p className="text-3xl font-bold text-gray-900">{stat.count}</p>
-                    </div>
-                    <div className={`p-3 rounded-lg ${stat.color}`}>
-                      <stat.icon className="h-6 w-6" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <div
+                className={`rounded-2xl shadow-lg p-6 flex items-center justify-between transition-transform duration-200 hover:scale-105 hover:ring-2 hover:ring-blue-200 ${stat.cardBg}`}
+                style={{ minHeight: 110 }}
+              >
+                <div>
+                  <div className="text-xs font-semibold text-gray-500 mb-1">{stat.title}</div>
+                  <div className="text-4xl font-extrabold text-gray-900 leading-tight">{stat.count}</div>
+                </div>
+                <div className={`flex items-center justify-center rounded-full ${stat.iconBg} shadow-md h-12 w-12 transition-transform duration-200 group-hover:animate-bounce`}>
+                  {stat.icon}
+                </div>
+              </div>
             </motion.div>
           ))}
         </div>
+        <hr className="my-8 border-t border-gray-200" />
 
         {/* Resumes Grid */}
         {isLoading ? (
@@ -167,7 +200,7 @@ const JobDetails = () => {
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
             <p className="mt-4 text-gray-600">Loading applications...</p>
           </div>
-        ) : resumes.length === 0 ? (
+        ) : sortedResumes.length === 0 ? (
           <Card className="border-0 shadow-sm bg-white">
             <CardContent className="p-12 text-center">
               <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -176,17 +209,23 @@ const JobDetails = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {resumes.map((resume, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
+            {sortedResumes.map((resume, index) => (
               <motion.div
                 key={resume.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
+                transition={{ delay: index * 0.08 }}
                 onClick={() => handleResumeClick(resume.id)}
                 className="cursor-pointer"
               >
-                <Card className="border-0 shadow-md bg-white hover:shadow-xl transition-all duration-300 group overflow-hidden">
+                <Card className={`relative border border-gray-200 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 group ${index === 0 ? 'ring-2 ring-blue-400' : ''}`}>
+                  {/* Rank Badge */}
+                  <div className="absolute top-[-10px] right-0 z-10">
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${index === 0 ? 'bg-gradient-to-r from-blue-500 to-green-400 text-white shadow-md' : 'bg-gray-200 text-gray-700'}`}>
+                      Rank #{index + 1}
+                    </span>
+                  </div>
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -200,7 +239,6 @@ const JobDetails = () => {
                       </Badge>
                     </div>
                   </CardHeader>
-                  
                   <CardContent className="pt-0">
                     {/* Enhanced CV Preview */}
                     <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl h-40 flex flex-col items-center justify-center mb-6 group-hover:from-blue-50 group-hover:to-blue-100 transition-all duration-300 border border-gray-200">
@@ -210,7 +248,6 @@ const JobDetails = () => {
                       <span className="text-sm text-gray-600 font-medium">CV Preview</span>
                       <div className="w-12 h-1 bg-blue-500 rounded-full mt-2 opacity-60"></div>
                     </div>
-
                     {/* Scores */}
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
@@ -219,7 +256,6 @@ const JobDetails = () => {
                           {resume.total_weighted_score}%
                         </span>
                       </div>
-                      
                       <div className="grid grid-cols-2 gap-3 text-xs">
                         <div className="flex justify-between">
                           <span className="text-gray-600">Company</span>
@@ -238,7 +274,6 @@ const JobDetails = () => {
                           <span className={`font-medium ${getScoreColor(resume.skill_score)}`}>{resume.skill_score}%</span>
                         </div>
                       </div>
-
                       {/* Enhanced Progress Bar */}
                       <div className="w-full bg-gray-200 rounded-full h-3 mt-4 overflow-hidden">
                         <div 
@@ -249,7 +284,6 @@ const JobDetails = () => {
                         </div>
                       </div>
                     </div>
-
                     {/* Applied Date */}
                     <p className="text-xs text-gray-500 mt-4 flex items-center">
                       <div className="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>

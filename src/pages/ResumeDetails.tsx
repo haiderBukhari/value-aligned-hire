@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Download, ExternalLink, Star, Award, Brain, Users, Eye } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, Star, Award, Brain, Users, Eye, CheckCircle, AlertTriangle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -145,7 +145,7 @@ const ResumeDetails = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-full mx-auto p-6 pt-0">
         {/* Back Button Only */}
         <div className="mb-8">
           <Button
@@ -264,7 +264,7 @@ const ResumeDetails = () => {
               </CardContent>
             </Card>
 
-            {/* Score Breakdown in 2x2 Grid */}
+            {/* Score Breakdown in custom layout */}
             <Card className="border-0 shadow-lg bg-white">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl">
@@ -274,94 +274,151 @@ const ResumeDetails = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {[
-                    {
-                      label: "Company Fit",
-                      score: resume.company_fit_score,
-                      icon: Brain,
-                      reason: resume.company_fit_reason,
-                      color: "from-purple-500 to-indigo-500"
-                    },
-                    {
-                      label: "Culture Fit",
-                      score: resume.culture_score,
-                      icon: Users,
-                      reason: resume.culture_reason,
-                      color: "from-green-500 to-teal-500"
-                    },
-                    {
-                      label: "Experience",
-                      score: resume.experience_score,
-                      icon: Award,
-                      reason: resume.experience_reason,
-                      color: "from-blue-500 to-cyan-500"
-                    },
-                    {
-                      label: "Skills",
-                      score: resume.skill_score,
-                      icon: Star,
-                      reason: resume.skill_reason,
-                      color: "from-orange-500 to-red-500"
-                    }
-                  ].map((item, index) => (
-                    <motion.div
-                      key={item.label}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 hover:shadow-md transition-all duration-300"
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-3 rounded-lg bg-gradient-to-r ${item.color}`}>
-                            <item.icon className="h-5 w-5 text-white" />
-                          </div>
-                          <span className="font-semibold text-gray-900 text-lg">{item.label}</span>
+                  {/* Company Fit */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0 }}
+                    className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 hover:shadow-md transition-all duration-300"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-3 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-500">
+                          <Brain className="h-5 w-5 text-white" />
                         </div>
-                        <span className={`text-2xl font-bold ${getScoreColor(item.score)}`}>
-                          {item.score}%
-                        </span>
+                        <span className="font-semibold text-gray-900 text-lg">Company Fit</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
-                        <div 
-                          className={`bg-gradient-to-r ${item.color} h-3 rounded-full transition-all duration-500`}
-                          style={{ width: `${item.score}%` }}
-                        ></div>
+                      <span className={`text-2xl font-bold ${getScoreColor(resume.company_fit_score)}`}>{resume.company_fit_score}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
+                      <div 
+                        className="bg-gradient-to-r from-purple-500 to-indigo-500 h-3 rounded-full transition-all duration-500"
+                        style={{ width: `${resume.company_fit_score}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-sm text-gray-700 leading-relaxed">{resume.company_fit_reason}</p>
+                  </motion.div>
+                  {/* Culture Fit */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 hover:shadow-md transition-all duration-300"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-3 rounded-lg bg-gradient-to-r from-green-500 to-teal-500">
+                          <Users className="h-5 w-5 text-white" />
+                        </div>
+                        <span className="font-semibold text-gray-900 text-lg">Culture Fit</span>
                       </div>
-                      <p className="text-sm text-gray-700 leading-relaxed">{item.reason}</p>
-                    </motion.div>
-                  ))}
+                      <span className={`text-2xl font-bold ${getScoreColor(resume.culture_score)}`}>{resume.culture_score}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
+                      <div 
+                        className="bg-gradient-to-r from-green-500 to-teal-500 h-3 rounded-full transition-all duration-500"
+                        style={{ width: `${resume.culture_score}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-sm text-gray-700 leading-relaxed">{resume.culture_reason}</p>
+                  </motion.div>
                 </div>
+                {/* Experience full width */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 hover:shadow-md transition-all duration-300 mt-6"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500">
+                        <Award className="h-5 w-5 text-white" />
+                      </div>
+                      <span className="font-semibold text-gray-900 text-lg">Experience</span>
+                    </div>
+                    <span className={`text-2xl font-bold ${getScoreColor(resume.experience_score)}`}>{resume.experience_score}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
+                    <div 
+                      className="bg-gradient-to-r from-blue-500 to-cyan-500 h-3 rounded-full transition-all duration-500"
+                      style={{ width: `${resume.experience_score}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-sm text-gray-700 leading-relaxed">{resume.experience_reason}</p>
+                </motion.div>
+                {/* Skills full width at bottom */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 hover:shadow-md transition-all duration-300 mt-6"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-lg bg-gradient-to-r from-orange-500 to-red-500">
+                        <Star className="h-5 w-5 text-white" />
+                      </div>
+                      <span className="font-semibold text-gray-900 text-lg">Skills</span>
+                    </div>
+                    <span className={`text-2xl font-bold ${getScoreColor(resume.skill_score)}`}>{resume.skill_score}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
+                    <div 
+                      className="bg-gradient-to-r from-orange-500 to-red-500 h-3 rounded-full transition-all duration-500"
+                      style={{ width: `${resume.skill_score}%` }}
+                    ></div>
+                  </div>
+                  {(() => {
+                    const text = resume.skill_reason || "";
+                    const sections = [];
+
+                    if (text.includes('- **')) {
+                      // This is a more robust method using split, which is more reliable than complex regex.
+                      const parts = text.split('- **').filter(p => p.trim());
+
+                      for (const part of parts) {
+                        const marker = ':**';
+                        const markerIndex = part.indexOf(marker);
+
+                        if (markerIndex !== -1) {
+                          const heading = part.substring(0, markerIndex).trim();
+                          const content = part.substring(markerIndex + marker.length).trim();
+                          sections.push({ heading, content });
+                        }
+                      }
+                    }
+
+                    if (sections.length > 0) {
+                      return (
+                        <div className="space-y-4">
+                          {sections.map((sec, i) => (
+                            <div key={i}>
+                              <div className="font-semibold text-gray-800 flex items-center mb-1">
+                                <Star className="h-5 w-5 mr-2 text-orange-500 flex-shrink-0" />
+                                {sec.heading}
+                              </div>
+                              <p className="text-gray-600 pl-7">{sec.content}</p>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    } else {
+                      // Fallback for plain text or if parsing fails
+                      return (
+                        <div className="space-y-2">
+                          <div className="font-semibold text-gray-800 flex items-center">
+                            <Star className="h-5 w-5 mr-2 text-orange-500 flex-shrink-0" />
+                             Skills Summary
+                          </div>
+                          <p className="text-gray-600 pl-7">{text}</p>
+                        </div>
+                      );
+                    }
+                  })()}
+                </motion.div>
               </CardContent>
             </Card>
-
-            {/* Experience Facts */}
-            {resume.experience_facts && resume.experience_facts.length > 0 && (
-              <Card className="border-0 shadow-lg bg-white">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-xl">
-                    <Award className="h-6 w-6" />
-                    Key Experience Highlights
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4">
-                    {resume.experience_facts.map((fact, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="flex items-start gap-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg hover:from-blue-100 hover:to-indigo-100 transition-all duration-300"
-                      >
-                        <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full mt-1 flex-shrink-0"></div>
-                        <span className="text-gray-700 leading-relaxed">{fact}</span>
-                      </motion.div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
 
           {/* Right Column - Application Info */}
@@ -387,6 +444,32 @@ const ResumeDetails = () => {
                   <Badge className={resume.evaluated ? "bg-green-100 text-green-800 px-3 py-1" : "bg-yellow-100 text-yellow-800 px-3 py-1"}>
                     {resume.evaluated ? "✓ Evaluated" : "⏳ Pending"}
                   </Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Key Experience Highlights */}
+            <Card className="border-0 shadow-lg bg-white">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Award className="h-6 w-6" />
+                  Key Experience Highlights
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4">
+                  {resume.experience_facts.map((fact, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="flex items-start gap-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg hover:from-blue-100 hover:to-indigo-100 transition-all duration-300"
+                    >
+                      <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full mt-1 flex-shrink-0"></div>
+                      <span className="text-gray-700 leading-relaxed">{fact}</span>
+                    </motion.div>
+                  ))}
                 </div>
               </CardContent>
             </Card>

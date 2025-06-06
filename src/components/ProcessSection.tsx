@@ -1,6 +1,7 @@
 
 import { motion } from "framer-motion";
 import { RecruitmentFlow3D } from "./RecruitmentFlow3D";
+import { WorkflowAnimation } from "./WorkflowAnimation";
 
 export const ProcessSection = () => {
   const steps = [
@@ -55,8 +56,13 @@ export const ProcessSection = () => {
           </p>
         </motion.div>
 
+        <div className="max-w-[600px] mx-auto">
+          <WorkflowAnimation />
+        </div>
+
+
         {/* 3D Interactive Flow Visualization */}
-        <motion.div 
+        {/* <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           whileInView={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1 }}
@@ -64,7 +70,7 @@ export const ProcessSection = () => {
           className="mb-20"
         >
           <RecruitmentFlow3D />
-        </motion.div>
+        </motion.div> */}
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 mt-20">
           {steps.map((step, index) => (

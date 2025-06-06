@@ -5,7 +5,7 @@ export const Footer = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           <div className="col-span-1 md:col-span-2">
-            <h3 className="text-2xl font-bold mb-6 tracking-wider">wilds</h3>
+            <h3 className="text-2xl font-bold mb-6 tracking-wider">Talo</h3>
             <p className="text-gray-300 mb-8 max-w-md leading-relaxed text-lg">
               Transforming hiring with intelligent, values-driven recruitment that finds the perfect 
               cultural and skill matches for your organization through advanced AI technology.
@@ -46,7 +46,7 @@ export const Footer = () => {
         
         <div className="border-t border-gray-800 mt-12 pt-8 text-center">
           <p className="text-gray-400 text-lg">
-            © 2024 WILDS AI Recruitment Platform. All rights reserved. Transforming hiring with intelligent technology.
+            © 2024 Talo AI Recruitment Platform. All rights reserved. Transforming hiring with intelligent technology.
           </p>
         </div>
       </div>
