@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Download, ExternalLink, Star, Award, Brain, Users } from "lucide-react";
@@ -63,17 +62,21 @@ const ResumeDetails = () => {
   const getRecommendationColor = (recommendation: string) => {
     switch (recommendation?.toLowerCase()) {
       case 'strong match':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-gradient-to-r from-green-500 to-emerald-500 text-white border-green-300 shadow-lg transform rotate-1';
       case 'good match':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-blue-300 shadow-lg transform -rotate-1';
+      case 'moderate fit':
+        return 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-yellow-300 shadow-lg transform rotate-1';
       case 'partial match':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-yellow-300 shadow-lg transform rotate-1';
       case 'weak match':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
+        return 'bg-gradient-to-r from-orange-500 to-red-500 text-white border-orange-300 shadow-lg transform -rotate-1';
+      case 'not a fit':
+        return 'bg-gradient-to-r from-red-500 to-pink-500 text-white border-red-300 shadow-lg transform rotate-1';
       case 'no match':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-gradient-to-r from-red-500 to-pink-500 text-white border-red-300 shadow-lg transform rotate-1';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gray-500 text-white border-gray-300';
     }
   };
 
@@ -125,7 +128,7 @@ const ResumeDetails = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-6">
-        {/* Header */}
+        {/* Back Button Only */}
         <div className="mb-8">
           <Button
             variant="ghost"
@@ -138,20 +141,20 @@ const ResumeDetails = () => {
           
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{resume.applicant_name}</h1>
-              <p className="text-gray-600 mt-1">{resume.email}</p>
-              <div className="flex items-center gap-3 mt-3">
-                <Badge className={`${getRecommendationColor(resume.final_recommendation)} border`}>
+              <h1 className="text-4xl font-bold text-gray-900">{resume.applicant_name}</h1>
+              <p className="text-gray-600 mt-2 text-lg">{resume.email}</p>
+              <div className="flex items-center gap-4 mt-4">
+                <Badge className={`${getRecommendationColor(resume.final_recommendation)} border-0 font-medium px-4 py-2 text-sm`}>
                   {resume.final_recommendation}
                 </Badge>
-                <Badge className={getLevelColor(resume.level_suggestion)}>
+                <Badge className={`${getLevelColor(resume.level_suggestion)} px-4 py-2 text-sm font-medium`}>
                   {resume.level_suggestion} Level
                 </Badge>
               </div>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-500">Overall Score</p>
-              <p className={`text-3xl font-bold ${getScoreColor(resume.total_weighted_score)}`}>
+              <p className={`text-4xl font-bold ${getScoreColor(resume.total_weighted_score)}`}>
                 {resume.total_weighted_score}%
               </p>
             </div>
@@ -162,40 +165,46 @@ const ResumeDetails = () => {
           {/* Left Column - Documents */}
           <div className="lg:col-span-2 space-y-6">
             {/* Documents */}
-            <Card className="border-0 shadow-sm bg-white">
+            <Card className="border-0 shadow-lg bg-white">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Download className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Download className="h-6 w-6" />
                   Documents
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-gray-300 transition-colors">
-                    <div className="bg-red-100 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-3">
-                      <Download className="h-6 w-6 text-red-600" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-blue-300 hover:bg-blue-50 transition-all duration-300 group">
+                    <div className="bg-gradient-to-br from-red-100 to-red-200 w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                      <Download className="h-8 w-8 text-red-600" />
                     </div>
-                    <h3 className="font-medium text-gray-900 mb-2">CV / Resume</h3>
+                    <h3 className="font-semibold text-gray-900 mb-3 text-lg">CV / Resume</h3>
+                    <div className="bg-gray-100 rounded-lg h-24 mb-4 flex items-center justify-center">
+                      <span className="text-xs text-gray-500">PDF Preview</span>
+                    </div>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => window.open(resume.cv_link, '_blank')}
-                      className="w-full"
+                      className="w-full hover:bg-red-50 hover:border-red-300"
                     >
                       <ExternalLink className="mr-2 h-4 w-4" />
                       View CV
                     </Button>
                   </div>
-                  <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-gray-300 transition-colors">
-                    <div className="bg-blue-100 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-3">
-                      <Download className="h-6 w-6 text-blue-600" />
+                  <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-blue-300 hover:bg-blue-50 transition-all duration-300 group">
+                    <div className="bg-gradient-to-br from-blue-100 to-blue-200 w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                      <Download className="h-8 w-8 text-blue-600" />
                     </div>
-                    <h3 className="font-medium text-gray-900 mb-2">Cover Letter</h3>
+                    <h3 className="font-semibold text-gray-900 mb-3 text-lg">Cover Letter</h3>
+                    <div className="bg-gray-100 rounded-lg h-24 mb-4 flex items-center justify-center">
+                      <span className="text-xs text-gray-500">PDF Preview</span>
+                    </div>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => window.open(resume.coverletter_link, '_blank')}
-                      className="w-full"
+                      className="w-full hover:bg-blue-50 hover:border-blue-300"
                     >
                       <ExternalLink className="mr-2 h-4 w-4" />
                       View Letter
@@ -205,109 +214,116 @@ const ResumeDetails = () => {
               </CardContent>
             </Card>
 
+            {/* Score Breakdown in 2x2 Grid */}
+            <Card className="border-0 shadow-lg bg-white">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Star className="h-6 w-6" />
+                  Score Breakdown
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {[
+                    {
+                      label: "Company Fit",
+                      score: resume.company_fit_score,
+                      icon: Brain,
+                      reason: resume.company_fit_reason,
+                      color: "from-purple-500 to-indigo-500"
+                    },
+                    {
+                      label: "Culture Fit",
+                      score: resume.culture_score,
+                      icon: Users,
+                      reason: resume.culture_reason,
+                      color: "from-green-500 to-teal-500"
+                    },
+                    {
+                      label: "Experience",
+                      score: resume.experience_score,
+                      icon: Award,
+                      reason: resume.experience_reason,
+                      color: "from-blue-500 to-cyan-500"
+                    },
+                    {
+                      label: "Skills",
+                      score: resume.skill_score,
+                      icon: Star,
+                      reason: resume.skill_reason,
+                      color: "from-orange-500 to-red-500"
+                    }
+                  ].map((item, index) => (
+                    <motion.div
+                      key={item.label}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 hover:shadow-md transition-all duration-300"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-3 rounded-lg bg-gradient-to-r ${item.color}`}>
+                            <item.icon className="h-5 w-5 text-white" />
+                          </div>
+                          <span className="font-semibold text-gray-900 text-lg">{item.label}</span>
+                        </div>
+                        <span className={`text-2xl font-bold ${getScoreColor(item.score)}`}>
+                          {item.score}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
+                        <div 
+                          className={`bg-gradient-to-r ${item.color} h-3 rounded-full transition-all duration-500`}
+                          style={{ width: `${item.score}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-sm text-gray-700 leading-relaxed">{item.reason}</p>
+                    </motion.div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Experience Facts */}
             {resume.experience_facts && resume.experience_facts.length > 0 && (
-              <Card className="border-0 shadow-sm bg-white">
+              <Card className="border-0 shadow-lg bg-white">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Award className="h-5 w-5" />
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <Award className="h-6 w-6" />
                     Key Experience Highlights
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ul className="space-y-3">
+                  <div className="grid gap-4">
                     {resume.experience_facts.map((fact, index) => (
-                      <motion.li
+                      <motion.div
                         key={index}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
-                        className="flex items-start gap-3"
+                        className="flex items-start gap-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg hover:from-blue-100 hover:to-indigo-100 transition-all duration-300"
                       >
-                        <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
-                        <span className="text-gray-700">{fact}</span>
-                      </motion.li>
+                        <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full mt-1 flex-shrink-0"></div>
+                        <span className="text-gray-700 leading-relaxed">{fact}</span>
+                      </motion.div>
                     ))}
-                  </ul>
+                  </div>
                 </CardContent>
               </Card>
             )}
           </div>
 
-          {/* Right Column - Scores and Analysis */}
+          {/* Right Column - Application Info */}
           <div className="space-y-6">
-            {/* Score Breakdown */}
-            <Card className="border-0 shadow-sm bg-white">
+            <Card className="border-0 shadow-lg bg-white">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Star className="h-5 w-5" />
-                  Score Breakdown
-                </CardTitle>
+                <CardTitle className="text-xl">Application Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {[
-                  {
-                    label: "Company Fit",
-                    score: resume.company_fit_score,
-                    icon: Brain,
-                    reason: resume.company_fit_reason
-                  },
-                  {
-                    label: "Culture Fit",
-                    score: resume.culture_score,
-                    icon: Users,
-                    reason: resume.culture_reason
-                  },
-                  {
-                    label: "Experience",
-                    score: resume.experience_score,
-                    icon: Award,
-                    reason: resume.experience_reason
-                  },
-                  {
-                    label: "Skills",
-                    score: resume.skill_score,
-                    icon: Star,
-                    reason: resume.skill_reason
-                  }
-                ].map((item, index) => (
-                  <motion.div
-                    key={item.label}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="space-y-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <item.icon className="h-4 w-4 text-gray-600" />
-                        <span className="font-medium text-gray-900">{item.label}</span>
-                      </div>
-                      <span className={`font-bold ${getScoreColor(item.score)}`}>
-                        {item.score}%
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${item.score}%` }}
-                      ></div>
-                    </div>
-                    <p className="text-sm text-gray-600 leading-relaxed">{item.reason}</p>
-                  </motion.div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Application Info */}
-            <Card className="border-0 shadow-sm bg-white">
-              <CardHeader>
-                <CardTitle>Application Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="text-sm text-gray-500">Applied Date</p>
-                  <p className="font-medium text-gray-900">
+                <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg">
+                  <p className="text-sm text-gray-500 mb-1">Applied Date</p>
+                  <p className="font-semibold text-gray-900">
                     {new Date(resume.created_at).toLocaleDateString('en-US', {
                       weekday: 'long',
                       year: 'numeric',
@@ -316,10 +332,10 @@ const ResumeDetails = () => {
                     })}
                   </p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">Evaluation Status</p>
-                  <Badge className={resume.evaluated ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>
-                    {resume.evaluated ? "Evaluated" : "Pending"}
+                <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg">
+                  <p className="text-sm text-gray-500 mb-2">Evaluation Status</p>
+                  <Badge className={resume.evaluated ? "bg-green-100 text-green-800 px-3 py-1" : "bg-yellow-100 text-yellow-800 px-3 py-1"}>
+                    {resume.evaluated ? "✓ Evaluated" : "⏳ Pending"}
                   </Badge>
                 </div>
               </CardContent>
