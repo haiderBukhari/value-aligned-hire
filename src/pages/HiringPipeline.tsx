@@ -3,22 +3,19 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
-import { Settings, Plus, Trash2, GripVertical, CheckCircle, Clock, Users, Trophy } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Settings, Plus, Trash2, GripVertical, CheckCircle, Users, Trophy } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const HiringPipeline = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [newStageName, setNewStageName] = useState("");
 
   // Available stages that can be added
   const availableStages = [
-    { id: "assessment", name: "Assessment", description: "Technical or skills assessment" },
     { id: "initial-interview", name: "Initial Interview", description: "First round interview" },
     { id: "secondary-interview", name: "Secondary Interview", description: "Second round interview" },
+    { id: "assessment", name: "Assessment", description: "Technical or skills assessment" },
   ];
 
   // Current pipeline configuration
@@ -28,44 +25,53 @@ const HiringPipeline = () => {
       name: "Application Screening",
       description: "Initial review of applications",
       isMandatory: true,
-      order: 1,
-      estimatedDays: 2
+      order: 1
     },
     {
       id: "assessment",
       name: "Assessment",
       description: "Technical or skills assessment",
       isMandatory: false,
-      order: 2,
-      estimatedDays: 3
+      order: 2
     },
     {
       id: "final-interview",
       name: "Final Interview",
       description: "Final decision interview",
       isMandatory: true,
-      order: 3,
-      estimatedDays: 2
+      order: 3
     },
     {
       id: "offer-stage",
       name: "Offer Stage",
       description: "Extending and negotiating offers",
       isMandatory: true,
-      order: 4,
-      estimatedDays: 1
+      order: 4
     }
   ]);
 
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
 
-    const items = Array.from(pipelineStages);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
+    const draggableStages = pipelineStages.filter(stage => !stage.isMandatory);
+    const [reorderedItem] = draggableStages.splice(result.source.index, 1);
+    draggableStages.splice(result.destination.index, 0, reorderedItem);
+
+    // Rebuild the full pipeline with mandatory stages in fixed positions
+    const newPipeline = [];
+    
+    // Add Application Screening (always first)
+    newPipeline.push(pipelineStages.find(s => s.id === "application-screening")!);
+    
+    // Add draggable stages
+    draggableStages.forEach(stage => newPipeline.push(stage));
+    
+    // Add Final Interview and Offer Stage (always last two)
+    newPipeline.push(pipelineStages.find(s => s.id === "final-interview")!);
+    newPipeline.push(pipelineStages.find(s => s.id === "offer-stage")!);
 
     // Update order numbers
-    const updatedItems = items.map((item, index) => ({
+    const updatedItems = newPipeline.map((item, index) => ({
       ...item,
       order: index + 1
     }));
@@ -74,14 +80,45 @@ const HiringPipeline = () => {
   };
 
   const addStage = (stageTemplate: any) => {
+    const currentStages = [...pipelineStages];
+    let insertIndex;
+
+    // Determine insertion order based on stage type
+    if (stageTemplate.id === "initial-interview") {
+      // Find if secondary interview exists
+      const secondaryIndex = currentStages.findIndex(s => s.id === "secondary-interview");
+      if (secondaryIndex !== -1) {
+        insertIndex = secondaryIndex;
+      } else {
+        // Insert before final interview
+        const finalIndex = currentStages.findIndex(s => s.id === "final-interview");
+        insertIndex = finalIndex;
+      }
+    } else if (stageTemplate.id === "secondary-interview") {
+      // Insert before final interview
+      const finalIndex = currentStages.findIndex(s => s.id === "final-interview");
+      insertIndex = finalIndex;
+    } else {
+      // Default: insert before final interview
+      const finalIndex = currentStages.findIndex(s => s.id === "final-interview");
+      insertIndex = finalIndex;
+    }
+
     const newStage = {
       ...stageTemplate,
       isMandatory: false,
-      order: pipelineStages.length + 1,
-      estimatedDays: 2
+      order: insertIndex + 1
     };
     
-    setPipelineStages([...pipelineStages, newStage]);
+    currentStages.splice(insertIndex, 0, newStage);
+    
+    // Update order numbers
+    const updatedStages = currentStages.map((stage, index) => ({
+      ...stage,
+      order: index + 1
+    }));
+    
+    setPipelineStages(updatedStages);
     setIsAddDialogOpen(false);
   };
 
@@ -93,20 +130,12 @@ const HiringPipeline = () => {
     setPipelineStages(updatedStages);
   };
 
-  const updateStageDuration = (stageId: string, days: number) => {
-    setPipelineStages(prev => 
-      prev.map(stage => 
-        stage.id === stageId ? { ...stage, estimatedDays: days } : stage
-      )
-    );
-  };
-
   const getAvailableStages = () => {
     const currentStageIds = pipelineStages.map(stage => stage.id);
     return availableStages.filter(stage => !currentStageIds.includes(stage.id));
   };
 
-  const totalEstimatedDays = pipelineStages.reduce((sum, stage) => sum + stage.estimatedDays, 0);
+  const draggableStages = pipelineStages.filter(stage => !stage.isMandatory);
 
   return (
     <div className="space-y-8">
@@ -148,7 +177,7 @@ const HiringPipeline = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -158,20 +187,6 @@ const HiringPipeline = () => {
               </div>
               <div className="p-3 rounded-lg bg-blue-50">
                 <Settings className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Estimated Timeline</p>
-                <p className="text-3xl font-bold text-gray-900">{totalEstimatedDays}d</p>
-              </div>
-              <div className="p-3 rounded-lg bg-green-50">
-                <Clock className="h-6 w-6 text-green-600" />
               </div>
             </div>
           </CardContent>
@@ -211,56 +226,60 @@ const HiringPipeline = () => {
         <CardHeader>
           <CardTitle>Pipeline Stages Configuration</CardTitle>
           <CardDescription>
-            Drag and drop to reorder stages. Mandatory stages cannot be removed.
+            Drag and drop to reorder optional stages. Mandatory stages have fixed positions.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId="pipeline-stages">
-              {(provided) => (
-                <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
-                  {pipelineStages.map((stage, index) => (
-                    <Draggable key={stage.id} draggableId={stage.id} index={index}>
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          className={`bg-white border rounded-lg p-6 transition-shadow ${
-                            snapshot.isDragging ? 'shadow-lg' : 'shadow-sm hover:shadow-md'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4">
-                              <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
-                                <GripVertical className="h-5 w-5 text-gray-400" />
-                              </div>
-                              <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-sm">
-                                  {stage.order}
+          <div className="space-y-4">
+            {/* Application Screening - Fixed at top */}
+            {pipelineStages.filter(stage => stage.id === "application-screening").map((stage) => (
+              <div key={stage.id} className="bg-white border rounded-lg p-6 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-semibold text-sm">
+                      {stage.order}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">{stage.name}</h3>
+                      <p className="text-sm text-gray-600">{stage.description}</p>
+                    </div>
+                  </div>
+                  <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200">
+                    Mandatory
+                  </Badge>
+                </div>
+              </div>
+            ))}
+
+            {/* Draggable Optional Stages */}
+            {draggableStages.length > 0 && (
+              <DragDropContext onDragEnd={handleDragEnd}>
+                <Droppable droppableId="pipeline-stages">
+                  {(provided) => (
+                    <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
+                      {draggableStages.map((stage, index) => (
+                        <Draggable key={stage.id} draggableId={stage.id} index={index}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={`bg-white border rounded-lg p-6 transition-shadow ${
+                                snapshot.isDragging ? 'shadow-lg' : 'shadow-sm hover:shadow-md'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-4">
+                                  <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                                    <GripVertical className="h-5 w-5 text-gray-400" />
+                                  </div>
+                                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-sm">
+                                    {stage.order}
+                                  </div>
+                                  <div>
+                                    <h3 className="text-lg font-semibold text-gray-900">{stage.name}</h3>
+                                    <p className="text-sm text-gray-600">{stage.description}</p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <h3 className="text-lg font-semibold text-gray-900">{stage.name}</h3>
-                                  <p className="text-sm text-gray-600">{stage.description}</p>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-4">
-                              <div className="flex items-center space-x-2">
-                                <label className="text-sm text-gray-600">Duration:</label>
-                                <Input
-                                  type="number"
-                                  value={stage.estimatedDays}
-                                  onChange={(e) => updateStageDuration(stage.id, parseInt(e.target.value) || 1)}
-                                  className="w-20"
-                                  min="1"
-                                />
-                                <span className="text-sm text-gray-600">days</span>
-                              </div>
-                              {stage.isMandatory ? (
-                                <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200">
-                                  Mandatory
-                                </Badge>
-                              ) : (
                                 <div className="flex items-center space-x-2">
                                   <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
                                     Optional
@@ -274,18 +293,38 @@ const HiringPipeline = () => {
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </div>
-                              )}
+                              </div>
                             </div>
-                          </div>
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
+            )}
+
+            {/* Final Interview and Offer Stage - Fixed at bottom */}
+            {pipelineStages.filter(stage => stage.id === "final-interview" || stage.id === "offer-stage").map((stage) => (
+              <div key={stage.id} className="bg-white border rounded-lg p-6 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-semibold text-sm">
+                      {stage.order}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">{stage.name}</h3>
+                      <p className="text-sm text-gray-600">{stage.description}</p>
+                    </div>
+                  </div>
+                  <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200">
+                    Mandatory
+                  </Badge>
                 </div>
-              )}
-            </Droppable>
-          </DragDropContext>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
@@ -299,7 +338,7 @@ const HiringPipeline = () => {
           <div className="space-y-6">
             <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
               <span>Pipeline Flow</span>
-              <span>Total Duration: {totalEstimatedDays} days</span>
+              <span>{pipelineStages.length} Total Stages</span>
             </div>
             <div className="flex items-center space-x-4 overflow-x-auto pb-4">
               {pipelineStages.map((stage, index) => (
@@ -312,7 +351,6 @@ const HiringPipeline = () => {
                     </div>
                     <div className="text-center">
                       <p className="text-sm font-medium text-gray-900 truncate">{stage.name}</p>
-                      <p className="text-xs text-gray-500">{stage.estimatedDays} days</p>
                     </div>
                   </div>
                   {index < pipelineStages.length - 1 && (
