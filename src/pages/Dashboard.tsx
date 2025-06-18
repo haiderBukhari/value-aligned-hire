@@ -103,7 +103,7 @@ const Dashboard = () => {
     {
       icon: FileText,
       label: "Application Screening",
-      path: "/dashboard/application-screening",
+      path: "/dashboard/jobs",
       count: 156
     },
     {
@@ -166,7 +166,7 @@ const Dashboard = () => {
     switch (location.pathname) {
       case "/dashboard": return "Dashboard";
       case "/dashboard/create-job": return "Create Job";
-      case "/dashboard/application-screening": return "Application Screening";
+      case "/dashboard/jobs": return "Application Screening";
       case "/dashboard/assessments": return "Assessment Center";
       case "/dashboard/initial-interview": return "Initial Interview Management";
       case "/dashboard/secondary-interview": return "Secondary Interview Management";
@@ -182,7 +182,7 @@ const Dashboard = () => {
     switch (location.pathname) {
       case "/dashboard": return "Welcome back! Here's what's happening with your recruitment.";
       case "/dashboard/create-job": return "Create a new job posting with AI assistance";
-      case "/dashboard/application-screening": return "Review and screen incoming applications";
+      case "/dashboard/jobs": return "Review and screen incoming applications";
       case "/dashboard/assessments": return "Manage candidate assessments and home tasks";
       case "/dashboard/initial-interview": return "Schedule and manage initial candidate interviews";
       case "/dashboard/secondary-interview": return "Coordinate secondary round interviews";
