@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -17,6 +18,7 @@ interface Candidate {
   status: string;
   score: number;
   jobId: string;
+  assignmentSentDate: string | null;
 }
 
 const AssessmentCenter = () => {
@@ -38,24 +40,27 @@ const AssessmentCenter = () => {
         status: "Assignment Pending to be Sent",
         score: 85,
         jobId: "101",
+        assignmentSentDate: null,
       },
       {
         id: "2",
         name: "Jane Smith",
         email: "jane.smith@example.com",
         jobTitle: "Backend Developer",
-        status: "Assessment Completed",
+        status: "Assignment Received",
         score: 92,
         jobId: "102",
+        assignmentSentDate: "2024-01-15",
       },
       {
         id: "3",
         name: "Alice Johnson",
         email: "alice.johnson@example.com",
         jobTitle: "Data Scientist",
-        status: "Initial Screening",
+        status: "Assignment Pending by the Candidate",
         score: 78,
         jobId: "103",
+        assignmentSentDate: "2024-01-12",
       },
       {
         id: "4",
@@ -65,15 +70,17 @@ const AssessmentCenter = () => {
         status: "Assignment Pending to be Sent",
         score: 65,
         jobId: "104",
+        assignmentSentDate: null,
       },
       {
         id: "5",
         name: "Charlie Brown",
         email: "charlie.brown@example.com",
         jobTitle: "UX Designer",
-        status: "Assessment Completed",
+        status: "Assignment Received",
         score: 88,
         jobId: "105",
+        assignmentSentDate: "2024-01-14",
       },
     ];
 
@@ -128,6 +135,11 @@ const AssessmentCenter = () => {
     setIsFilterModalOpen(false);
   };
 
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "Not sent";
+    return new Date(dateString).toLocaleDateString();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -172,6 +184,7 @@ const AssessmentCenter = () => {
                   <th className="px-6 py-3 font-semibold text-gray-900">Email</th>
                   <th className="px-6 py-3 font-semibold text-gray-900">Job Title</th>
                   <th className="px-6 py-3 font-semibold text-gray-900">Status</th>
+                  <th className="px-6 py-3 font-semibold text-gray-900">Assignment Sent</th>
                   <th className="px-6 py-3 font-semibold text-gray-900">Score</th>
                   <th className="px-6 py-3 font-semibold text-gray-900">Actions</th>
                 </tr>
@@ -190,15 +203,20 @@ const AssessmentCenter = () => {
                     <td className="px-6 py-4">{candidate.jobTitle}</td>
                     <td className="px-6 py-4">
                       <Select value={candidate.status} onValueChange={(value) => handleStatusChange(candidate.id, value)}>
-                        <SelectTrigger className="w-[200px]">
+                        <SelectTrigger className="w-[240px]">
                           <SelectValue placeholder="Select a status" />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Initial Screening">Initial Screening</SelectItem>
+                        <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
                           <SelectItem value="Assignment Pending to be Sent">Assignment Pending to be Sent</SelectItem>
-                          <SelectItem value="Assessment Completed">Assessment Completed</SelectItem>
+                          <SelectItem value="Assignment Received">Assignment Received</SelectItem>
+                          <SelectItem value="Assignment Pending by the Candidate">Assignment Pending by the Candidate</SelectItem>
                         </SelectContent>
                       </Select>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={candidate.assignmentSentDate ? "text-gray-900" : "text-gray-500"}>
+                        {formatDate(candidate.assignmentSentDate)}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-1">
@@ -240,7 +258,7 @@ const AssessmentCenter = () => {
       
       {/* Filter Modal */}
       <Dialog open={isFilterModalOpen} onOpenChange={handleCloseFilterModal}>
-        <DialogContent>
+        <DialogContent className="bg-white">
           <DialogHeader>
             <DialogTitle>Filter Candidates</DialogTitle>
           </DialogHeader>
@@ -249,17 +267,19 @@ const AssessmentCenter = () => {
               <Label htmlFor="status" className="text-right">
                 Status
               </Label>
-              <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value)} className="col-span-3">
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All</SelectItem>
-                  <SelectItem value="Initial Screening">Initial Screening</SelectItem>
-                  <SelectItem value="Assignment Pending to be Sent">Assignment Pending to be Sent</SelectItem>
-                  <SelectItem value="Assessment Completed">Assessment Completed</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="col-span-3">
+                <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a status" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
+                    <SelectItem value="">All</SelectItem>
+                    <SelectItem value="Assignment Pending to be Sent">Assignment Pending to be Sent</SelectItem>
+                    <SelectItem value="Assignment Received">Assignment Received</SelectItem>
+                    <SelectItem value="Assignment Pending by the Candidate">Assignment Pending by the Candidate</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <div className="flex justify-end space-x-2">

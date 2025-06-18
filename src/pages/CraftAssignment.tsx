@@ -398,7 +398,7 @@ Return only the HTML content without any markdown code blocks or explanations.
 
       {/* Template Selection Modal */}
       <Dialog open={showTemplateModal} onOpenChange={setShowTemplateModal}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-white">
           <DialogHeader>
             <DialogTitle>Select Assignment Template</DialogTitle>
           </DialogHeader>
