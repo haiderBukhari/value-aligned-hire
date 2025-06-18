@@ -6,7 +6,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Code, Clock, CheckCircle, AlertCircle, Plus, Search, Filter, Eye, Download, Send, Edit3, User, Award } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { FileText, Code, Clock, CheckCircle, AlertCircle, Plus, Search, Filter, Eye, Download, Send, Edit3, User, Award, Calendar } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -14,6 +15,8 @@ import { toast } from "sonner";
 const AssessmentCenter = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("assignments");
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   // Sample data for active assessments
   const activeAssessments = [
@@ -25,7 +28,8 @@ const AssessmentCenter = () => {
       status: "Assignment Received",
       overallScore: 85,
       submittedAt: "2024-06-15",
-      timeSpent: "4h 30m"
+      timeSpent: "4h 30m",
+      assignmentSentDate: "2024-06-10"
     },
     {
       id: 2,
@@ -35,7 +39,8 @@ const AssessmentCenter = () => {
       status: "Assignment Pending to be Sent",
       overallScore: null,
       submittedAt: null,
-      timeSpent: null
+      timeSpent: null,
+      assignmentSentDate: null
     },
     {
       id: 3,
@@ -45,7 +50,8 @@ const AssessmentCenter = () => {
       status: "Assignment Pending by the Candidate",
       overallScore: null,
       submittedAt: null,
-      timeSpent: "1h 45m"
+      timeSpent: "1h 45m",
+      assignmentSentDate: "2024-06-12"
     },
     {
       id: 4,
@@ -55,7 +61,8 @@ const AssessmentCenter = () => {
       status: "Assignment Received",
       overallScore: 92,
       submittedAt: "2024-06-14",
-      timeSpent: "3h 20m"
+      timeSpent: "3h 20m",
+      assignmentSentDate: "2024-06-11"
     }
   ];
 
@@ -143,6 +150,40 @@ const AssessmentCenter = () => {
       skills: ["User Research", "Prototyping", "Design Thinking", "Figma"]
     }
   ];
+
+  const availableStatuses = [
+    "Assignment Received",
+    "Assignment Pending to be Sent",
+    "Assignment Pending by the Candidate"
+  ];
+
+  const filteredAssessments = activeAssessments.filter(assessment => {
+    const matchesSearch = assessment.candidateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         assessment.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         assessment.jobTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         assessment.status.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(assessment.status);
+    
+    return matchesSearch && matchesStatus;
+  });
+
+  const handleStatusToggle = (status: string) => {
+    setSelectedStatuses(prev => 
+      prev.includes(status) 
+        ? prev.filter(s => s !== status)
+        : [...prev, status]
+    );
+  };
+
+  const clearFilters = () => {
+    setSelectedStatuses([]);
+  };
+
+  const applyFilters = () => {
+    setIsFilterModalOpen(false);
+    toast.success("Filters applied successfully");
+  };
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -315,10 +356,54 @@ const AssessmentCenter = () => {
                 className="pl-10"
               />
             </div>
-            <Button variant="outline" className="shrink-0">
-              <Filter className="mr-2 h-4 w-4" />
-              Filter
-            </Button>
+            <Dialog open={isFilterModalOpen} onOpenChange={setIsFilterModalOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="shrink-0">
+                  <Filter className="mr-2 h-4 w-4" />
+                  Filter
+                  {selectedStatuses.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {selectedStatuses.length}
+                    </Badge>
+                  )}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Filter Assessments</DialogTitle>
+                  <DialogDescription>
+                    Filter assessments by status to find specific candidates.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div>
+                    <h4 className="text-sm font-medium mb-3">Assignment Status</h4>
+                    <div className="space-y-2">
+                      {availableStatuses.map((status) => (
+                        <div key={status} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id={status}
+                            checked={selectedStatuses.includes(status)}
+                            onChange={() => handleStatusToggle(status)}
+                            className="rounded border-gray-300"
+                          />
+                          <label htmlFor={status} className="text-sm font-medium">
+                            {status}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={clearFilters}>
+                    Clear All
+                  </Button>
+                  <Button onClick={applyFilters}>Apply Filters</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
 
           {/* Interactive Assessment Table */}
@@ -342,11 +427,12 @@ const AssessmentCenter = () => {
                       <TableHead className="font-semibold">Status</TableHead>
                       <TableHead className="font-semibold">Score</TableHead>
                       <TableHead className="font-semibold">Time Spent</TableHead>
+                      <TableHead className="font-semibold">Assignment Sent</TableHead>
                       <TableHead className="font-semibold">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {activeAssessments.map((assessment, index) => (
+                    {filteredAssessments.map((assessment, index) => (
                       <motion.tr
                         key={assessment.id}
                         initial={{ opacity: 0, y: 20 }}
@@ -395,6 +481,16 @@ const AssessmentCenter = () => {
                             </div>
                           ) : (
                             <span className="text-gray-400 italic">N/A</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {assessment.assignmentSentDate ? (
+                            <div className="flex items-center text-gray-600">
+                              <Calendar className="mr-1 h-4 w-4" />
+                              {assessment.assignmentSentDate}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 italic">Not sent</span>
                           )}
                         </TableCell>
                         <TableCell>
