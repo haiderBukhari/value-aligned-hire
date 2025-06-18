@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { 
   Users, Briefcase, TrendingUp, Calendar, Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, 
@@ -197,9 +197,9 @@ const Dashboard = () => {
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Fixed Width Sidebar */}
-      <div className="w-80 bg-white shadow-xl border-r border-gray-200 fixed left-0 top-0 h-full z-30">
+      <div className="w-80 bg-white shadow-xl border-r border-gray-200 fixed left-0 top-0 h-full z-30 flex flex-col">
         {/* Logo Section */}
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b border-gray-200 flex-shrink-0">
           <button 
             onClick={() => navigate('/')}
             className="flex items-center hover:opacity-80 transition-opacity w-full"
@@ -215,7 +215,7 @@ const Dashboard = () => {
         </div>
         
         {/* Quick Stats */}
-        <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50">
+        <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50 flex-shrink-0">
           <div className="grid grid-cols-2 gap-3">
             <div className="text-center p-3 bg-white rounded-lg shadow-sm">
               <p className="text-lg font-bold text-gray-900">24</p>
@@ -228,63 +228,67 @@ const Dashboard = () => {
           </div>
         </div>
         
-        {/* Navigation */}
-        <nav className="mt-6 px-4">
-          <div className="space-y-2">
-            {navigationItems.map((item) => (
-              <Button
-                key={item.path}
-                variant={location.pathname === item.path ? "default" : "ghost"}
-                className={`w-full justify-between h-12 text-left font-medium transition-all duration-200 ${
-                  location.pathname === item.path
-                    ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm hover:bg-blue-100" 
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                }`}
-                onClick={() => navigate(item.path)}
-              >
-                <div className="flex items-center">
-                  <item.icon className="mr-3 h-5 w-5" />
-                  {item.label}
-                </div>
-                {item.count && (
-                  <Badge 
-                    variant="secondary" 
-                    className={`${
-                      location.pathname === item.path 
-                        ? "bg-blue-100 text-blue-700" 
-                        : "bg-gray-100 text-gray-600"
-                    } text-xs px-2 py-1`}
+        {/* Scrollable Navigation Area */}
+        <div className="flex-1 overflow-hidden">
+          <ScrollArea className="h-full">
+            <nav className="mt-6 px-4">
+              <div className="space-y-2">
+                {navigationItems.map((item) => (
+                  <Button
+                    key={item.path}
+                    variant={location.pathname === item.path ? "default" : "ghost"}
+                    className={`w-full justify-between h-12 text-left font-medium transition-all duration-200 ${
+                      location.pathname === item.path
+                        ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm hover:bg-blue-100" 
+                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    }`}
+                    onClick={() => navigate(item.path)}
                   >
-                    {item.count}
-                  </Badge>
-                )}
-              </Button>
-            ))}
-          </div>
-        </nav>
-        
-        {/* Recent Activity */}
-        <div className="mt-8 px-4">
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-              <Bell className="mr-2 h-4 w-4" />
-              Recent Activity
-            </h3>
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <p className="text-xs text-gray-600">New application for Senior Developer</p>
+                    <div className="flex items-center">
+                      <item.icon className="mr-3 h-5 w-5" />
+                      {item.label}
+                    </div>
+                    {item.count && (
+                      <Badge 
+                        variant="secondary" 
+                        className={`${
+                          location.pathname === item.path 
+                            ? "bg-blue-100 text-blue-700" 
+                            : "bg-gray-100 text-gray-600"
+                        } text-xs px-2 py-1`}
+                      >
+                        {item.count}
+                      </Badge>
+                    )}
+                  </Button>
+                ))}
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <p className="text-xs text-gray-600">Interview scheduled with Sarah J.</p>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                <p className="text-xs text-gray-600">Assessment completed by Alex R.</p>
+            </nav>
+            
+            {/* Recent Activity */}
+            <div className="mt-8 px-4 pb-6">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                  <Bell className="mr-2 h-4 w-4" />
+                  Recent Activity
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <p className="text-xs text-gray-600">New application for Senior Developer</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <p className="text-xs text-gray-600">Interview scheduled with Sarah J.</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                    <p className="text-xs text-gray-600">Assessment completed by Alex R.</p>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          </ScrollArea>
         </div>
       </div>
 
