@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Download, ExternalLink, Star, Award, Brain, Users, Eye, CheckCircle, AlertTriangle, Info } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, Star, Award, Brain, Users, Eye, CheckCircle, AlertTriangle, Info, ArrowRight, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface Resume {
   id: string;
@@ -118,6 +119,14 @@ const ResumeDetails = () => {
     setDocumentModal({ isOpen: false, type: null, url: '' });
   };
 
+  const handleMoveToAssessment = () => {
+    toast.success("Candidate moved to assessment stage successfully!", {
+      description: "They will receive an assessment invitation shortly.",
+    });
+    // Navigate to assessments page
+    navigate('/dashboard/assessments');
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
@@ -168,7 +177,23 @@ const ResumeDetails = () => {
                 <Badge className={`${getLevelColor(resume.level_suggestion)} px-4 py-2 text-sm font-medium`}>
                   {resume.level_suggestion} Level
                 </Badge>
-              </div>
+                
+                {/* Move to Assessment Button */}
+                <motion.div 
+                  className="mt-6"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <Button 
+                    onClick={handleMoveToAssessment}
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold px-8 py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                  >
+                    <Send className="mr-3 h-5 w-5" />
+                    Move to Assessment Stage
+                    <ArrowRight className="ml-3 h-5 w-5" />
+                  </Button>
+                </motion.div>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-500">Overall Score</p>

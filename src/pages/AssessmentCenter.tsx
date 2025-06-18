@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,12 +5,59 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Code, Clock, CheckCircle, AlertCircle, Plus, Search, Filter, Eye, Download } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { FileText, Code, Clock, CheckCircle, AlertCircle, Plus, Search, Filter, Eye, Download, Send, Edit3, User, Award } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 const AssessmentCenter = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("assignments");
+
+  // Sample data for active assessments
+  const activeAssessments = [
+    {
+      id: 1,
+      candidateName: "Muhammad Haider Bukhari",
+      email: "haider100xdev@gmail.com",
+      jobTitle: "Senior Frontend Developer",
+      status: "Assignment Received",
+      overallScore: 85,
+      submittedAt: "2024-06-15",
+      timeSpent: "4h 30m"
+    },
+    {
+      id: 2,
+      candidateName: "Sarah Johnson",
+      email: "sarah.j@email.com",
+      jobTitle: "React Developer",
+      status: "Assignment Pending to be Sent",
+      overallScore: null,
+      submittedAt: null,
+      timeSpent: null
+    },
+    {
+      id: 3,
+      candidateName: "Alex Rodriguez",
+      email: "alex.rodriguez@email.com",
+      jobTitle: "Frontend Engineer",
+      status: "Assignment Pending by the Candidate",
+      overallScore: null,
+      submittedAt: null,
+      timeSpent: "1h 45m"
+    },
+    {
+      id: 4,
+      candidateName: "Maria Garcia",
+      email: "maria.garcia@email.com",
+      jobTitle: "Full Stack Developer",
+      status: "Assignment Received",
+      overallScore: 92,
+      submittedAt: "2024-06-14",
+      timeSpent: "3h 20m"
+    }
+  ];
 
   const assignments = [
     {
@@ -100,6 +146,9 @@ const AssessmentCenter = () => {
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
+      case 'assignment received': return 'bg-green-100 text-green-800 border-green-200';
+      case 'assignment pending to be sent': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'assignment pending by the candidate': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'completed': return 'bg-green-100 text-green-800 border-green-200';
       case 'submitted': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'in progress': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
@@ -127,6 +176,59 @@ const AssessmentCenter = () => {
       case 'design challenge':
       case 'design': return <Eye className="h-4 w-4" />;
       default: return <FileText className="h-4 w-4" />;
+    }
+  };
+
+  const handleCraftAssignment = (candidateName: string) => {
+    toast.success(`Crafting assignment for ${candidateName}`, {
+      description: "Assignment template is being prepared...",
+    });
+  };
+
+  const handleReviewAssignment = (candidateName: string) => {
+    toast.success(`Opening review for ${candidateName}`, {
+      description: "Loading assignment details...",
+    });
+  };
+
+  const renderActionButton = (assessment: any) => {
+    switch (assessment.status) {
+      case "Assignment Pending to be Sent":
+        return (
+          <Button 
+            size="sm" 
+            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
+            onClick={() => handleCraftAssignment(assessment.candidateName)}
+          >
+            <Edit3 className="h-4 w-4 mr-1" />
+            Craft Assignment
+          </Button>
+        );
+      case "Assignment Pending by the Candidate":
+        return (
+          <Button 
+            size="sm" 
+            variant="outline" 
+            disabled
+            className="opacity-50 cursor-not-allowed"
+          >
+            <Clock className="h-4 w-4 mr-1" />
+            Review Assignment
+          </Button>
+        );
+      case "Assignment Received":
+        return (
+          <Button 
+            size="sm" 
+            className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white"
+            onClick={() => handleReviewAssignment(assessment.candidateName)}
+          >
+            <Eye className="h-4 w-4 mr-1" />
+            Review
+          </Button>
+        );
+      default:
+        return null;
     }
   };
 
@@ -183,11 +285,11 @@ const AssessmentCenter = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Overdue</p>
-                <p className="text-3xl font-bold text-gray-900">1</p>
+                <p className="text-sm font-medium text-gray-600">Pending</p>
+                <p className="text-3xl font-bold text-gray-900">4</p>
               </div>
-              <div className="p-3 rounded-lg bg-red-50">
-                <AlertCircle className="h-6 w-6 text-red-600" />
+              <div className="p-3 rounded-lg bg-purple-50">
+                <Send className="h-6 w-6 text-purple-600" />
               </div>
             </div>
           </CardContent>
@@ -197,7 +299,7 @@ const AssessmentCenter = () => {
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="assignments">Active Assignments</TabsTrigger>
+          <TabsTrigger value="assignments">Active Assessments</TabsTrigger>
           <TabsTrigger value="templates">Assessment Templates</TabsTrigger>
         </TabsList>
 
@@ -207,7 +309,7 @@ const AssessmentCenter = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search assignments, candidates, or positions..."
+                placeholder="Search candidates, jobs, or status..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -219,79 +321,93 @@ const AssessmentCenter = () => {
             </Button>
           </div>
 
-          {/* Assignments List */}
-          <div className="space-y-4">
-            {assignments.map((assignment) => (
-              <Card key={assignment.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-4 flex-1">
-                      <div className="p-3 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50">
-                        {getTypeIcon(assignment.type)}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900">{assignment.title}</h3>
-                          <Badge variant="outline" className={getDifficultyColor(assignment.difficulty)}>
-                            {assignment.difficulty}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-3">{assignment.type}</p>
-                        
-                        <div className="flex items-center space-x-4 mb-4">
-                          <div className="flex items-center space-x-2">
-                            <Avatar className="h-8 w-8">
+          {/* Interactive Assessment Table */}
+          <Card className="border-0 shadow-lg bg-white">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <User className="h-6 w-6" />
+                Assessment Pipeline
+              </CardTitle>
+              <CardDescription>
+                Track and manage candidate assessments with real-time status updates
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50">
+                      <TableHead className="font-semibold">Candidate</TableHead>
+                      <TableHead className="font-semibold">Job Title</TableHead>
+                      <TableHead className="font-semibold">Status</TableHead>
+                      <TableHead className="font-semibold">Score</TableHead>
+                      <TableHead className="font-semibold">Time Spent</TableHead>
+                      <TableHead className="font-semibold">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {activeAssessments.map((assessment, index) => (
+                      <motion.tr
+                        key={assessment.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <TableCell>
+                          <div className="flex items-center space-x-3">
+                            <Avatar className="h-10 w-10">
                               <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm">
-                                {assignment.candidate.split(' ').map(n => n[0]).join('')}
+                                {assessment.candidateName.split(' ').map(n => n[0]).join('')}
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="text-sm font-medium text-gray-900">{assignment.candidate}</p>
-                              <p className="text-xs text-gray-500">{assignment.position}</p>
+                              <p className="font-medium text-gray-900">{assessment.candidateName}</p>
+                              <p className="text-sm text-gray-500">{assessment.email}</p>
                             </div>
                           </div>
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-6">
-                            <div className="flex items-center text-sm text-gray-500">
-                              <Clock className="mr-1 h-4 w-4" />
-                              {assignment.timeSpent}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              Due: {assignment.deadline}
-                            </div>
-                            {assignment.score && (
-                              <div className="flex items-center space-x-2">
-                                <span className="text-sm text-gray-500">Score:</span>
-                                <span className="text-sm font-semibold text-green-600">{assignment.score}%</span>
-                                <Progress value={assignment.score} className="w-16 h-2" />
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-medium text-gray-700">{assessment.jobTitle}</span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={`${getStatusColor(assessment.status)} font-medium`}>
+                            {assessment.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {assessment.overallScore ? (
+                            <div className="flex items-center space-x-2">
+                              <div className="flex items-center space-x-1">
+                                <Award className="h-4 w-4 text-yellow-500" />
+                                <span className="font-bold text-green-600">{assessment.overallScore}%</span>
                               </div>
-                            )}
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Badge className={getStatusColor(assignment.status)}>
-                              {assignment.status}
-                            </Badge>
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4 mr-1" />
-                              View
-                            </Button>
-                            {assignment.status === 'Submitted' && (
-                              <Button variant="ghost" size="sm">
-                                <Download className="h-4 w-4 mr-1" />
-                                Download
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                              <Progress value={assessment.overallScore} className="w-16 h-2" />
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 italic">Pending</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {assessment.timeSpent ? (
+                            <div className="flex items-center text-gray-600">
+                              <Clock className="mr-1 h-4 w-4" />
+                              {assessment.timeSpent}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 italic">N/A</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {renderActionButton(assessment)}
+                        </TableCell>
+                      </motion.tr>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="templates" className="space-y-6">
