@@ -241,7 +241,7 @@ const AssessmentCenter = () => {
             className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
             onClick={() => handleCraftAssignment(assessment.candidateName)}
           >
-            <Edit3 className="h-4 w-4 mr-1" />
+            {/* <Edit3 className="h-4 w-4 mr-1" /> */}
             Craft Assignment
           </Button>
         );
@@ -253,7 +253,7 @@ const AssessmentCenter = () => {
             disabled
             className="opacity-50 cursor-not-allowed"
           >
-            <Clock className="h-4 w-4 mr-1" />
+            {/* <Clock className="h-4 w-4 mr-1" /> */}
             Review Assignment
           </Button>
         );
@@ -264,7 +264,7 @@ const AssessmentCenter = () => {
             className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white"
             onClick={() => handleReviewAssignment(assessment.candidateName)}
           >
-            <Eye className="h-4 w-4 mr-1" />
+            {/* <Eye className="h-4 w-4 mr-1" /> */}
             Review
           </Button>
         );
@@ -407,7 +407,7 @@ const AssessmentCenter = () => {
           </div>
 
           {/* Interactive Assessment Table */}
-          <Card className="border-0 shadow-lg bg-white">
+          <Card className="border-0 shadow-lg bg-white w-full">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-xl">
                 <User className="h-6 w-6" />
@@ -417,9 +417,9 @@ const AssessmentCenter = () => {
                 Track and manage candidate assessments with real-time status updates
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4">
               <div className="overflow-x-auto">
-                <Table>
+                <Table className="w-full">
                   <TableHeader>
                     <TableRow className="bg-gray-50">
                       <TableHead className="font-semibold">Candidate</TableHead>
@@ -428,7 +428,7 @@ const AssessmentCenter = () => {
                       <TableHead className="font-semibold">Score</TableHead>
                       <TableHead className="font-semibold">Time Spent</TableHead>
                       <TableHead className="font-semibold">Assignment Sent</TableHead>
-                      <TableHead className="font-semibold">Actions</TableHead>
+                      <TableHead className="font-semibold whitespace-nowrap text-center">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -493,8 +493,10 @@ const AssessmentCenter = () => {
                             <span className="text-gray-400 italic">Not sent</span>
                           )}
                         </TableCell>
-                        <TableCell>
-                          {renderActionButton(assessment)}
+                        <TableCell className="w-1 whitespace-nowrap text-center">
+                          <div className="flex justify-center">
+                            {renderActionButton(assessment)}
+                          </div>
                         </TableCell>
                       </motion.tr>
                     ))}
