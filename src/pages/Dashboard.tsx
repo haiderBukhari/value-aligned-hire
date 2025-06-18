@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { 
   Users, Briefcase, TrendingUp, Calendar, Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, 
-  Home, LogOut, Building2, UserCheck, ClipboardList, FileText, Target, Bell
+  Home, LogOut, Building2, UserCheck, ClipboardList, FileText, Target, Bell, Award, Handshake
 } from "lucide-react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 
@@ -85,7 +86,7 @@ const Dashboard = () => {
     }
   ];
 
-  // Navigation items with dummy data
+  // Updated navigation items with new flow
   const navigationItems = [
     {
       icon: Home,
@@ -100,22 +101,40 @@ const Dashboard = () => {
       count: null
     },
     {
-      icon: Briefcase,
-      label: "Jobs",
-      path: "/dashboard/jobs",
-      count: 24
-    },
-    {
-      icon: Calendar,
-      label: "Interviews",
-      path: "/dashboard/interviews",
-      count: 8
+      icon: FileText,
+      label: "Application Screening",
+      path: "/dashboard/application-screening",
+      count: 156
     },
     {
       icon: ClipboardList,
       label: "Assessments",
       path: "/dashboard/assessments",
+      count: 42
+    },
+    {
+      icon: Users,
+      label: "Initial Interview",
+      path: "/dashboard/initial-interview",
+      count: 18
+    },
+    {
+      icon: UserCheck,
+      label: "Secondary Interview",
+      path: "/dashboard/secondary-interview",
       count: 12
+    },
+    {
+      icon: Calendar,
+      label: "Final Interview",
+      path: "/dashboard/final-interview",
+      count: 8
+    },
+    {
+      icon: Handshake,
+      label: "Offer Stage",
+      path: "/dashboard/offer-stage",
+      count: 5
     },
     {
       icon: Target,
@@ -147,9 +166,12 @@ const Dashboard = () => {
     switch (location.pathname) {
       case "/dashboard": return "Dashboard";
       case "/dashboard/create-job": return "Create Job";
-      case "/dashboard/jobs": return "Jobs Management";
-      case "/dashboard/interviews": return "Interview Management";
+      case "/dashboard/application-screening": return "Application Screening";
       case "/dashboard/assessments": return "Assessment Center";
+      case "/dashboard/initial-interview": return "Initial Interview Management";
+      case "/dashboard/secondary-interview": return "Secondary Interview Management";
+      case "/dashboard/final-interview": return "Final Interview Management";
+      case "/dashboard/offer-stage": return "Offer Management";
       case "/dashboard/pipeline": return "Hiring Pipeline";
       case "/dashboard/company": return "Company Configuration";
       default: return "Dashboard";
@@ -160,9 +182,12 @@ const Dashboard = () => {
     switch (location.pathname) {
       case "/dashboard": return "Welcome back! Here's what's happening with your recruitment.";
       case "/dashboard/create-job": return "Create a new job posting with AI assistance";
-      case "/dashboard/jobs": return "Manage your job postings and applications";
-      case "/dashboard/interviews": return "Schedule and manage candidate interviews";
+      case "/dashboard/application-screening": return "Review and screen incoming applications";
       case "/dashboard/assessments": return "Manage candidate assessments and home tasks";
+      case "/dashboard/initial-interview": return "Schedule and manage initial candidate interviews";
+      case "/dashboard/secondary-interview": return "Coordinate secondary round interviews";
+      case "/dashboard/final-interview": return "Manage final round interviews and decisions";
+      case "/dashboard/offer-stage": return "Create and manage job offers for selected candidates";
       case "/dashboard/pipeline": return "Track candidates through hiring stages";
       case "/dashboard/company": return "Manage your company profile and branding";
       default: return "Welcome to your recruitment dashboard";
@@ -261,30 +286,6 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-        
-        {/* Bottom Section */}
-        {/* <div className="absolute w-80 bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
-          <div className="flex items-center space-x-3 mb-4">
-            <Avatar className="h-10 w-10 ring-2 ring-blue-200">
-              <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold">
-                AD
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">Admin User</p>
-              <p className="text-xs text-gray-500 truncate">admin@talehr.com</p>
-            </div>
-          </div>
-          
-          <Button
-            variant="ghost"
-            className="w-full justify-start h-10 text-left font-medium transition-all duration-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-            onClick={() => navigate('/')}
-          >
-            <LogOut className="mr-3 h-4 w-4" />
-            Sign Out
-          </Button>
-        </div> */}
       </div>
 
       {/* Main Content with left margin to account for fixed sidebar */}
