@@ -382,7 +382,6 @@ const AssessmentCenter = () => {
                                 <Award className="h-4 w-4 text-yellow-500" />
                                 <span className="font-bold text-green-600">{assessment.overallScore}%</span>
                               </div>
-                              <Progress value={assessment.overallScore} className="w-16 h-2" />
                             </div>
                           ) : (
                             <span className="text-gray-400 italic">Pending</span>

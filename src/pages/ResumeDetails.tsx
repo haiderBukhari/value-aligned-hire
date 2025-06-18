@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -158,15 +157,29 @@ const ResumeDetails = () => {
       <div className="max-w-full mx-auto p-6 pt-0">
         {/* Back Button Only */}
         <div className="mb-8">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(`/dashboard/jobs/${jobId}`)}
-            className="mb-4 text-gray-600 hover:text-gray-900"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Applications
-          </Button>
-          
+          <div className="flex items-center justify-between mb-4">
+            <Button
+              variant="ghost"
+              onClick={() => navigate(`/dashboard/jobs/${jobId}`)}
+              className="text-gray-600 hover:text-gray-900"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Applications
+            </Button>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Button
+                onClick={handleMoveToAssessment}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold px-4 py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              >
+                <Send className="mr-3 h-5 w-5" />
+                Move to Assessment Stage
+              </Button>
+            </motion.div>
+          </div>
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-4xl font-bold text-gray-900">{resume.applicant_name}</h1>
@@ -179,27 +192,10 @@ const ResumeDetails = () => {
                   {resume.level_suggestion} Level
                 </Badge>
               </div>
-              
-              {/* Move to Assessment Button */}
-              <motion.div 
-                className="mt-6"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                <Button 
-                  onClick={handleMoveToAssessment}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold px-8 py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                >
-                  <Send className="mr-3 h-5 w-5" />
-                  Move to Assessment Stage
-                  <ArrowRight className="ml-3 h-5 w-5" />
-                </Button>
-              </motion.div>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-500">Overall Score</p>
-              <p className={`text-4xl font-bold ${getScoreColor(resume.total_weighted_score)}`}>
+              <p className={`text-4xl font-bold ${getScoreColor(resume.total_weighted_score)}`}> 
                 {resume.total_weighted_score}%
               </p>
             </div>
