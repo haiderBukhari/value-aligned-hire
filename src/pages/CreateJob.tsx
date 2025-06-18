@@ -1,11 +1,11 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/components/ui/use-toast"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GEMINI_API_KEY } from '@/constants';
 import { CheckCircle, Copy, Loader2 } from 'lucide-react';
@@ -21,6 +21,15 @@ const CreateJob = () => {
   const { toast } = useToast();
 
   const generateJobDescription = async () => {
+    if (!GEMINI_API_KEY) {
+      toast({
+        variant: "destructive",
+        title: "API Key Missing",
+        description: "Please set your VITE_GEMINI_API_KEY environment variable.",
+      });
+      return;
+    }
+
     setIsGenerating(true);
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
