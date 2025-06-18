@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -138,8 +137,8 @@ const HiringPipeline = () => {
   const draggableStages = pipelineStages.filter(stage => !stage.isMandatory);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto p-6 space-y-8">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+      <div className="max-w-[960px] mx-auto p-6 space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -223,7 +222,7 @@ const HiringPipeline = () => {
         </div>
 
         {/* Pipeline Configuration */}
-        <Card>
+        <Card className="w-full">
           <CardHeader>
             <CardTitle>Pipeline Stages Configuration</CardTitle>
             <CardDescription>
@@ -231,10 +230,10 @@ const HiringPipeline = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="space-y-4">
+            <div className="space-y-4 w-full">
               {/* Application Screening - Fixed at top */}
               {pipelineStages.filter(stage => stage.id === "application-screening").map((stage) => (
-                <div key={stage.id} className="bg-white border rounded-lg p-6 shadow-sm">
+                <div key={stage.id} className="w-full bg-white border rounded-lg p-6 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-semibold text-sm">
@@ -257,14 +256,14 @@ const HiringPipeline = () => {
                 <DragDropContext onDragEnd={handleDragEnd}>
                   <Droppable droppableId="pipeline-stages">
                     {(provided) => (
-                      <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
+                      <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4 w-full">
                         {draggableStages.map((stage, index) => (
                           <Draggable key={stage.id} draggableId={stage.id} index={index}>
                             {(provided, snapshot) => (
                               <div
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
-                                className={`bg-white border rounded-lg p-6 transition-shadow ${
+                                className={`w-full bg-white border rounded-lg p-6 transition-shadow ${
                                   snapshot.isDragging ? 'shadow-lg' : 'shadow-sm hover:shadow-md'
                                 }`}
                               >
@@ -308,7 +307,7 @@ const HiringPipeline = () => {
 
               {/* Final Interview and Offer Stage - Fixed at bottom */}
               {pipelineStages.filter(stage => stage.id === "final-interview" || stage.id === "offer-stage").map((stage) => (
-                <div key={stage.id} className="bg-white border rounded-lg p-6 shadow-sm">
+                <div key={stage.id} className="w-full bg-white border rounded-lg p-6 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-semibold text-sm">
