@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -177,23 +178,24 @@ const ResumeDetails = () => {
                 <Badge className={`${getLevelColor(resume.level_suggestion)} px-4 py-2 text-sm font-medium`}>
                   {resume.level_suggestion} Level
                 </Badge>
-                
-                {/* Move to Assessment Button */}
-                <motion.div 
-                  className="mt-6"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
+              </div>
+              
+              {/* Move to Assessment Button */}
+              <motion.div 
+                className="mt-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <Button 
+                  onClick={handleMoveToAssessment}
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold px-8 py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                 >
-                  <Button 
-                    onClick={handleMoveToAssessment}
-                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold px-8 py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                  >
-                    <Send className="mr-3 h-5 w-5" />
-                    Move to Assessment Stage
-                    <ArrowRight className="ml-3 h-5 w-5" />
-                  </Button>
-                </motion.div>
+                  <Send className="mr-3 h-5 w-5" />
+                  Move to Assessment Stage
+                  <ArrowRight className="ml-3 h-5 w-5" />
+                </Button>
+              </motion.div>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-500">Overall Score</p>
