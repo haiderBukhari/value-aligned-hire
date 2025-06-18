@@ -138,7 +138,7 @@ const HiringPipeline = () => {
   const draggableStages = pipelineStages.filter(stage => !stage.isMandatory);
 
   return (
-    <div className="space-y-8">
+    <div className="w-full max-w-7xl mx-auto space-y-8 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -230,10 +230,10 @@ const HiringPipeline = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="w-full space-y-4">
             {/* Application Screening - Fixed at top */}
             {pipelineStages.filter(stage => stage.id === "application-screening").map((stage) => (
-              <div key={stage.id} className="bg-white border rounded-lg p-6 shadow-sm">
+              <div key={stage.id} className="w-full bg-white border rounded-lg p-6 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-semibold text-sm">
@@ -256,14 +256,14 @@ const HiringPipeline = () => {
               <DragDropContext onDragEnd={handleDragEnd}>
                 <Droppable droppableId="pipeline-stages">
                   {(provided) => (
-                    <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
+                    <div {...provided.droppableProps} ref={provided.innerRef} className="w-full space-y-4">
                       {draggableStages.map((stage, index) => (
                         <Draggable key={stage.id} draggableId={stage.id} index={index}>
                           {(provided, snapshot) => (
                             <div
                               ref={provided.innerRef}
                               {...provided.draggableProps}
-                              className={`bg-white border rounded-lg p-6 transition-shadow ${
+                              className={`w-full bg-white border rounded-lg p-6 transition-shadow ${
                                 snapshot.isDragging ? 'shadow-lg' : 'shadow-sm hover:shadow-md'
                               }`}
                             >
@@ -307,7 +307,7 @@ const HiringPipeline = () => {
 
             {/* Final Interview and Offer Stage - Fixed at bottom */}
             {pipelineStages.filter(stage => stage.id === "final-interview" || stage.id === "offer-stage").map((stage) => (
-              <div key={stage.id} className="bg-white border rounded-lg p-6 shadow-sm">
+              <div key={stage.id} className="w-full bg-white border rounded-lg p-6 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-semibold text-sm">
