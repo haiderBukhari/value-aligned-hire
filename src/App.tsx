@@ -17,11 +17,6 @@ import CompanyConfiguration from "./pages/CompanyConfiguration";
 import InterviewManagement from "./pages/InterviewManagement";
 import AssessmentCenter from "./pages/AssessmentCenter";
 import HiringPipeline from "./pages/HiringPipeline";
-import ApplicationScreening from "./pages/ApplicationScreening";
-import InitialInterview from "./pages/InitialInterview";
-import SecondaryInterview from "./pages/SecondaryInterview";
-import FinalInterview from "./pages/FinalInterview";
-import OfferStage from "./pages/OfferStage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,15 +37,10 @@ const App = () => (
             <Route path="jobs/:jobId" element={<JobDetails />} />
             <Route path="jobs/:jobId/resume/:resumeId" element={<ResumeDetails />} />
             <Route path="create-job" element={<CreateJob />} />
-            <Route path="application-screening" element={<ApplicationScreening />} />
-            <Route path="assessments" element={<AssessmentCenter />} />
-            <Route path="initial-interview" element={<InitialInterview />} />
-            <Route path="secondary-interview" element={<SecondaryInterview />} />
-            <Route path="final-interview" element={<FinalInterview />} />
-            <Route path="offer-stage" element={<OfferStage />} />
-            <Route path="pipeline" element={<HiringPipeline />} />
             <Route path="company" element={<CompanyConfiguration />} />
             <Route path="interviews" element={<InterviewManagement />} />
+            <Route path="assessments" element={<AssessmentCenter />} />
+            <Route path="pipeline" element={<HiringPipeline />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
