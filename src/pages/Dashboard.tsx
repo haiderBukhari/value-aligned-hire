@@ -12,11 +12,13 @@ import {
   Home, LogOut, Building2, UserCheck, ClipboardList, FileText, Target, Bell, Award, Handshake
 } from "lucide-react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { useCompanyInfo } from "@/hooks/useCompanyInfo";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState("overview");
+  const { companyName } = useCompanyInfo();
 
   const isDashboardHome = location.pathname === "/dashboard";
 
@@ -95,6 +97,12 @@ const Dashboard = () => {
       count: null
     },
     {
+      icon: Building2,
+      label: `Get to know ${companyName}`,
+      path: "/dashboard/company",
+      count: null
+    },
+    {
       icon: Plus,
       label: "Create Job",
       path: "/dashboard/create-job",
@@ -141,12 +149,6 @@ const Dashboard = () => {
       label: "Hiring Pipeline",
       path: "/dashboard/pipeline",
       count: 91
-    },
-    {
-      icon: Building2,
-      label: "Company Config",
-      path: "/dashboard/company",
-      count: null
     }
   ];
 
@@ -165,6 +167,7 @@ const Dashboard = () => {
   const getPageTitle = () => {
     switch (location.pathname) {
       case "/dashboard": return "Dashboard";
+      case "/dashboard/company": return `Get to know ${companyName}`;
       case "/dashboard/create-job": return "Create Job";
       case "/dashboard/jobs": return "Application Screening";
       case "/dashboard/assessments": return "Assessment Center";
@@ -173,7 +176,6 @@ const Dashboard = () => {
       case "/dashboard/final-interview": return "Final Interview Management";
       case "/dashboard/offer-stage": return "Offer Management";
       case "/dashboard/pipeline": return "Hiring Pipeline";
-      case "/dashboard/company": return "Company Configuration";
       default: return "Dashboard";
     }
   };
@@ -181,6 +183,7 @@ const Dashboard = () => {
   const getPageDescription = () => {
     switch (location.pathname) {
       case "/dashboard": return "Welcome back! Here's what's happening with your recruitment.";
+      case "/dashboard/company": return `Configure and update ${companyName}'s profile, culture, and values`;
       case "/dashboard/create-job": return "Create a new job posting with AI assistance";
       case "/dashboard/jobs": return "Review and screen incoming applications";
       case "/dashboard/assessments": return "Manage candidate assessments and home tasks";
@@ -189,7 +192,6 @@ const Dashboard = () => {
       case "/dashboard/final-interview": return "Manage final round interviews and decisions";
       case "/dashboard/offer-stage": return "Create and manage job offers for selected candidates";
       case "/dashboard/pipeline": return "Track candidates through hiring stages";
-      case "/dashboard/company": return "Manage your company profile and branding";
       default: return "Welcome to your recruitment dashboard";
     }
   };
