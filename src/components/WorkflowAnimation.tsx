@@ -8,65 +8,68 @@ import {
   Users, 
   MessageSquare, 
   Award,
-  CheckCircle 
+  CheckCircle,
+  Settings,
+  BarChart3,
+  Brain
 } from "lucide-react";
 
 const workflowSteps = [
   {
     id: 1,
-    title: "Job Creation",
-    description: "AI helps create detailed job descriptions aligned with company culture",
-    icon: FileText,
-    color: "bg-blue-500",
-    animation: "Create job posting with AI assistance"
+    title: "Pipeline Setup",
+    description: "Configure your hiring stages with drag-and-drop simplicity",
+    icon: Settings,
+    color: "bg-purple-500",
+    animation: "Customize your hiring pipeline"
   },
   {
     id: 2,
-    title: "Resume Submission",
-    description: "Candidates submit resumes through intelligent portal",
-    icon: Upload,
-    color: "bg-green-500",
-    animation: "Candidates upload their resumes"
+    title: "Application Screening",
+    description: "AI automatically screens and scores incoming applications",
+    icon: Search,
+    color: "bg-blue-500",
+    animation: "AI analyzes applications in real-time"
   },
   {
     id: 3,
-    title: "AI Analysis",
-    description: "Advanced algorithms analyze qualifications and cultural fit",
-    icon: Search,
-    color: "bg-purple-500",
-    animation: "AI processes and evaluates all applications"
+    title: "Assessment Creation",
+    description: "Generate tailored assessments for each role",
+    icon: FileText,
+    color: "bg-green-500",
+    animation: "Create smart technical assessments"
   },
   {
     id: 4,
-    title: "Smart Filtering",
-    description: "Filter top candidates based on skills and company culture match",
-    icon: Users,
+    title: "Interview Analysis",
+    description: "Upload transcripts for AI-driven interview insights",
+    icon: MessageSquare,
     color: "bg-orange-500",
-    animation: "System identifies best-fit candidates"
+    animation: "AI analyzes interview performance"
   },
   {
     id: 5,
-    title: "AI-Guided Interviews",
-    description: "Conduct interviews with intelligent suggestions and insights",
-    icon: MessageSquare,
+    title: "Talent Pool Management",
+    description: "Track candidate performance across all stages",
+    icon: Users,
     color: "bg-teal-500",
-    animation: "Interview process with AI guidance"
+    animation: "Monitor candidate journey"
   },
   {
     id: 6,
-    title: "Skills Assessment",
-    description: "Assign home tasks and technical evaluations",
-    icon: Award,
+    title: "Smart Scoring",
+    description: "AI updates candidate scores at each stage",
+    icon: BarChart3,
     color: "bg-red-500",
-    animation: "Candidates complete skill assessments"
+    animation: "Real-time performance analytics"
   },
   {
     id: 7,
-    title: "Final Decision",
-    description: "AI evaluates all data and recommends final hiring decisions",
-    icon: CheckCircle,
+    title: "AI Recommendations",
+    description: "Get data-driven hiring recommendations",
+    icon: Brain,
     color: "bg-indigo-500",
-    animation: "Make data-driven hiring decisions"
+    animation: "AI-powered hiring decisions"
   }
 ];
 
@@ -177,9 +180,9 @@ export const WorkflowAnimation = () => {
       {/* Mini Timeline */}
       <div className="mt-4">
         <div className="flex justify-between text-xs text-gray-500">
-          <span>Job Creation</span>
-          <span>AI Analysis</span>
-          <span>Final Decision</span>
+          <span>Setup</span>
+          <span>Analysis</span>
+          <span>Decision</span>
         </div>
         <div className="w-full bg-gray-700 rounded-full h-1 mt-2">
           <motion.div

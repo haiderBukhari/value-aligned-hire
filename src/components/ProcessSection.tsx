@@ -1,39 +1,39 @@
 
 import { motion } from "framer-motion";
-import { RecruitmentFlow3D } from "./RecruitmentFlow3D";
 import { WorkflowAnimation } from "./WorkflowAnimation";
+import { PipelineShowcase } from "./PipelineShowcase";
 
 export const ProcessSection = () => {
   const steps = [
     {
       number: "01",
-      title: "Company Profile Learning",
-      description: "Upload documents or provide structured inputs to help AI understand your company's identity, goals, values, and cultural nuances for personalized hiring decisions."
+      title: "Configure Your Pipeline",
+      description: "Set up your hiring stages with drag-and-drop simplicity. Define mandatory stages like Application Screening and Final Interview, while customizing optional stages to match your process."
     },
     {
       number: "02", 
-      title: "Smart Job Description Creation",
-      description: "Create job descriptions using AI generation or upload drafts for AI enhancement and value alignment based on specific role objectives and company culture."
+      title: "AI-Powered Application Analysis",
+      description: "Advanced algorithms automatically screen applications, analyzing CVs, cover letters, and cultural fit to identify top candidates with unprecedented accuracy."
     },
     {
       number: "03",
-      title: "Intelligent Application Portal",
-      description: "Candidates submit CVs and cover letters through our smart portal with value-fit assessments and self-introductions for comprehensive evaluation."
+      title: "Smart Assessment Management",
+      description: "Create and assign technical assessments with AI assistance. Track completion rates and automatically evaluate candidate performance against job requirements."
     },
     {
       number: "04",
-      title: "AI-Powered Analysis & Scoring",
-      description: "Advanced algorithms analyze qualifications, experience, cultural fit, and mission alignment with detailed multi-dimensional scoring metrics."
+      title: "Interview Intelligence",
+      description: "Upload interview transcripts for AI analysis. Get detailed insights on candidate responses, communication skills, and alignment with company values."
     },
     {
       number: "05",
-      title: "Smart Candidate Shortlisting",
-      description: "High-matching candidates are automatically presented with detailed explanations of why they're ideal fits for your specific organization."
+      title: "Talent Pool Analytics",
+      description: "View comprehensive candidate performance across all stages. AI updates scores in real-time, providing actionable insights for better hiring decisions."
     },
     {
       number: "06",
-      title: "Structured Multi-Stage Evaluation",
-      description: "Manage interviews, technical assessments, and take-home tasks with AI-powered scoring, insights, and performance tracking throughout the process."
+      title: "Data-Driven Decisions",
+      description: "Make confident hiring choices with complete candidate profiles, stage-by-stage analytics, and AI recommendations based on your company's success patterns."
     }
   ];
 
@@ -52,27 +52,26 @@ export const ProcessSection = () => {
           </h2>
           <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
             Experience a seamless, intelligent hiring journey that transforms recruitment into a strategic, 
-            values-driven process from company profiling to final hiring decisions.
+            data-driven process from pipeline configuration to final hiring decisions.
           </p>
         </motion.div>
 
-        <div className="max-w-[600px] mx-auto">
-          <WorkflowAnimation />
-        </div>
-
-
-        {/* 3D Interactive Flow Visualization */}
-        {/* <motion.div 
+        {/* Pipeline Configuration Showcase */}
+        <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           whileInView={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1 }}
           viewport={{ once: true }}
           className="mb-20"
         >
-          <RecruitmentFlow3D />
-        </motion.div> */}
+          <PipelineShowcase />
+        </motion.div>
+
+        <div className="max-w-[600px] mx-auto mb-20">
+          <WorkflowAnimation />
+        </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 mt-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
           {steps.map((step, index) => (
             <motion.div
               key={index}

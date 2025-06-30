@@ -21,21 +21,21 @@ export const HeroSection = () => {
             transition={{ duration: 1, ease: "easeOut" }}
             className="text-6xl lg:text-7xl font-bold text-black leading-tight mb-8 tracking-tight"
           >
-            The Future of Smart<br />
+            Configure Your Perfect<br />
             <motion.span 
               initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 1, delay: 0.3 }}
               className="text-gray-700"
             >
-              AI Recruitment
+              Hiring Pipeline
             </motion.span><br />
             <motion.span
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 1, delay: 0.6 }}
             >
-              is here.
+              with AI Intelligence.
             </motion.span>
           </motion.h1>
           
@@ -45,9 +45,9 @@ export const HeroSection = () => {
             transition={{ duration: 1, delay: 0.8 }}
             className="text-xl text-gray-600 mb-12 leading-relaxed max-w-4xl mx-auto"
           >
-            Transform your hiring process with AI-powered recruitment that understands your company's values, 
-            culture, and mission. Our intelligent system analyzes CVs, matches cultural fit, and streamlines 
-            every stage from application to final decision.
+            Design custom hiring stages, analyze interview transcripts with 100% accuracy, 
+            track talent pool performance, and make data-driven decisions with our comprehensive 
+            AI recruitment platform that adapts to your company's unique process.
           </motion.p>
           
           <motion.div 
@@ -83,20 +83,20 @@ export const HeroSection = () => {
         >
           {[
             {
-              title: "AI-Powered Matching",
-              description: "Advanced algorithms analyze CVs, cover letters, and cultural fit for perfect candidate identification."
+              title: "Configurable Pipeline",
+              description: "Drag-and-drop hiring stages with mandatory and optional configurations tailored to your process."
             },
             {
-              title: "Smart Company Learning",
-              description: "Platform learns your organization's goals, values, and culture through intelligent inputs."
+              title: "AI Interview Analysis",
+              description: "Upload transcripts for 100% accurate analysis of candidate performance and cultural fit."
             },
             {
-              title: "Intelligent Job Creation",
-              description: "Generate contextually relevant job descriptions aligned with your company values."
+              title: "Comprehensive Talent Pool",
+              description: "Track every applicant's journey with detailed analytics and performance insights."
             },
             {
-              title: "Multi-Stage Evaluation",
-              description: "Comprehensive scoring system with AI insights throughout the entire recruitment process."
+              title: "Smart Stage Scoring",
+              description: "AI automatically updates candidate scores at each stage with real-time recommendations."
             }
           ].map((feature, index) => (
             <motion.div
