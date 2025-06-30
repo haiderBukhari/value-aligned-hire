@@ -1,9 +1,11 @@
 
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useCompanyInfo } from "@/hooks/useCompanyInfo";
 
 export const Navigation = () => {
   const navigate = useNavigate();
+  const { companyName } = useCompanyInfo();
 
   return (
     <nav className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-100 z-50">

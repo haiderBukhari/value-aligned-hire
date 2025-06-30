@@ -3,7 +3,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { WorkflowAnimation } from "@/components/WorkflowAnimation";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
@@ -19,8 +18,7 @@ const Signup = () => {
     full_name: "",
     email: "",
     company_name: "",
-    company_details: "",
-    company_culture: "",
+    website_url: "",
     password: ""
   });
 
@@ -175,25 +173,14 @@ const Signup = () => {
               </div>
 
               <div>
-                <Label htmlFor="company_details" className="text-gray-700">Company Details</Label>
-                <Textarea
-                  id="company_details"
-                  value={signUpData.company_details}
-                  onChange={(e) => setSignUpData(prev => ({ ...prev, company_details: e.target.value }))}
-                  className="border-gray-300 focus:border-blue-500 bg-white text-gray-800 min-h-[80px]"
-                  placeholder="Brief description of your company, industry, size..."
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="company_culture" className="text-gray-700">Company Culture & Values</Label>
-                <Textarea
-                  id="company_culture"
-                  value={signUpData.company_culture}
-                  onChange={(e) => setSignUpData(prev => ({ ...prev, company_culture: e.target.value }))}
-                  className="border-gray-300 focus:border-blue-500 bg-white text-gray-800 min-h-[80px]"
-                  placeholder="Describe your company culture, values, work environment..."
+                <Label htmlFor="website_url" className="text-gray-700">Company Website</Label>
+                <Input
+                  id="website_url"
+                  type="url"
+                  value={signUpData.website_url}
+                  onChange={(e) => setSignUpData(prev => ({ ...prev, website_url: e.target.value }))}
+                  className="border-gray-300 focus:border-blue-500 bg-white text-gray-800"
+                  placeholder="https://www.yourcompany.com"
                   required
                 />
               </div>
