@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createPartFromUri, GoogleGenAI } from "@google/genai";
+import { motion } from "framer-motion";
 
 const genAI = new GoogleGenerativeAI("AIzaSyC8MPRWNW6xARNNyUdG1p3m2bd6QZuNP3A");
 const fileAI = new GoogleGenAI({ apiKey: "AIzaSyC8MPRWNW6xARNNyUdG1p3m2bd6QZuNP3A" });
@@ -284,182 +285,235 @@ Minimum 5+ years React experience, Bachelor's degree in Computer Science, Experi
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{
+            x: [0, 100, 0],
+            y: [0, -100, 0],
+            rotate: [0, 180, 360]
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+          className="absolute top-10 left-10 w-32 h-32 bg-blue-200 opacity-20 rounded-full"
+        />
+        <motion.div
+          animate={{
+            x: [0, -150, 0],
+            y: [0, 100, 0],
+            rotate: [360, 180, 0]
+          }}
+          transition={{
+            duration: 25,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+          className="absolute bottom-10 right-10 w-48 h-48 bg-purple-200 opacity-20 rounded-full"
+        />
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.1, 0.3, 0.1]
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-300 to-purple-300 rounded-full"
+        />
+      </div>
 
-      {/* Main Content */}
-      <div className="max-w-full mx-auto p-2 space-y-6">
-        {/* PDF Upload Section */}
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center text-lg">
-              <Upload className="h-5 w-5 mr-2" />
-              Quick Upload
-            </CardTitle>
-            <CardDescription>
-              Upload a PDF document to auto-populate job details
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-              <Upload className="h-8 w-8 text-gray-400 mx-auto mb-3" />
-              <h3 className="text-sm font-medium text-gray-900 mb-2">
-                Upload Job Document
-              </h3>
-              <p className="text-xs text-gray-500 mb-3">
-                PDF files only • Auto-populate all fields
-              </p>
-              <input
-                type="file"
-                accept=".pdf"
-                onChange={handleFileUpload}
-                className="hidden"
-                id="pdf-upload"
-                disabled={isUploading}
-              />
-              <label htmlFor="pdf-upload">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="cursor-pointer"
+      <div className="relative z-10 max-w-4xl mx-auto p-8">
+        {/* Page Header */}
+        <div className="text-center mb-8 pt-10">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+            Create Job
+          </h1>
+          <p className="text-gray-600 text-lg max-w-xl mx-auto">
+            Easily create a new job posting with AI assistance. Upload a PDF or fill in the details below to get started!
+          </p>
+        </div>
+
+        {/* Main Content */}
+        <div className="space-y-6">
+          {/* PDF Upload Section */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center text-lg">
+                <Upload className="h-5 w-5 mr-2" />
+                Quick Upload
+              </CardTitle>
+              <CardDescription>
+                Upload a PDF document to auto-populate job details
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <Upload className="h-8 w-8 text-gray-400 mx-auto mb-3" />
+                <h3 className="text-sm font-medium text-gray-900 mb-2">
+                  Upload Job Document
+                </h3>
+                <p className="text-xs text-gray-500 mb-3">
+                  PDF files only • Auto-populate all fields
+                </p>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="pdf-upload"
                   disabled={isUploading}
-                  asChild
-                >
-                  <span>
-                    {isUploading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Processing...
-                      </>
+                />
+                <label htmlFor="pdf-upload">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="cursor-pointer"
+                    disabled={isUploading}
+                    asChild
+                  >
+                    <span>
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Choose PDF
+                        </>
+                      )}
+                    </span>
+                  </Button>
+                </label>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Job Details Form */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg">Job Details</CardTitle>
+              <CardDescription>
+                Fill in the job information below. Use AI suggestions for each field.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Job Title */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="title">Job Title</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => generateFieldSuggestion('title', jobData.title)}
+                    disabled={isGenerating.title}
+                    className="text-blue-600 hover:text-blue-700 h-8"
+                  >
+                    {isGenerating.title ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <>
-                        <Upload className="h-4 w-4 mr-2" />
-                        Choose PDF
-                      </>
+                      <Sparkles className="h-4 w-4" />
                     )}
-                  </span>
-                </Button>
-              </label>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Job Details Form */}
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Job Details</CardTitle>
-            <CardDescription>
-              Fill in the job information below. Use AI suggestions for each field.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Job Title */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <Label htmlFor="title">Job Title</Label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => generateFieldSuggestion('title', jobData.title)}
-                  disabled={isGenerating.title}
-                  className="text-blue-600 hover:text-blue-700 h-8"
-                >
-                  {isGenerating.title ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4" />
-                  )}
-                  <span className="ml-1 text-xs">AI Suggest</span>
-                </Button>
-              </div>
-              <Input
-                id="title"
-                value={jobData.title}
-                onChange={(e) => setJobData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="e.g., Senior Frontend Developer"
-                className="h-10"
-              />
-            </div>
-
-            {/* Job Description */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <Label htmlFor="description">Job Description</Label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => generateFieldSuggestion('description', jobData.description)}
-                  disabled={isGenerating.description}
-                  className="text-blue-600 hover:text-blue-700 h-8"
-                >
-                  {isGenerating.description ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4" />
-                  )}
-                  <span className="ml-1 text-xs">AI Suggest</span>
-                </Button>
-              </div>
-              <Textarea
-                id="description"
-                value={jobData.description}
-                onChange={(e) => setJobData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Detailed job description including responsibilities, requirements, and benefits..."
-                className="min-h-[150px]"
-              />
-            </div>
-
-            {/* Skill Conditions */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <Label htmlFor="skillConditions">Skill Conditions (AI Filtering)</Label>
-                  <p className="text-xs text-gray-500 mt-1">
-                    This is for AI filtering only and won't be visible to candidates
-                  </p>
+                    <span className="ml-1 text-xs">AI Suggest</span>
+                  </Button>
                 </div>
+                <Input
+                  id="title"
+                  value={jobData.title}
+                  onChange={(e) => setJobData(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="e.g., Senior Frontend Developer"
+                  className="h-10"
+                />
+              </div>
+
+              {/* Job Description */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="description">Job Description</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => generateFieldSuggestion('description', jobData.description)}
+                    disabled={isGenerating.description}
+                    className="text-blue-600 hover:text-blue-700 h-8"
+                  >
+                    {isGenerating.description ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4" />
+                    )}
+                    <span className="ml-1 text-xs">AI Suggest</span>
+                  </Button>
+                </div>
+                <Textarea
+                  id="description"
+                  value={jobData.description}
+                  onChange={(e) => setJobData(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Detailed job description including responsibilities, requirements, and benefits..."
+                  className="min-h-[150px]"
+                />
+              </div>
+
+              {/* Skill Conditions */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <Label htmlFor="skillConditions">Skill Conditions (AI Filtering)</Label>
+                    <p className="text-xs text-gray-500 mt-1">
+                      This is for AI filtering only and won't be visible to candidates
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => generateFieldSuggestion('skillConditions', jobData.skillConditions)}
+                    disabled={isGenerating.skillConditions}
+                    className="text-blue-600 hover:text-blue-700 h-8"
+                  >
+                    {isGenerating.skillConditions ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4" />
+                    )}
+                    <span className="ml-1 text-xs">AI Suggest</span>
+                  </Button>
+                </div>
+                <Textarea
+                  id="skillConditions"
+                  value={jobData.skillConditions}
+                  onChange={(e) => setJobData(prev => ({ ...prev, skillConditions: e.target.value }))}
+                  placeholder="e.g., Minimum 5+ years React experience, Bachelor's degree in Computer Science, Experience with TypeScript..."
+                  className="min-h-[100px]"
+                />
+              </div>
+
+              {/* Publish Button */}
+              <div className="pt-4 border-t">
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => generateFieldSuggestion('skillConditions', jobData.skillConditions)}
-                  disabled={isGenerating.skillConditions}
-                  className="text-blue-600 hover:text-blue-700 h-8"
+                  onClick={handlePublishJob}
+                  disabled={isPublishing || !jobData.title || !jobData.description}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
                 >
-                  {isGenerating.skillConditions ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                  {isPublishing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Publishing Job...
+                    </>
                   ) : (
-                    <Sparkles className="h-4 w-4" />
+                    "Publish Job"
                   )}
-                  <span className="ml-1 text-xs">AI Suggest</span>
                 </Button>
               </div>
-              <Textarea
-                id="skillConditions"
-                value={jobData.skillConditions}
-                onChange={(e) => setJobData(prev => ({ ...prev, skillConditions: e.target.value }))}
-                placeholder="e.g., Minimum 5+ years React experience, Bachelor's degree in Computer Science, Experience with TypeScript..."
-                className="min-h-[100px]"
-              />
-            </div>
-
-            {/* Publish Button */}
-            <div className="pt-4 border-t">
-              <Button
-                onClick={handlePublishJob}
-                disabled={isPublishing || !jobData.title || !jobData.description}
-                className="w-full bg-blue-600 hover:bg-blue-700"
-              >
-                {isPublishing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Publishing Job...
-                  </>
-                ) : (
-                  "Publish Job"
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

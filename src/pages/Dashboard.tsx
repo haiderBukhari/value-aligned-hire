@@ -7,8 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { 
-  Users, Briefcase, TrendingUp, Calendar, Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, 
+import {
+  Users, Briefcase, TrendingUp, Calendar, Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2,
   Home, LogOut, Building2, UserCheck, ClipboardList, FileText, Target, Bell, Award, Handshake
 } from "lucide-react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
@@ -103,6 +103,12 @@ const Dashboard = () => {
       count: null
     },
     {
+      icon: Users,
+      label: "Talent Pool",
+      path: "/dashboard/talent-pool",
+      count: 89
+    },
+    {
       icon: Plus,
       label: "Create Job",
       path: "/dashboard/create-job",
@@ -113,12 +119,6 @@ const Dashboard = () => {
       label: "Application Screening",
       path: "/dashboard/jobs",
       count: 156
-    },
-    {
-      icon: Users,
-      label: "Talent Pool",
-      path: "/dashboard/talent-pool",
-      count: 89
     },
     {
       icon: ClipboardList,
@@ -210,7 +210,7 @@ const Dashboard = () => {
       <div className="w-80 bg-white shadow-xl border-r border-gray-200 fixed left-0 top-0 h-full z-30 flex flex-col">
         {/* Logo Section */}
         <div className="p-6 border-b border-gray-200 flex-shrink-0">
-          <button 
+          <button
             onClick={() => navigate('/')}
             className="flex items-center hover:opacity-80 transition-opacity w-full"
           >
@@ -223,7 +223,7 @@ const Dashboard = () => {
             </div>
           </button>
         </div>
-        
+
         {/* Quick Stats */}
         <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50 flex-shrink-0">
           <div className="grid grid-cols-2 gap-3">
@@ -237,7 +237,7 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-        
+
         {/* Scrollable Navigation Area */}
         <div className="flex-1 overflow-hidden">
           <ScrollArea className="h-full">
@@ -247,11 +247,10 @@ const Dashboard = () => {
                   <Button
                     key={item.path}
                     variant={location.pathname === item.path ? "default" : "ghost"}
-                    className={`w-full justify-between h-12 text-left font-medium transition-all duration-200 ${
-                      location.pathname === item.path
-                        ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm hover:bg-blue-100" 
+                    className={`w-full justify-between h-12 text-left font-medium transition-all duration-200 ${location.pathname === item.path
+                        ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm hover:bg-blue-100"
                         : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                    }`}
+                      }`}
                     onClick={() => navigate(item.path)}
                   >
                     <div className="flex items-center">
@@ -259,13 +258,12 @@ const Dashboard = () => {
                       {item.label}
                     </div>
                     {item.count && (
-                      <Badge 
-                        variant="secondary" 
-                        className={`${
-                          location.pathname === item.path 
-                            ? "bg-blue-100 text-blue-700" 
+                      <Badge
+                        variant="secondary"
+                        className={`${location.pathname === item.path
+                            ? "bg-blue-100 text-blue-700"
                             : "bg-gray-100 text-gray-600"
-                        } text-xs px-2 py-1`}
+                          } text-xs px-2 py-1`}
                       >
                         {item.count}
                       </Badge>
@@ -274,7 +272,7 @@ const Dashboard = () => {
                 ))}
               </div>
             </nav>
-            
+
             {/* Recent Activity */}
             <div className="mt-8 px-4 pb-6">
               <div className="bg-gray-50 rounded-lg p-4">
@@ -305,30 +303,33 @@ const Dashboard = () => {
       {/* Main Content with left margin to account for fixed sidebar */}
       <div className="flex-1 flex flex-col ml-80">
         {/* Enhanced Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-1">
-                {getPageTitle()}
-              </h2>
-              <p className="text-sm text-gray-600">
-                {getPageDescription()}
-              </p>
+        {isDashboardHome && (
+          <header className="bg-white shadow-sm border-b border-gray-200 px-8 py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900 mb-1">
+                  {getPageTitle()}
+                </h2>
+                <p className="text-sm text-gray-600">
+                  {getPageDescription()}
+                </p>
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <Button
+                  onClick={() => navigate("/dashboard/create-job")}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-6 py-2 shadow-lg"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Job
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <Button 
-                onClick={() => navigate("/dashboard/create-job")}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-6 py-2 shadow-lg"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Create Job
-              </Button>
-            </div>
-          </div>
-        </header>
+          </header>
+        )}
 
         {/* Page Content */}
-        <main className="flex-1 p-8">
+        <main className="flex-1">
           {isDashboardHome ? (
             <>
               {/* Stats Grid */}
