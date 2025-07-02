@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +7,7 @@ import { Settings, Plus, Trash2, GripVertical, CheckCircle, Users, Trophy, Loade
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useWorkflow } from "@/hooks/useWorkflow";
+import { motion } from "framer-motion";
 
 const HiringPipeline = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -16,7 +16,8 @@ const HiringPipeline = () => {
     setWorkflowStages, 
     isLoading, 
     isSaving, 
-    saveWorkflow 
+    saveWorkflow, 
+    fetchWorkflow 
   } = useWorkflow();
 
   // Available stages that can be added
@@ -115,60 +116,174 @@ const HiringPipeline = () => {
   };
 
   const handleSaveWorkflow = async () => {
-    await saveWorkflow(workflowStages);
+    const success = await saveWorkflow(workflowStages);
+    if (success) {
+      await fetchWorkflow();
+    }
   };
 
   const draggableStages = workflowStages.filter(stage => !stage.isMandatory);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="flex items-center space-x-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Loading workflow...</span>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <motion.div
+            animate={{
+              x: [0, 100, 0],
+              y: [0, -100, 0],
+              rotate: [0, 180, 360]
+            }}
+            transition={{
+              duration: 20,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+            className="absolute top-10 left-10 w-32 h-32 bg-blue-200 opacity-20 rounded-full"
+          />
+          <motion.div
+            animate={{
+              x: [0, -150, 0],
+              y: [0, 100, 0],
+              rotate: [360, 180, 0]
+            }}
+            transition={{
+              duration: 25,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+            className="absolute bottom-10 right-10 w-48 h-48 bg-purple-200 opacity-20 rounded-full"
+          />
+          <motion.div
+            animate={{
+              scale: [1, 1.2, 1],
+              opacity: [0.1, 0.3, 0.1]
+            }}
+            transition={{
+              duration: 8,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-300 to-purple-300 rounded-full"
+          />
         </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center relative z-10"
+        >
+          <div className="w-16 h-16 border-4 border-blue-500 border-dashed rounded-full animate-spin mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">
+            Loading workflow...
+          </h2>
+          <p className="text-gray-600">
+            Please wait while we fetch your hiring pipeline configuration
+          </p>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
-      <div className="max-w-[960px] mx-auto p-6 space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 relative overflow-x-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{
+            x: [0, 100, 0],
+            y: [0, -100, 0],
+            rotate: [0, 180, 360]
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+          className="absolute top-10 left-10 w-32 h-32 bg-blue-200 opacity-20 rounded-full"
+        />
+        <motion.div
+          animate={{
+            x: [0, -150, 0],
+            y: [0, 100, 0],
+            rotate: [360, 180, 0]
+          }}
+          transition={{
+            duration: 25,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+          className="absolute bottom-10 right-10 w-48 h-48 bg-purple-200 opacity-20 rounded-full"
+        />
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.1, 0.3, 0.1]
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-300 to-purple-300 rounded-full"
+        />
+      </div>
+      <div className="relative z-10 max-w-[960px] mx-auto p-6 space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Hiring Pipeline Configuration</h1>
             <p className="text-gray-600 mt-2">Configure your hiring stages and process flow</p>
           </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Stage
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add Pipeline Stage</DialogTitle>
-                <DialogDescription>
-                  Choose from available stages to add to your hiring pipeline
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                {getAvailableStages().map((stage) => (
-                  <Card key={stage.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => addStage(stage)}>
-                    <CardContent className="p-4">
-                      <h4 className="font-semibold">{stage.name}</h4>
-                      <p className="text-sm text-gray-600">{stage.description}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-                {getAvailableStages().length === 0 && (
-                  <p className="text-center text-gray-500 py-4">All available stages are already added to your pipeline.</p>
-                )}
-              </div>
-            </DialogContent>
-          </Dialog>
+          <div className="flex items-center gap-3">
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Stage
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add Pipeline Stage</DialogTitle>
+                  <DialogDescription>
+                    Choose from available stages to add to your hiring pipeline
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  {getAvailableStages().map((stage) => (
+                    <Card key={stage.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => addStage(stage)}>
+                      <CardContent className="p-4">
+                        <h4 className="font-semibold">{stage.name}</h4>
+                        <p className="text-sm text-gray-600">{stage.description}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  {getAvailableStages().length === 0 && (
+                    <p className="text-center text-gray-500 py-4">All available stages are already added to your pipeline.</p>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button 
+              size="lg" 
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8"
+              onClick={handleSaveWorkflow}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Save Pipeline Configuration
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -357,28 +472,6 @@ const HiringPipeline = () => {
             </div>
           </CardContent>
         </Card>
-
-        {/* Save Button */}
-        <div className="flex justify-end pt-6 border-t">
-          <Button 
-            size="lg" 
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8"
-            onClick={handleSaveWorkflow}
-            disabled={isSaving}
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Save Pipeline Configuration
-              </>
-            )}
-          </Button>
-        </div>
       </div>
     </div>
   );

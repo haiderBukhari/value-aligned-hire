@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import {
   Users, Briefcase, TrendingUp, Calendar, Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2,
-  Home, LogOut, Building2, UserCheck, ClipboardList, FileText, Target, Bell, Award, Handshake
+  Home, LogOut, Building2, UserCheck, ClipboardList, FileText, Target, Bell, Award, Handshake, Loader2
 } from "lucide-react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useCompanyInfo } from "@/hooks/useCompanyInfo";
@@ -269,33 +268,69 @@ const Dashboard = () => {
           <ScrollArea className="h-full">
             <nav className="mt-6 px-4">
               <div className="space-y-2">
-                {navigationItems.map((item) => (
-                  <Button
-                    key={item.path}
-                    variant={location.pathname === item.path ? "default" : "ghost"}
-                    className={`w-full justify-between h-12 text-left font-medium transition-all duration-200 ${location.pathname === item.path
+                {navigationItems.map((item, idx) => {
+                  if (
+                    item.label === "Create Job" && isLoading
+                  ) {
+                    return [
+                      <Button
+                        key={item.path}
+                        variant={location.pathname === item.path ? "default" : "ghost"}
+                        className={`w-full justify-between h-12 text-left font-medium transition-all duration-200 ${location.pathname === item.path
+                          ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm hover:bg-blue-100"
+                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                        }`}
+                        onClick={() => navigate(item.path)}
+                      >
+                        <div className="flex items-center">
+                          <item.icon className="mr-3 h-5 w-5" />
+                          {item.label}
+                        </div>
+                        {item.count && (
+                          <Badge
+                            variant="secondary"
+                            className={`${location.pathname === item.path
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-gray-100 text-gray-600"
+                            } text-xs px-2 py-1`}
+                          >
+                            {item.count}
+                          </Badge>
+                        )}
+                      </Button>,
+                      <div key="workflow-loader" className="flex justify-center py-2">
+                        <Loader2 className="h-5 w-5 text-blue-400 animate-spin" />
+                      </div>
+                    ];
+                  }
+                  return (
+                    <Button
+                      key={item.path}
+                      variant={location.pathname === item.path ? "default" : "ghost"}
+                      className={`w-full justify-between h-12 text-left font-medium transition-all duration-200 ${location.pathname === item.path
                         ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm hover:bg-blue-100"
                         : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                       }`}
-                    onClick={() => navigate(item.path)}
-                  >
-                    <div className="flex items-center">
-                      <item.icon className="mr-3 h-5 w-5" />
-                      {item.label}
-                    </div>
-                    {item.count && (
-                      <Badge
-                        variant="secondary"
-                        className={`${location.pathname === item.path
+                      onClick={() => navigate(item.path)}
+                    >
+                      <div className="flex items-center">
+                        <item.icon className="mr-3 h-5 w-5" />
+                        {item.label}
+                      </div>
+                      {item.count && (
+                        <Badge
+                          variant="secondary"
+                          className={`${location.pathname === item.path
                             ? "bg-blue-100 text-blue-700"
                             : "bg-gray-100 text-gray-600"
                           } text-xs px-2 py-1`}
-                      >
-                        {item.count}
-                      </Badge>
-                    )}
-                  </Button>
-                ))}
+                        >
+                          {item.count}
+                        </Badge>
+                      )}
+                    </Button>
+                  );
+                })}
               </div>
             </nav>
 

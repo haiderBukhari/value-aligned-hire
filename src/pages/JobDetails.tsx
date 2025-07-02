@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, FileText, Download, Star, Award, TrendingUp, CheckCircle, AlertTriangle, Info } from "lucide-react";
+import { ArrowLeft, FileText, Download, Star, Award, TrendingUp, CheckCircle, AlertTriangle, Info, CloudCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,26 @@ interface Resume {
 const JobDetails = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
+
+  // Fetch job details for title
+  const { data: job, isLoading: isJobLoading, error: jobError } = useQuery({
+    queryKey: ['job', jobId],
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token found');
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/jobs/${jobId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch job details');
+      const data = await response.json();
+      return data;
+    },
+    enabled: !!jobId,
+  });
 
   const { data: resumes = [], isLoading, error } = useQuery({
     queryKey: ['resumes', jobId],
@@ -131,6 +151,20 @@ const JobDetails = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6 pt-0">
       <div className="max-w-full mx-auto">
+        {/* Job Title Header */}
+        <div className="text-center mb-8 mt-6">
+          {isJobLoading ? (
+            <div className="h-10 w-48 bg-gray-200 rounded animate-pulse mb-4 mx-auto" />
+          ) : job && job.title ? (
+            <>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+                {job.title}
+              </h1>
+            </>
+          ) : (
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Job Details</h1>
+          )}
+        </div>
 
         <div className="mb-3">
           <Button

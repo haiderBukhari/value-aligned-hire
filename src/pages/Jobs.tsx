@@ -10,7 +10,11 @@ import {
   Eye,
   ToggleLeft,
   ToggleRight,
-  Copy
+  Copy,
+  Briefcase,
+  CheckCircle,
+  XCircle,
+  Users as UsersIcon
 } from "lucide-react";
 import { 
   Card,
@@ -43,6 +47,7 @@ const Jobs = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
+  const [tab, setTab] = useState<'all' | 'active' | 'inactive'>('all');
 
   // Fetch jobs from API
   const { data: jobs = [], isLoading, error } = useQuery({
@@ -101,7 +106,20 @@ const Jobs = () => {
     },
   });
 
-  const filteredJobs = jobs.filter((job: Job) => 
+  // Stats
+  const totalJobs = jobs.length;
+  const activeJobs = jobs.filter((job: Job) => job.status === 'active').length;
+  const inactiveJobs = jobs.filter((job: Job) => job.status === 'inactive').length;
+  const totalApplicants = jobs.reduce((sum: number, job: Job) => sum + (job.total_applicants || 0), 0);
+
+  // Tabs
+  const filteredByTab = jobs.filter((job: Job) => {
+    if (tab === 'all') return true;
+    return job.status === tab;
+  });
+
+  // Search
+  const filteredJobs = filteredByTab.filter((job: Job) =>
     job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     job.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -150,91 +168,167 @@ const Jobs = () => {
   }
 
   return (
-    <div className="max-w-full ">
-      {/* Search and Filter */}
-      <div className="flex justify-between w-full items-center mb-6 px-2">
-        <div className="relative w-80">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
-          <Input 
-            className="pl-10" 
-            placeholder="Search jobs..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-0">
+      {/* Header */}
+      <div className="max-w-6xl mx-auto pt-8 pb-4 px-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-1">Job Management</h1>
+            <p className="text-gray-600 text-base">Manage your job postings and track applicants</p>
+          </div>
+          {/* <div className="flex items-center gap-2">
+            <Button variant="outline" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Create Job
+            </Button>
+          </div> */}
         </div>
-        <Button variant="outline" className="gap-2">
-          <Filter className="h-4 w-4" />
-          Filter
-        </Button>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+          {[
+            {
+              title: "Total Jobs",
+              count: totalJobs,
+              icon: <Briefcase className="h-7 w-7" />,
+              iconBg: "bg-blue-100 text-blue-500",
+              cardBg: "bg-gradient-to-br from-blue-50 to-white",
+            },
+            {
+              title: "Active Jobs",
+              count: activeJobs,
+              icon: <CheckCircle className="h-7 w-7" />,
+              iconBg: "bg-green-100 text-green-500",
+              cardBg: "bg-gradient-to-br from-green-50 to-white",
+            },
+            {
+              title: "Inactive Jobs",
+              count: inactiveJobs,
+              icon: <XCircle className="h-7 w-7" />,
+              iconBg: "bg-red-100 text-red-500",
+              cardBg: "bg-gradient-to-br from-red-50 to-white",
+            },
+            {
+              title: "Total Applicants",
+              count: totalApplicants,
+              icon: <UsersIcon className="h-7 w-7" />,
+              iconBg: "bg-purple-100 text-purple-500",
+              cardBg: "bg-gradient-to-br from-purple-50 to-white",
+            }
+          ].map((stat, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ scale: 1.05 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <div
+                className={`rounded-2xl shadow-lg p-6 flex items-center justify-between transition-transform duration-200 hover:scale-105 hover:ring-2 hover:ring-blue-200 ${stat.cardBg}`}
+                style={{ minHeight: 110 }}
+              >
+                <div>
+                  <div className="text-xs font-semibold text-gray-500 mb-1">{stat.title}</div>
+                  <div className="text-4xl font-extrabold text-gray-900 leading-tight">{stat.count}</div>
+                </div>
+                <div className={`flex items-center justify-center rounded-full ${stat.iconBg} shadow-md h-12 w-12 transition-transform duration-200 group-hover:animate-bounce`}>
+                  {stat.icon}
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+        {/* Tabs */}
+        <div className="flex gap-2 mb-4">
+          <button
+            className={`px-6 py-2 rounded-full text-sm font-semibold transition 
+              ${tab === 'all' 
+                ? 'bg-gray-900 text-white shadow' 
+                : 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-100'}`}
+            onClick={() => setTab('all')}
+          >
+            All
+          </button>
+          <button
+            className={`px-6 py-2 rounded-full text-sm font-semibold transition 
+              ${tab === 'active' 
+                ? 'bg-gray-900 text-white shadow' 
+                : 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-100'}`}
+            onClick={() => setTab('active')}
+          >
+            Active
+          </button>
+          <button
+            className={`px-6 py-2 rounded-full text-sm font-semibold transition 
+              ${tab === 'inactive' 
+                ? 'bg-gray-900 text-white shadow' 
+                : 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-100'}`}
+            onClick={() => setTab('inactive')}
+          >
+            Inactive
+          </button>
+        </div>
+        {/* Search and Filter */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+            <Input
+              className="pl-10"
+              placeholder="Search jobs..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <Button variant="outline" className="gap-2">
+            <Filter className="h-4 w-4" />
+            Filter
+          </Button>
+        </div>
       </div>
-
-      {/* Jobs List */}
-      <div className="w-full overflow-hidden px-2">
-        <Card className="border border-gray-200 rounded-lg shadow-sm">
+      {/* Jobs Table */}
+      <div className="max-w-6xl mx-auto px-4 pb-10">
+        <Card className="border border-gray-200 rounded-xl shadow-lg bg-white/95">
           <CardContent className="p-0">
             <div className="w-full overflow-x-auto">
               <table className="w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Job Title
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Description
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
-                      Applicants
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
-                      Created
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
-                      Status
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
-                      Actions
-                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Job Title</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+                    <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[100px]">Applicants</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[120px]">Created</th>
+                    <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[100px]">Status</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[120px]">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white divide-y divide-gray-100">
                   {isLoading ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                         Loading jobs...
                       </td>
                     </tr>
                   ) : filteredJobs.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                         No jobs found
                       </td>
                     </tr>
                   ) : (
                     filteredJobs.map((job: Job) => (
-                      <motion.tr 
+                      <motion.tr
                         key={job.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        transition={{ duration: 0.3 }}
+                        whileHover={{ backgroundColor: '#f3f4f6' }}
+                        transition={{ duration: 0.2 }}
+                        className="transition-colors"
                       >
-                        <td className="px-6 py-4">
-                          <div className="text-sm font-medium text-gray-900 truncate max-w-[180px">{job.title}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-500 truncate max-w-[280px]">
-                            {job.description}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900">{job.total_applicants}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-500">{formatDate(job.created_at)}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <Badge className={`${getStatusColor(job.status)} capitalize`}>
-                            {job.status}
-                          </Badge>
+                        <td className="px-6 py-4 font-semibold text-gray-900 truncate max-w-[180px]">{job.title}</td>
+                        <td className="px-6 py-4 text-gray-500 truncate max-w-[280px]">{job.description}</td>
+                        <td className="px-6 py-4 text-center text-gray-900 font-medium">{job.total_applicants}</td>
+                        <td className="px-6 py-4 text-gray-500">{formatDate(job.created_at)}</td>
+                        <td className="px-6 py-4 text-center">
+                          <Badge className={`${getStatusColor(job.status)} capitalize`}>{job.status}</Badge>
                         </td>
                         <td className="px-6 py-4 text-right text-sm font-medium">
                           <div className="flex items-center justify-end gap-2">
@@ -254,7 +348,7 @@ const Jobs = () => {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem 
+                                <DropdownMenuItem
                                   className="cursor-pointer"
                                   onClick={() => handleCopyApplicationLink(job.id)}
                                 >
@@ -262,7 +356,7 @@ const Jobs = () => {
                                   <span>Copy Application Link</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem 
+                                <DropdownMenuItem
                                   className="cursor-pointer"
                                   onClick={() => handleViewDetails(job.id)}
                                 >
@@ -274,7 +368,7 @@ const Jobs = () => {
                                   <span>Edit Job</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem 
+                                <DropdownMenuItem
                                   className="cursor-pointer"
                                   onClick={() => handleToggleStatus(job.id)}
                                   disabled={toggleStatusMutation.isPending}

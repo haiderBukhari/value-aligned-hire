@@ -67,6 +67,25 @@ const ResumeDetails = () => {
 
   const resume = resumes.find((r: Resume) => r.id === resumeId);
 
+  // Fetch job details for title
+  const { data: job, isLoading: isJobLoading, error: jobError } = useQuery({
+    queryKey: ['job', jobId],
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token found');
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/jobs/${jobId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch job details');
+      const data = await response.json();
+      return data;
+    },
+    enabled: !!jobId,
+  });
+
   const getRecommendationColor = (recommendation: string) => {
     switch (recommendation?.toLowerCase()) {
       case 'strong match':
@@ -155,6 +174,19 @@ const ResumeDetails = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-full mx-auto p-6 pt-0">
+        {/* Job Title Header */}
+        <div className="text-center mb-8 mt-6">
+          {isJobLoading ? (
+            <div className="h-10 w-48 bg-gray-200 rounded animate-pulse mb-4 mx-auto" />
+          ) : job && job.title ? (
+            <>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+                {job.title}
+              </h1>
+            </>
+          ) : null}
+        </div>
+
         {/* Back Button Only */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
