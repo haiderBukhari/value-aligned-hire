@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -32,7 +32,11 @@ interface Job {
 const InitialInterview = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTab, setSelectedTab] = useState<'all' | 'upcoming'>('all');
+  const [selectedTab, setSelectedTab] = useState<'all' | 'upcoming' | 'past'>('all');
+  const [upcomingInterviews, setUpcomingInterviews] = useState<any[]>([]);
+  const [pastInterviews, setPastInterviews] = useState<any[]>([]);
+  const [interviewsLoading, setInterviewsLoading] = useState(false);
+  const [interviewsError, setInterviewsError] = useState<string | null>(null);
 
   // Fetch jobs for Initial Interview stage
   const { data: jobs = [], isLoading, error } = useQuery({
@@ -85,6 +89,39 @@ const InitialInterview = () => {
 
   const handleViewDetails = (jobId: string) => {
     navigate(`/dashboard/jobs/${jobId}?stage=Initial%20Interview`);
+  };
+
+  useEffect(() => {
+    if (selectedTab === 'upcoming' || selectedTab === 'past') {
+      const fetchInterviews = async () => {
+        setInterviewsLoading(true);
+        setInterviewsError(null);
+        try {
+          const token = localStorage.getItem('token');
+          const stage = 'Initial Interview';
+          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/interviews?stage=${encodeURIComponent(stage)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (!response.ok) throw new Error('Failed to fetch interviews');
+          const data = await response.json();
+          // Sort upcoming: nearest to farthest, past: most recent to oldest
+          const parseDateTime = (date: string, time: string) => new Date(`${date} ${time}`);
+          const sortedUpcoming = (data.upcoming_interviews || []).sort((a, b) => parseDateTime(a.schedule.date, a.schedule.time).getTime() - parseDateTime(b.schedule.date, b.schedule.time).getTime());
+          const sortedPast = (data.past_interviews || []).sort((a, b) => parseDateTime(b.schedule.date, b.schedule.time).getTime() - parseDateTime(a.schedule.date, a.schedule.time).getTime());
+          setUpcomingInterviews(sortedUpcoming);
+          setPastInterviews(sortedPast);
+        } catch (err: any) {
+          setInterviewsError(err.message || 'Error fetching interviews');
+        } finally {
+          setInterviewsLoading(false);
+        }
+      };
+      fetchInterviews();
+    }
+  }, [selectedTab]);
+
+  const handleViewInterview = (jobId: string, resumeId: string, stage: string) => {
+    navigate(`/dashboard/jobs/${jobId}/interview/${resumeId}?stage=${encodeURIComponent(stage)}`);
   };
 
   if (error) {
@@ -177,10 +214,11 @@ const InitialInterview = () => {
             Filter
           </Button>
         </div>
-        <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as 'all' | 'upcoming')} className="mb-6">
+        <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as 'all' | 'upcoming' | 'past')} className="mb-6">
           <TabsList>
             <TabsTrigger value="all">All Jobs</TabsTrigger>
             <TabsTrigger value="upcoming">Upcoming Scheduled Interviews</TabsTrigger>
+            <TabsTrigger value="past">Past Interview</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -251,7 +289,7 @@ const InitialInterview = () => {
               </div>
             </CardContent>
           </Card>
-        ) : (
+        ) : selectedTab === 'upcoming' ? (
           <Card className="border border-gray-200 rounded-xl shadow-lg bg-white/95">
             <CardContent className="p-0">
               <div className="w-full overflow-x-auto">
@@ -261,20 +299,79 @@ const InitialInterview = () => {
                       <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
                       <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Applicant Name</th>
                       <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Scheduled Date</th>
+                      <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[80px]">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-100">
-                    {/* Dummy data for scheduled interviews */}
+                    {interviewsLoading ? (
+                      <tr><td colSpan={4} className="px-6 py-8 text-center text-gray-500">Loading interviews...</td></tr>
+                    ) : interviewsError ? (
+                      <tr><td colSpan={4} className="px-6 py-8 text-center text-red-500">{interviewsError}</td></tr>
+                    ) : upcomingInterviews.length === 0 ? (
+                      <tr><td colSpan={4} className="px-6 py-8 text-center text-gray-500">No upcoming interviews</td></tr>
+                    ) : (
+                      upcomingInterviews.map((interview) => (
+                        <tr key={interview.job_id + interview.resume_id + interview.stage}>
+                          <td className="px-6 py-4 font-semibold text-gray-900">{interview.job_title}</td>
+                          <td className="px-6 py-4 text-gray-500">{interview.applicant_name}</td>
+                          <td className="px-6 py-4 text-gray-500">{interview.schedule.date} {interview.schedule.time}</td>
+                          <td className="px-6 py-4 text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleViewInterview(interview.job_id, interview.resume_id, interview.stage)}
+                              className="h-8 w-8"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border border-gray-200 rounded-xl shadow-lg bg-white/95">
+            <CardContent className="p-0">
+              <div className="w-full overflow-x-auto">
+                <table className="w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
                     <tr>
-                      <td className="px-6 py-4 font-semibold text-gray-900">Frontend Developer</td>
-                      <td className="px-6 py-4 text-gray-500">Sarah Johnson</td>
-                      <td className="px-6 py-4 text-gray-500">2024-07-10 10:00 AM</td>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Applicant Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Interviewed Date</th>
+                      <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[80px]">Actions</th>
                     </tr>
-                    <tr>
-                      <td className="px-6 py-4 font-semibold text-gray-900">Data Scientist</td>
-                      <td className="px-6 py-4 text-gray-500">Alex Rodriguez</td>
-                      <td className="px-6 py-4 text-gray-500">2024-07-12 2:00 PM</td>
-                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {interviewsLoading ? (
+                      <tr><td colSpan={4} className="px-6 py-8 text-center text-gray-500">Loading interviews...</td></tr>
+                    ) : interviewsError ? (
+                      <tr><td colSpan={4} className="px-6 py-8 text-center text-red-500">{interviewsError}</td></tr>
+                    ) : pastInterviews.length === 0 ? (
+                      <tr><td colSpan={4} className="px-6 py-8 text-center text-gray-500">No past interviews</td></tr>
+                    ) : (
+                      pastInterviews.map((interview) => (
+                        <tr key={interview.job_id + interview.resume_id + interview.stage}>
+                          <td className="px-6 py-4 font-semibold text-gray-900">{interview.job_title}</td>
+                          <td className="px-6 py-4 text-gray-500">{interview.applicant_name}</td>
+                          <td className="px-6 py-4 text-gray-500">{interview.schedule.date} {interview.schedule.time}</td>
+                          <td className="px-6 py-4 text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleViewInterview(interview.job_id, interview.resume_id, interview.stage)}
+                              className="h-8 w-8"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>

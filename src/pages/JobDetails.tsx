@@ -105,7 +105,18 @@ const JobDetails = () => {
 
   const handleResumeClick = (resume: Resume) => {
     if (resume.evaluated) {
-      navigate(`/dashboard/jobs/${jobId}/resume/${resume.id}`);
+      if (stage === 'Initial Interview') {
+        navigate(`/dashboard/jobs/${jobId}/interview/${resume.id}?stage=Initial Interview`);
+      }  
+      else if (stage === 'Secondary Interview') {
+        navigate(`/dashboard/jobs/${jobId}/interview/${resume.id}?stage=Secondary Interview`);
+      }  
+      else if (stage === 'Final Interview') {
+        navigate(`/dashboard/jobs/${jobId}/interview/${resume.id}?stage=Final Interview`);
+      }  
+      else {
+        navigate(`/dashboard/jobs/${jobId}/resume/${resume.id}`);
+      }
     } else {
       toast.info("This resume is currently being evaluated by our AI.", {
         description: "Please check back in a few moments. Scores will appear here automatically.",

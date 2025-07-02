@@ -1,306 +1,383 @@
-
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { 
-  Search, Filter, Eye, Check, X, Star, Clock, 
-  FileText, Download, User, Briefcase, MapPin, Calendar, MoreHorizontal,
-  Users, TrendingUp, AlertCircle, CheckCircle, Crown
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import {
+  Search,
+  Filter,
+  Eye,
+  Briefcase,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
+import {
+  Card,
+  CardContent
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
+interface Job {
+  id: string;
+  title: string;
+  description: string;
+  status: 'active' | 'inactive';
+  total_applicants: number;
+  created_at: string;
+  resume_count_in_stage?: number;
+}
 
 const FinalInterview = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTab, setSelectedTab] = useState("all_applicants");
+  const [selectedTab, setSelectedTab] = useState<'all' | 'upcoming' | 'past'>('all');
+  const [upcomingInterviews, setUpcomingInterviews] = useState<any[]>([]);
+  const [pastInterviews, setPastInterviews] = useState<any[]>([]);
+  const [interviewsLoading, setInterviewsLoading] = useState(false);
+  const [interviewsError, setInterviewsError] = useState<string | null>(null);
 
-  const applications = [
-    {
-      id: 1,
-      candidate: "David Kim",
-      email: "david.kim@email.com",
-      position: "Product Manager",
-      appliedDate: "2024-06-08",
-      status: "scheduled",
-      score: 91,
-      location: "Seattle, WA",
-      experience: "6 years",
-      skills: ["Strategy", "Analytics", "Agile"],
-      reason: "Executive decision round",
-      dateRequested: "08/06/2024",
-      action: "Final Interview",
-      interviewDate: "2024-06-25",
-      interviewTime: "2:00 PM"
+  // Fetch jobs for Initial Interview stage
+  const { data: jobs = [], isLoading, error } = useQuery({
+    queryKey: ['jobs-initial-interview'],
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token found');
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/jobs?stage=Final%20Interview`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch jobs');
+      const data = await response.json();
+      return data.jobs || [];
     },
-    {
-      id: 2,
-      candidate: "Sarah Martinez",
-      email: "sarah.martinez@email.com",
-      position: "Senior Developer",
-      appliedDate: "2024-06-05",
-      status: "completed",
-      score: 94,
-      location: "San Francisco, CA",
-      experience: "7 years",
-      skills: ["React", "Node.js", "AWS"],
-      reason: "Top performer",
-      dateRequested: "05/06/2024",
-      action: "Offer Extended",
-      interviewDate: "2024-06-20",
-      interviewTime: "10:00 AM"
-    }
-  ];
-
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'scheduled':
-        return 'bg-amber-100 text-amber-800 border-amber-200';
-      case 'completed':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getScoreColor = (score: number) => {
-    if (score >= 90) return 'text-green-600 font-bold';
-    if (score >= 80) return 'text-blue-600 font-bold';
-    if (score >= 70) return 'text-yellow-600 font-bold';
-    return 'text-red-600 font-bold';
-  };
-
-  const filteredApplications = applications.filter(app => {
-    const matchesSearch = app.candidate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         app.position.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesTab = selectedTab === 'all_applicants' || 
-                      (selectedTab === 'upcoming_interviews' && app.status === 'scheduled');
-    return matchesSearch && matchesTab;
   });
 
-  const upcomingInterviews = applications.filter(app => app.status === 'scheduled');
+  // Stats
+  const totalJobs = jobs.length;
+  const activeJobs = jobs.filter((job: Job) => job.status === 'active').length;
+  const inactiveJobs = jobs.filter((job: Job) => job.status === 'inactive').length;
+  const resumesToReview = jobs.reduce((sum: number, job: Job) => sum + (job.resume_count_in_stage || 0), 0);
 
-  const stats = [
-    { 
-      label: "Final Candidates", 
-      value: applications.length, 
-      icon: Crown,
-      color: "from-amber-500 to-yellow-500",
-      bgColor: "bg-amber-50",
-      iconColor: "text-amber-500"
-    },
-    { 
-      label: "Scheduled Interviews", 
-      value: upcomingInterviews.length, 
-      icon: Clock,
-      color: "from-yellow-500 to-yellow-600",
-      bgColor: "bg-yellow-50",
-      iconColor: "text-yellow-500"
-    },
-    { 
-      label: "Completed", 
-      value: applications.filter(a => a.status === 'completed').length, 
-      icon: CheckCircle,
-      color: "from-green-500 to-green-600",
-      bgColor: "bg-green-50",
-      iconColor: "text-green-500"
-    },
-    { 
-      label: "Avg Score", 
-      value: Math.round(applications.reduce((acc, a) => acc + a.score, 0) / applications.length) + "%", 
-      icon: Star,
-      color: "from-purple-500 to-purple-600",
-      bgColor: "bg-purple-50",
-      iconColor: "text-purple-500"
+  // Search
+  const filteredJobs = jobs.filter((job: Job) =>
+    job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    job.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const getStatusColor = (status: string) => {
+    switch(status) {
+      case "active":
+        return "bg-green-100 text-green-800";
+      case "inactive":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
-  ];
-
-  const handleViewCandidate = (candidateId: number) => {
-    navigate(`/dashboard/resume-details?id=${candidateId}&fromFinalInterview=true`);
   };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const handleViewDetails = (jobId: string) => {
+    navigate(`/dashboard/jobs/${jobId}?stage=Final%20Interview`);
+  };
+
+  useEffect(() => {
+    if (selectedTab === 'upcoming' || selectedTab === 'past') {
+      const fetchInterviews = async () => {
+        setInterviewsLoading(true);
+        setInterviewsError(null);
+        try {
+          const token = localStorage.getItem('token');
+          const stage = 'Final Interview';
+          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/interviews?stage=${encodeURIComponent(stage)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (!response.ok) throw new Error('Failed to fetch interviews');
+          const data = await response.json();
+          // Sort upcoming: nearest to farthest, past: most recent to oldest
+          const parseDateTime = (date: string, time: string) => new Date(`${date} ${time}`);
+          const sortedUpcoming = (data.upcoming_interviews || []).sort((a, b) => parseDateTime(a.schedule.date, a.schedule.time).getTime() - parseDateTime(b.schedule.date, b.schedule.time).getTime());
+          const sortedPast = (data.past_interviews || []).sort((a, b) => parseDateTime(b.schedule.date, b.schedule.time).getTime() - parseDateTime(a.schedule.date, a.schedule.time).getTime());
+          setUpcomingInterviews(sortedUpcoming);
+          setPastInterviews(sortedPast);
+        } catch (err: any) {
+          setInterviewsError(err.message || 'Error fetching interviews');
+        } finally {
+          setInterviewsLoading(false);
+        }
+      };
+      fetchInterviews();
+    }
+  }, [selectedTab]);
+
+  const handleViewInterview = (jobId: string, resumeId: string, stage: string) => {
+    navigate(`/dashboard/jobs/${jobId}/interview/${resumeId}?stage=${encodeURIComponent(stage)}`);
+  };
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="text-center text-red-600">
+          Error loading jobs: {error.message}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 p-0">
+      {/* Header */}
+      <div className="max-w-6xl mx-auto pt-8 pb-4 px-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Final Interview</h1>
-            <p className="text-gray-600 mt-1">Executive-level assessment for top-tier candidates</p>
-          </div>
-          <div className="text-sm text-gray-500">
-            July 2, 2025 07:44 AM
+            <h1 className="text-3xl font-bold text-gray-900 mb-1">Final Interview</h1>
+            <p className="text-gray-600 text-base">Jobs currently in the Final Interview stage</p>
           </div>
         </div>
-
-        {/* Enhanced Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {stats.map((stat, index) => (
-            <Card key={index} className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                    <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
-                  </div>
-                  <div className={`p-4 rounded-full ${stat.bgColor}`}>
-                    <stat.icon className={`h-8 w-8 ${stat.iconColor}`} />
-                  </div>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+          {[
+            {
+              title: "Total Jobs",
+              count: totalJobs,
+              icon: <Briefcase className="h-7 w-7" />,
+              iconBg: "bg-purple-100 text-purple-500",
+              cardBg: "bg-gradient-to-br from-purple-50 to-white",
+            },
+            {
+              title: "Active Jobs",
+              count: activeJobs,
+              icon: <CheckCircle className="h-7 w-7" />,
+              iconBg: "bg-green-100 text-green-500",
+              cardBg: "bg-gradient-to-br from-green-50 to-white",
+            },
+            {
+              title: "Inactive Jobs",
+              count: inactiveJobs,
+              icon: <XCircle className="h-7 w-7" />,
+              iconBg: "bg-red-100 text-red-500",
+              cardBg: "bg-gradient-to-br from-red-50 to-white",
+            },
+            {
+              title: "Resumes to Review",
+              count: resumesToReview,
+              icon: <Eye className="h-7 w-7" />,
+              iconBg: "bg-blue-100 text-blue-500",
+              cardBg: "bg-gradient-to-br from-blue-50 to-white",
+            }
+          ].map((stat, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ scale: 1.05 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <div
+                className={`rounded-2xl shadow-lg p-6 flex items-center justify-between transition-transform duration-200 hover:scale-105 hover:ring-2 hover:ring-purple-200 ${stat.cardBg}`}
+                style={{ minHeight: 110 }}
+              >
+                <div>
+                  <div className="text-xs font-semibold text-gray-500 mb-1">{stat.title}</div>
+                  <div className="text-4xl font-extrabold text-gray-900 leading-tight">{stat.count}</div>
                 </div>
-                <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${stat.color}`} />
-              </CardContent>
-            </Card>
+                <div className={`flex items-center justify-center rounded-full ${stat.iconBg} shadow-md h-12 w-12 transition-transform duration-200 group-hover:animate-bounce`}>
+                  {stat.icon}
+                </div>
+              </div>
+            </motion.div>
           ))}
         </div>
-
         {/* Search and Filter */}
-        <Card className="shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search candidates..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                />
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+            <Input
+              className="pl-10"
+              placeholder="Search jobs..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <Button variant="outline" className="gap-2">
+            <Filter className="h-4 w-4" />
+            Filter
+          </Button>
+        </div>
+        <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as 'all' | 'upcoming' | 'past')} className="mb-6">
+          <TabsList>
+            <TabsTrigger value="all">All Jobs</TabsTrigger>
+            <TabsTrigger value="upcoming">Upcoming Scheduled Interviews</TabsTrigger>
+            <TabsTrigger value="past">Past Interview</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+      {/* Jobs Table */}
+      <div className="max-w-6xl mx-auto px-4 pb-10">
+        {selectedTab === 'all' ? (
+          <Card className="border border-gray-200 rounded-xl shadow-lg bg-white/95">
+            <CardContent className="p-0">
+              <div className="w-full overflow-x-auto">
+                <table className="w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Job Title</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+                      <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[100px]">Resumes to Review</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[120px]">Created</th>
+                      <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[100px]">Status</th>
+                      <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[120px]">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {isLoading ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                          Loading jobs...
+                        </td>
+                      </tr>
+                    ) : filteredJobs.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                          No jobs found
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredJobs.map((job: Job) => (
+                        <motion.tr
+                          key={job.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          whileHover={{ backgroundColor: '#f3f4f6' }}
+                          transition={{ duration: 0.2 }}
+                          className="transition-colors"
+                        >
+                          <td className="px-6 py-4 font-semibold text-gray-900 truncate max-w-[180px]">{job.title}</td>
+                          <td className="px-6 py-4 text-gray-500 truncate max-w-[280px]">{job.description}</td>
+                          <td className="px-6 py-4 text-center text-gray-900 font-medium">{job.resume_count_in_stage }</td>
+                          <td className="px-6 py-4 text-gray-500">{formatDate(job.created_at)}</td>
+                          <td className="px-6 py-4 text-center">
+                            <Badge className={`${getStatusColor(job.status)} capitalize`}>{job.status}</Badge>
+                          </td>
+                          <td className="px-6 py-4 text-right text-sm font-medium">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleViewDetails(job.id)}
+                                className="h-8 w-8"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
-              <Button variant="outline" className="ml-4 border-gray-200 hover:border-blue-500">
-                <Filter className="mr-2 h-4 w-4" />
-                Filter
-              </Button>
-            </div>
-
-            {/* Tabs */}
-            <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-              <TabsList className="grid w-full max-w-md grid-cols-2 bg-gray-100 p-1">
-                <TabsTrigger 
-                  value="all_applicants" 
-                  className="data-[state=active]:bg-amber-500 data-[state=active]:text-white"
-                >
-                  All Applicants
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="upcoming_interviews" 
-                  className="data-[state=active]:bg-green-500 data-[state=active]:text-white"
-                >
-                  Upcoming Interviews
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </CardContent>
-        </Card>
-
-        {/* Enhanced Table */}
-        <Card className="shadow-lg border-0">
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
-                    <TableHead className="font-bold text-gray-900 py-4">Candidate</TableHead>
-                    <TableHead className="font-bold text-gray-900">Position</TableHead>
-                    <TableHead className="font-bold text-gray-900">Applied Date</TableHead>
-                    <TableHead className="font-bold text-gray-900">Score</TableHead>
-                    <TableHead className="font-bold text-gray-900">Status</TableHead>
-                    <TableHead className="font-bold text-gray-900">Interview Date</TableHead>
-                    <TableHead className="font-bold text-gray-900">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredApplications.map((application, index) => (
-                    <TableRow key={application.id} className={`hover:bg-gray-50 transition-colors border-b border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
-                      <TableCell className="py-4">
-                        <div className="flex items-center space-x-3">
-                          <Avatar className="h-10 w-10 ring-2 ring-gray-100">
-                            <AvatarFallback className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white font-semibold text-sm">
-                              {application.candidate.split(' ').map(n => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-semibold text-gray-900">{application.candidate}</div>
-                            <div className="text-sm text-gray-500">{application.email}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium text-gray-900">{application.position}</div>
-                        <div className="text-sm text-gray-500 flex items-center mt-1">
-                          <MapPin className="h-3 w-3 mr-1" />
-                          {application.location}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm text-gray-900 font-medium">{application.dateRequested}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <span className={`text-lg font-bold ${getScoreColor(application.score)}`}>
-                            {application.score}%
-                          </span>
-                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={`${getStatusColor(application.status)} px-3 py-1 text-xs font-medium`}>
-                          {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm text-gray-900 font-medium">
-                          {application.interviewDate ? new Date(application.interviewDate).toLocaleDateString() : '-'}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {application.interviewTime || ''}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
-                            onClick={() => handleViewCandidate(application.id)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 w-8 p-0 text-green-600 hover:bg-green-50 hover:text-green-700"
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ) : selectedTab === 'upcoming' ? (
+          <Card className="border border-gray-200 rounded-xl shadow-lg bg-white/95">
+            <CardContent className="p-0">
+              <div className="w-full overflow-x-auto">
+                <table className="w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Applicant Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Scheduled Date</th>
+                      <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[80px]">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {interviewsLoading ? (
+                      <tr><td colSpan={4} className="px-6 py-8 text-center text-gray-500">Loading interviews...</td></tr>
+                    ) : interviewsError ? (
+                      <tr><td colSpan={4} className="px-6 py-8 text-center text-red-500">{interviewsError}</td></tr>
+                    ) : upcomingInterviews.length === 0 ? (
+                      <tr><td colSpan={4} className="px-6 py-8 text-center text-gray-500">No upcoming interviews</td></tr>
+                    ) : (
+                      upcomingInterviews.map((interview) => (
+                        <tr key={interview.job_id + interview.resume_id + interview.stage}>
+                          <td className="px-6 py-4 font-semibold text-gray-900">{interview.job_title}</td>
+                          <td className="px-6 py-4 text-gray-500">{interview.applicant_name}</td>
+                          <td className="px-6 py-4 text-gray-500">{interview.schedule.date} {interview.schedule.time}</td>
+                          <td className="px-6 py-4 text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleViewInterview(interview.job_id, interview.resume_id, interview.stage)}
+                              className="h-8 w-8"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border border-gray-200 rounded-xl shadow-lg bg-white/95">
+            <CardContent className="p-0">
+              <div className="w-full overflow-x-auto">
+                <table className="w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Applicant Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Interviewed Date</th>
+                      <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[80px]">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {interviewsLoading ? (
+                      <tr><td colSpan={4} className="px-6 py-8 text-center text-gray-500">Loading interviews...</td></tr>
+                    ) : interviewsError ? (
+                      <tr><td colSpan={4} className="px-6 py-8 text-center text-red-500">{interviewsError}</td></tr>
+                    ) : pastInterviews.length === 0 ? (
+                      <tr><td colSpan={4} className="px-6 py-8 text-center text-gray-500">No past interviews</td></tr>
+                    ) : (
+                      pastInterviews.map((interview) => (
+                        <tr key={interview.job_id + interview.resume_id + interview.stage}>
+                          <td className="px-6 py-4 font-semibold text-gray-900">{interview.job_title}</td>
+                          <td className="px-6 py-4 text-gray-500">{interview.applicant_name}</td>
+                          <td className="px-6 py-4 text-gray-500">{interview.schedule.date} {interview.schedule.time}</td>
+                          <td className="px-6 py-4 text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleViewInterview(interview.job_id, interview.resume_id, interview.stage)}
+                              className="h-8 w-8"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

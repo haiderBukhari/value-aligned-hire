@@ -286,17 +286,6 @@ const Dashboard = () => {
                           <item.icon className="mr-3 h-5 w-5" />
                           {item.label}
                         </div>
-                        {item.count && (
-                          <Badge
-                            variant="secondary"
-                            className={`${location.pathname === item.path
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-gray-100 text-gray-600"
-                            } text-xs px-2 py-1`}
-                          >
-                            {item.count}
-                          </Badge>
-                        )}
                       </Button>,
                       <div key="workflow-loader" className="flex justify-center py-2">
                         <Loader2 className="h-5 w-5 text-blue-400 animate-spin" />
@@ -317,17 +306,6 @@ const Dashboard = () => {
                         <item.icon className="mr-3 h-5 w-5" />
                         {item.label}
                       </div>
-                      {item.count && (
-                        <Badge
-                          variant="secondary"
-                          className={`${location.pathname === item.path
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-gray-100 text-gray-600"
-                          } text-xs px-2 py-1`}
-                        >
-                          {item.count}
-                        </Badge>
-                      )}
                     </Button>
                   );
                 })}
