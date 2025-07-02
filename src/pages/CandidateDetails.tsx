@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, User, Briefcase, Award, TrendingUp, CheckCircle, AlertTriangle, Eye, Calendar, Mail, Phone, MapPin, FileText, Star, Target, Clock } from "lucide-react";
@@ -7,64 +7,46 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useQuery } from "@tanstack/react-query";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface CandidateStage {
-  stage_name: string;
+  name: string;
   status: string;
   score: number;
   feedback: string;
-  completed_at: string;
-  ai_recommendation: string;
+  aiRecommendation: string;
+  completedAt: string | null;
 }
 
 interface CandidateData {
-  id: string;
+  id: number;
   name: string;
   email: string;
   phone: string;
   location: string;
-  current_stage: string;
-  overall_score: number;
-  job_title: string;
-  application_date: string;
-  cv_url: string;
-  cover_letter_url: string;
-  stages: CandidateStage[];
-  skills: string[];
-  experience_years: number;
+  position: string;
+  appliedDate: string;
+  currentStage: string;
+  overallScore: number;
+  experienceYears: number;
   education: string;
+  skills: string[];
   summary: string;
+  stages: CandidateStage[];
 }
 
 const CandidateDetails = () => {
   const { candidateId } = useParams<{ candidateId: string }>();
   const navigate = useNavigate();
+  const [candidate, setCandidate] = useState<CandidateData | null>(null);
 
-  const { data: candidate, isLoading, error } = useQuery<CandidateData>({
-    queryKey: ['candidate', candidateId],
-    queryFn: async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/candidates/${candidateId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch candidate details');
-      }
-
-      return response.json();
-    },
-    enabled: !!candidateId,
-  });
+  useEffect(() => {
+    // Get candidate data from localStorage (in real app, this would be from API)
+    const storedCandidate = localStorage.getItem('selectedCandidate');
+    if (storedCandidate) {
+      setCandidate(JSON.parse(storedCandidate));
+    }
+  }, [candidateId]);
 
   const getStageColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -82,38 +64,18 @@ const CandidateDetails = () => {
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-blue-600';
-    if (score >= 40) return 'text-yellow-600';
+    if (score >= 90) return 'text-green-600';
+    if (score >= 80) return 'text-blue-600';
+    if (score >= 70) return 'text-yellow-600';
     return 'text-red-600';
   };
 
-  if (error) {
-    return (
-      <div className="p-6">
-        <div className="text-center text-red-600">
-          Error loading candidate details: {error.message}
-        </div>
-      </div>
-    );
-  }
-
-  if (isLoading) {
+  if (!candidate) {
     return (
       <div className="min-h-screen bg-gray-50 p-6 pt-0">
         <div className="text-center py-12">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
           <p className="mt-4 text-gray-600">Loading candidate details...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!candidate) {
-    return (
-      <div className="p-6">
-        <div className="text-center text-gray-600">
-          Candidate not found
         </div>
       </div>
     );
@@ -142,14 +104,13 @@ const CandidateDetails = () => {
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-6">
               <Avatar className="h-24 w-24">
-                <AvatarImage src="/placeholder.svg" alt={candidate.name} />
                 <AvatarFallback className="text-2xl bg-gradient-to-r from-blue-500 to-purple-500 text-white">
                   {candidate.name.split(' ').map(n => n[0]).join('')}
                 </AvatarFallback>
               </Avatar>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">{candidate.name}</h1>
-                <p className="text-lg text-gray-600 mb-2">Applying for: {candidate.job_title}</p>
+                <p className="text-lg text-gray-600 mb-2">Applying for: {candidate.position}</p>
                 <div className="flex items-center space-x-6 text-sm text-gray-500">
                   <div className="flex items-center">
                     <Mail className="h-4 w-4 mr-1" />
@@ -165,21 +126,21 @@ const CandidateDetails = () => {
                   </div>
                   <div className="flex items-center">
                     <Calendar className="h-4 w-4 mr-1" />
-                    Applied {new Date(candidate.application_date).toLocaleDateString()}
+                    Applied {new Date(candidate.appliedDate).toLocaleDateString()}
                   </div>
                 </div>
               </div>
             </div>
             <div className="text-right">
               <div className="mb-4">
-                <Badge className={`${getStageColor(candidate.current_stage)} px-4 py-2 text-sm font-medium`}>
-                  {candidate.current_stage.replace('_', ' ').toUpperCase()}
+                <Badge className={`${getStageColor(candidate.currentStage)} px-4 py-2 text-sm font-medium`}>
+                  {candidate.currentStage.replace('_', ' ').toUpperCase()}
                 </Badge>
               </div>
               <div className="text-right">
                 <span className="text-sm text-gray-500">Overall Score</span>
-                <div className={`text-3xl font-bold ${getScoreColor(candidate.overall_score)}`}>
-                  {candidate.overall_score}%
+                <div className={`text-3xl font-bold ${getScoreColor(candidate.overallScore)}`}>
+                  {candidate.overallScore}%
                 </div>
               </div>
             </div>
@@ -205,7 +166,7 @@ const CandidateDetails = () => {
                 <CardContent className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Experience</span>
-                    <span className="font-medium">{candidate.experience_years} years</span>
+                    <span className="font-medium">{candidate.experienceYears} years</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Education</span>
@@ -261,21 +222,17 @@ const CandidateDetails = () => {
                   <Button
                     variant="outline"
                     className="w-full justify-start"
-                    onClick={() => window.open(candidate.cv_url, '_blank')}
                   >
                     <FileText className="mr-2 h-4 w-4" />
                     View Resume
                   </Button>
-                  {candidate.cover_letter_url && (
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start"
-                      onClick={() => window.open(candidate.cover_letter_url, '_blank')}
-                    >
-                      <FileText className="mr-2 h-4 w-4" />
-                      View Cover Letter
-                    </Button>
-                  )}
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    View Cover Letter
+                  </Button>
                 </CardContent>
               </Card>
             </motion.div>
@@ -346,7 +303,7 @@ const CandidateDetails = () => {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-2">
                               <h4 className="text-lg font-semibold text-gray-900">
-                                {stage.stage_name.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                {stage.name}
                               </h4>
                               <div className="flex items-center space-x-3">
                                 {stage.score > 0 && (
@@ -373,20 +330,20 @@ const CandidateDetails = () => {
                               </div>
                             )}
                             
-                            {stage.ai_recommendation && (
+                            {stage.aiRecommendation && (
                               <div className="bg-blue-50 rounded-lg p-4 mb-3">
                                 <h5 className="font-medium text-blue-900 mb-2 flex items-center">
                                   <Star className="h-4 w-4 mr-1" />
                                   AI Recommendation
                                 </h5>
-                                <p className="text-sm text-blue-800">{stage.ai_recommendation}</p>
+                                <p className="text-sm text-blue-800">{stage.aiRecommendation}</p>
                               </div>
                             )}
                             
-                            {stage.completed_at && (
+                            {stage.completedAt && (
                               <p className="text-xs text-gray-500 flex items-center">
                                 <Calendar className="h-3 w-3 mr-1" />
-                                Completed on {new Date(stage.completed_at).toLocaleDateString('en-US', {
+                                Completed on {new Date(stage.completedAt).toLocaleDateString('en-US', {
                                   month: 'long',
                                   day: 'numeric',
                                   year: 'numeric',

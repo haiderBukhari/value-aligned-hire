@@ -3,18 +3,18 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
-  Search, Filter, MoreVertical, Eye, Check, X, Star, Clock, 
-  FileText, Download, User, Briefcase, MapPin, Calendar
+  Search, Filter, Eye, Check, X, Star, Clock, 
+  FileText, Download, User, Briefcase, MapPin, Calendar, MoreHorizontal
 } from "lucide-react";
 
 const ApplicationScreening = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTab, setSelectedTab] = useState("all");
+  const [selectedTab, setSelectedTab] = useState("pending");
 
   const applications = [
     {
@@ -22,74 +22,96 @@ const ApplicationScreening = () => {
       candidate: "Sarah Johnson",
       email: "sarah.johnson@email.com",
       position: "Senior Frontend Developer",
-      appliedDate: "2024-06-07",
-      status: "new",
+      appliedDate: "2024-06-15",
+      status: "pending",
       score: 92,
       location: "San Francisco, CA",
       experience: "5 years",
       skills: ["React", "TypeScript", "Node.js"],
-      resumeUrl: "#",
-      coverLetter: "I am excited to apply for this position..."
+      reason: "Strong technical background",
+      dateRequested: "15/06/2024",
+      action: "Review"
     },
     {
       id: 2,
       candidate: "Alex Rodriguez",
       email: "alex.rodriguez@email.com",
       position: "Data Scientist",
-      appliedDate: "2024-06-06",
-      status: "reviewed",
+      appliedDate: "2024-06-12",
+      status: "approved",
       score: 88,
       location: "New York, NY",
       experience: "3 years",
       skills: ["Python", "Machine Learning", "SQL"],
-      resumeUrl: "#",
-      coverLetter: "With my background in data science..."
+      reason: "Excellent portfolio",
+      dateRequested: "12/06/2024",
+      action: "Interview"
     },
     {
       id: 3,
       candidate: "Emily Chen",
       email: "emily.chen@email.com",
       position: "UX Designer",
-      appliedDate: "2024-06-05",
-      status: "shortlisted",
-      score: 95,
+      appliedDate: "2024-06-10",
+      status: "rejected",
+      score: 75,
       location: "Austin, TX",
-      experience: "4 years",
+      experience: "2 years",
       skills: ["Figma", "User Research", "Prototyping"],
-      resumeUrl: "#",
-      coverLetter: "I believe my design philosophy aligns..."
+      reason: "Lacks senior experience",
+      dateRequested: "10/06/2024",
+      action: "Rejected"
     },
     {
       id: 4,
       candidate: "David Kim",
       email: "david.kim@email.com",
       position: "Product Manager",
-      appliedDate: "2024-06-04",
-      status: "rejected",
-      score: 72,
+      appliedDate: "2024-06-08",
+      status: "pending",
+      score: 85,
       location: "Seattle, WA",
-      experience: "2 years",
+      experience: "4 years",
       skills: ["Strategy", "Analytics", "Agile"],
-      resumeUrl: "#",
-      coverLetter: "As a passionate product manager..."
+      reason: "Good strategic thinking",
+      dateRequested: "08/06/2024",
+      action: "Review"
+    },
+    {
+      id: 5,
+      candidate: "Lisa Wang",
+      email: "lisa.wang@email.com",
+      position: "Backend Engineer",
+      appliedDate: "2024-06-05",
+      status: "approved",
+      score: 90,
+      location: "Boston, MA",
+      experience: "6 years",
+      skills: ["Java", "Spring", "AWS"],
+      reason: "Excellent technical skills",
+      dateRequested: "05/06/2024",
+      action: "Interview"
     }
   ];
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'new': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'reviewed': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'shortlisted': return 'bg-green-100 text-green-800 border-green-200';
-      case 'rejected': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    switch (status?.toLowerCase()) {
+      case 'pending':
+        return 'bg-blue-500 text-white hover:bg-blue-600';
+      case 'approved':
+        return 'bg-gray-200 text-gray-700 hover:bg-gray-300';
+      case 'rejected':
+        return 'bg-gray-200 text-gray-700 hover:bg-gray-300';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 90) return 'text-green-600';
-    if (score >= 80) return 'text-yellow-600';
-    if (score >= 70) return 'text-orange-600';
-    return 'text-red-600';
+    if (score >= 90) return 'text-green-600 font-bold';
+    if (score >= 80) return 'text-blue-600 font-bold';
+    if (score >= 70) return 'text-yellow-600 font-bold';
+    return 'text-red-600 font-bold';
   };
 
   const filteredApplications = applications.filter(app => {
@@ -100,143 +122,172 @@ const ApplicationScreening = () => {
   });
 
   const stats = [
-    { label: "Total Applications", value: applications.length, color: "bg-blue-50 text-blue-600" },
-    { label: "New Applications", value: applications.filter(a => a.status === 'new').length, color: "bg-purple-50 text-purple-600" },
-    { label: "Shortlisted", value: applications.filter(a => a.status === 'shortlisted').length, color: "bg-green-50 text-green-600" },
-    { label: "Avg Score", value: Math.round(applications.reduce((acc, app) => acc + app.score, 0) / applications.length), color: "bg-orange-50 text-orange-600" }
+    { label: "Total Applications", value: applications.length, color: "bg-blue-500", count: applications.length },
+    { label: "Pending Review", value: applications.filter(a => a.status === 'pending').length, color: "bg-blue-500", count: applications.filter(a => a.status === 'pending').length },
+    { label: "Approved", value: applications.filter(a => a.status === 'approved').length, color: "bg-green-500", count: applications.filter(a => a.status === 'approved').length },
+    { label: "Rejected", value: applications.filter(a => a.status === 'rejected').length, color: "bg-red-500", count: applications.filter(a => a.status === 'rejected').length }
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Application Screening</h1>
+          <p className="text-gray-600 mt-1">Overview</p>
+        </div>
+        <div className="text-sm text-gray-500">
+          July 2, 2025 07:44 AM
+        </div>
+      </div>
+
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         {stats.map((stat, index) => (
-          <Card key={index} className="border-l-4 border-l-blue-500 shadow-lg hover:shadow-xl transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-2">{stat.value}</p>
-                </div>
-                <div className={`p-3 rounded-full ${stat.color}`}>
-                  <FileText className="h-6 w-6" />
+          <div key={index} className="bg-white rounded-xl p-6 shadow-sm border">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-gray-600 mb-2">{stat.label}</h3>
+                <div className="flex items-center space-x-2">
+                  <span className="text-2xl font-bold text-gray-900">{stat.value}</span>
+                  <span className="text-sm text-gray-500">/{stat.count}</span>
+                  <span className="text-sm text-gray-400">2024</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ))}
       </div>
 
-      {/* Search and Filter */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
+      {/* Search */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Search applications, candidates, or positions..."
+            placeholder="Search applications..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 border-2 border-gray-200 focus:border-blue-500"
+            className="pl-10"
           />
         </div>
-        <Button variant="outline" className="shrink-0 border-2 border-gray-200 hover:border-blue-500">
+        <Button variant="outline" className="ml-4">
           <Filter className="mr-2 h-4 w-4" />
           Filter
         </Button>
       </div>
 
-      {/* Applications List */}
-      <Card className="shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
-          <CardTitle className="text-xl">Application Screening</CardTitle>
-          <CardDescription>Review and manage incoming job applications</CardDescription>
-          
-          <Tabs value={selectedTab} onValueChange={setSelectedTab} className="mt-4">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="all">All ({applications.length})</TabsTrigger>
-              <TabsTrigger value="new">New ({applications.filter(a => a.status === 'new').length})</TabsTrigger>
-              <TabsTrigger value="reviewed">Reviewed ({applications.filter(a => a.status === 'reviewed').length})</TabsTrigger>
-              <TabsTrigger value="shortlisted">Shortlisted ({applications.filter(a => a.status === 'shortlisted').length})</TabsTrigger>
-              <TabsTrigger value="rejected">Rejected ({applications.filter(a => a.status === 'rejected').length})</TabsTrigger>
+      {/* Main Content */}
+      <Card className="shadow-sm">
+        <CardContent className="p-6">
+          <Tabs value={selectedTab} onValueChange={setSelectedTab} className="mb-6">
+            <TabsList className="grid w-full grid-cols-4 bg-gray-100">
+              <TabsTrigger 
+                value="pending" 
+                className="data-[state=active]:bg-blue-500 data-[state=active]:text-white"
+              >
+                Pending
+              </TabsTrigger>
+              <TabsTrigger 
+                value="rejected" 
+                className="data-[state=active]:bg-gray-500 data-[state=active]:text-white"
+              >
+                Rejected
+              </TabsTrigger>
+              <TabsTrigger 
+                value="approved" 
+                className="data-[state=active]:bg-gray-500 data-[state=active]:text-white"
+              >
+                Approved
+              </TabsTrigger>
+              <TabsTrigger 
+                value="all" 
+                className="data-[state=active]:bg-gray-500 data-[state=active]:text-white"
+              >
+                All
+              </TabsTrigger>
             </TabsList>
           </Tabs>
-        </CardHeader>
-        
-        <CardContent className="p-0">
-          <div className="space-y-1">
-            {filteredApplications.map((application, index) => (
-              <div key={application.id} className={`p-6 border-b border-gray-100 hover:bg-gray-50 transition-colors ${index === 0 ? 'bg-blue-25' : ''}`}>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-4">
-                    <Avatar className="h-12 w-12 ring-2 ring-blue-100">
-                      <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold">
-                        {application.candidate.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                    
-                    <div className="flex-1 space-y-2">
+
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50">
+                  <TableHead className="font-semibold text-gray-900">Candidate</TableHead>
+                  <TableHead className="font-semibold text-gray-900">Position</TableHead>
+                  <TableHead className="font-semibold text-gray-900">Applied Date</TableHead>
+                  <TableHead className="font-semibold text-gray-900">Score</TableHead>
+                  <TableHead className="font-semibold text-gray-900">Status</TableHead>
+                  <TableHead className="font-semibold text-gray-900">Reason</TableHead>
+                  <TableHead className="font-semibold text-gray-900">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredApplications.map((application) => (
+                  <TableRow key={application.id} className="hover:bg-gray-50">
+                    <TableCell>
                       <div className="flex items-center space-x-3">
-                        <h3 className="text-lg font-semibold text-gray-900">{application.candidate}</h3>
-                        <Badge className={getStatusColor(application.status)}>
-                          {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                        </Badge>
-                        <div className="flex items-center space-x-1">
-                          <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                          <span className={`font-semibold ${getScoreColor(application.score)}`}>
-                            {application.score}%
-                          </span>
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="bg-blue-100 text-blue-600 text-xs">
+                            {application.candidate.split(' ').map(n => n[0]).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium text-gray-900">{application.candidate}</div>
+                          <div className="text-xs text-gray-500">{application.email}</div>
                         </div>
                       </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-                        <div className="flex items-center space-x-2">
-                          <Briefcase className="h-4 w-4" />
-                          <span>{application.position}</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <MapPin className="h-4 w-4" />
-                          <span>{application.location}</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Clock className="h-4 w-4" />
-                          <span>{application.experience} experience</span>
-                        </div>
-                      </div>
-                      
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium text-gray-900">{application.position}</div>
+                      <div className="text-xs text-gray-500">{application.location}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm text-gray-900">{application.dateRequested}</div>
+                    </TableCell>
+                    <TableCell>
+                      <span className={getScoreColor(application.score)}>
+                        {application.score}%
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        className={`${getStatusColor(application.status)} border-0`}
+                      >
+                        {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-gray-600">{application.reason}</span>
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-500">Skills:</span>
-                        <div className="flex flex-wrap gap-1">
-                          {application.skills.map((skill) => (
-                            <Badge key={skill} variant="secondary" className="text-xs">
-                              {skill}
-                            </Badge>
-                          ))}
-                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
-                      
-                      <Progress value={application.score} className="w-full h-2" />
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Button variant="ghost" size="sm" className="text-green-600 hover:bg-green-50">
-                      <Check className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-50">
-                      <X className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-blue-600 hover:bg-blue-50">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-gray-600 hover:bg-gray-50">
-                      <Download className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
