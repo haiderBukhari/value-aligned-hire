@@ -88,7 +88,7 @@ const Dashboard = () => {
     }
   ];
 
-  // Updated navigation items with new flow
+  // Updated navigation items with Talent Pool
   const navigationItems = [
     {
       icon: Home,
@@ -113,6 +113,12 @@ const Dashboard = () => {
       label: "Application Screening",
       path: "/dashboard/jobs",
       count: 156
+    },
+    {
+      icon: Users,
+      label: "Talent Pool",
+      path: "/dashboard/talent-pool",
+      count: 89
     },
     {
       icon: ClipboardList,
@@ -170,6 +176,7 @@ const Dashboard = () => {
       case "/dashboard/company": return `Get to know ${companyName}`;
       case "/dashboard/create-job": return "Create Job";
       case "/dashboard/jobs": return "Application Screening";
+      case "/dashboard/talent-pool": return "Talent Pool";
       case "/dashboard/assessments": return "Assessment Center";
       case "/dashboard/initial-interview": return "Initial Interview Management";
       case "/dashboard/secondary-interview": return "Secondary Interview Management";
@@ -186,6 +193,7 @@ const Dashboard = () => {
       case "/dashboard/company": return `Configure and update ${companyName}'s profile, culture, and values`;
       case "/dashboard/create-job": return "Create a new job posting with AI assistance";
       case "/dashboard/jobs": return "Review and screen incoming applications";
+      case "/dashboard/talent-pool": return "Manage and track all candidates across different stages";
       case "/dashboard/assessments": return "Manage candidate assessments and home tasks";
       case "/dashboard/initial-interview": return "Schedule and manage initial candidate interviews";
       case "/dashboard/secondary-interview": return "Coordinate secondary round interviews";

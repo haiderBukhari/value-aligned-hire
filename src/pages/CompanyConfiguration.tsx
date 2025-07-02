@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +23,7 @@ interface CompanyData {
 }
 
 const CompanyConfiguration = () => {
-  const { companyName } = useCompanyInfo();
+  const { companyName, isPopulating } = useCompanyInfo();
   const [companyData, setCompanyData] = useState<CompanyData>({
     company_name: "",
     company_description: "",
@@ -142,7 +141,7 @@ const CompanyConfiguration = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isPopulating) {
     return (
       <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
         {/* Animated background */}
@@ -157,7 +156,9 @@ const CompanyConfiguration = () => {
             <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-blue-600" />
             <Sparkles className="h-6 w-6 absolute -top-2 -right-2 text-purple-500 animate-pulse" />
           </div>
-          <p className="text-gray-600 font-medium">Loading company information...</p>
+          <p className="text-gray-600 font-medium">
+            {isPopulating ? "Populating company data..." : "Loading company information..."}
+          </p>
         </div>
       </div>
     );
