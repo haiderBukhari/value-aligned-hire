@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -341,7 +342,7 @@ const Dashboard = () => {
       <div className="flex-1 flex flex-col ml-80">
         {/* Enhanced Header */}
         {isDashboardHome && (
-          <header="bg-white shadow-sm border-b border-gray-200 px-8 py-6">
+          <header className="bg-white shadow-sm border-b border-gray-200 px-8 py-6">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-1">
@@ -368,7 +369,7 @@ const Dashboard = () => {
         {/* Page Content */}
         <main className="flex-1">
           {isDashboardHome ? (
-            <>
+            <div className="p-8">
               {/* Stats Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 {stats.map((stat, index) => (
@@ -495,7 +496,7 @@ const Dashboard = () => {
                   </CardContent>
                 </Card>
               </div>
-            </>
+            </div>
           ) : (
             <Outlet />
           )}
