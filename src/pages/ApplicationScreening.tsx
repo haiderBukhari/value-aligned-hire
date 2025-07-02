@@ -12,10 +12,12 @@ import {
   FileText, Download, User, Briefcase, MapPin, Calendar, MoreHorizontal,
   Users, TrendingUp, AlertCircle, CheckCircle
 } from "lucide-react";
+import { useJobStats } from "@/hooks/useJobStats";
 
 const ApplicationScreening = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTab, setSelectedTab] = useState("pending");
+  const { stageStats, isLoading: isStatsLoading } = useJobStats();
 
   const applications = [
     {
@@ -122,35 +124,52 @@ const ApplicationScreening = () => {
     return matchesSearch && matchesTab;
   });
 
+  // Updated stats with real data from API
   const stats = [
     { 
-      label: "Total Applications", 
-      value: applications.length, 
+      label: "Application Screening", 
+      value: stageStats["Application Screening"] || 0, 
       icon: Users,
       color: "from-blue-500 to-blue-600",
       bgColor: "bg-blue-50",
       iconColor: "text-blue-500"
     },
     { 
-      label: "Pending Review", 
-      value: applications.filter(a => a.status === 'pending').length, 
+      label: "Initial Interview", 
+      value: stageStats["Initial Interview"] || 0, 
       icon: Clock,
       color: "from-yellow-500 to-yellow-600",
       bgColor: "bg-yellow-50",
       iconColor: "text-yellow-500"
     },
     { 
-      label: "Approved", 
-      value: applications.filter(a => a.status === 'approved').length, 
+      label: "Assessment", 
+      value: stageStats["Assessment"] || 0, 
       icon: CheckCircle,
       color: "from-green-500 to-green-600",
       bgColor: "bg-green-50",
       iconColor: "text-green-500"
     },
     { 
-      label: "Rejected", 
-      value: applications.filter(a => a.status === 'rejected').length, 
+      label: "Secondary Interview", 
+      value: stageStats["Secondary Interview"] || 0, 
       icon: AlertCircle,
+      color: "from-purple-500 to-purple-600",
+      bgColor: "bg-purple-50",
+      iconColor: "text-purple-500"
+    },
+    { 
+      label: "Final Interview", 
+      value: stageStats["Final Interview"] || 0, 
+      icon: Star,
+      color: "from-orange-500 to-orange-600",
+      bgColor: "bg-orange-50",
+      iconColor: "text-orange-500"
+    },
+    { 
+      label: "Offer Stage", 
+      value: stageStats["Offer Stage"] || 0, 
+      icon: TrendingUp,
       color: "from-red-500 to-red-600",
       bgColor: "bg-red-50",
       iconColor: "text-red-500"
@@ -172,17 +191,23 @@ const ApplicationScreening = () => {
         </div>
 
         {/* Enhanced Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {stats.map((stat, index) => (
             <Card key={index} className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-              <CardContent className="p-6">
+              <CardContent className="p-4">
                 <div className="flex items-center justify-between">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                    <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-gray-600">{stat.label}</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {isStatsLoading ? (
+                        <div className="h-6 w-8 bg-gray-200 rounded animate-pulse" />
+                      ) : (
+                        stat.value
+                      )}
+                    </p>
                   </div>
-                  <div className={`p-4 rounded-full ${stat.bgColor}`}>
-                    <stat.icon className={`h-8 w-8 ${stat.iconColor}`} />
+                  <div className={`p-2 rounded-full ${stat.bgColor}`}>
+                    <stat.icon className={`h-5 w-5 ${stat.iconColor}`} />
                   </div>
                 </div>
                 <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${stat.color}`} />
