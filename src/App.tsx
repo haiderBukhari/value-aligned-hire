@@ -23,6 +23,8 @@ import SecondaryInterview from "./pages/SecondaryInterview";
 import FinalInterview from "./pages/FinalInterview";
 import OfferStage from "./pages/OfferStage";
 import NotFound from "./pages/NotFound";
+import TalentPool from "./pages/TalentPool";
+import CandidateDetails from "./pages/CandidateDetails";
 
 const queryClient = new QueryClient();
 
