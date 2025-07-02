@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, FileText, Download, Star, Award, TrendingUp, CheckCircle, AlertTriangle, Info, CloudCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,11 @@ interface Resume {
 const JobDetails = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Extract stage from query param, default to 'Application Screening'
+  const searchParams = new URLSearchParams(location.search);
+  const stage = searchParams.get('stage') || 'Application Screening';
 
   // Fetch job details for title
   const { data: job, isLoading: isJobLoading, error: jobError } = useQuery({
@@ -49,24 +54,21 @@ const JobDetails = () => {
   });
 
   const { data: resumes = [], isLoading, error } = useQuery({
-    queryKey: ['resumes', jobId],
+    queryKey: ['resumes', jobId, stage],
     queryFn: async () => {
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('No authentication token found');
       }
-
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/resumes/${jobId}?stage=Application%20Screening`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/resumes/${jobId}?stage=${encodeURIComponent(stage)}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
-
       if (!response.ok) {
         throw new Error('Failed to fetch resumes');
       }
-
       const data = await response.json();
       return data.resumes || [];
     },
