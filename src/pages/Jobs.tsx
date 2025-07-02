@@ -41,6 +41,7 @@ interface Job {
   status: 'active' | 'inactive';
   total_applicants: number;
   created_at: string;
+  resume_count_in_stage?: number;
 }
 
 const Jobs = () => {
@@ -58,7 +59,7 @@ const Jobs = () => {
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/jobs`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/jobs?stage=Application%20Screening`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -111,6 +112,7 @@ const Jobs = () => {
   const activeJobs = jobs.filter((job: Job) => job.status === 'active').length;
   const inactiveJobs = jobs.filter((job: Job) => job.status === 'inactive').length;
   const totalApplicants = jobs.reduce((sum: number, job: Job) => sum + (job.total_applicants || 0), 0);
+  const resumesToReview = jobs.reduce((sum: number, job: Job) => sum + (job.resume_count_in_stage || 0), 0);
 
   // Tabs
   const filteredByTab = jobs.filter((job: Job) => {
@@ -173,7 +175,7 @@ const Jobs = () => {
       <div className="max-w-6xl mx-auto pt-8 pb-4 px-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-1">Job Management</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-1">Initial Application Screening</h1>
             <p className="text-gray-600 text-base">Manage your job postings and track applicants</p>
           </div>
           {/* <div className="flex items-center gap-2">
@@ -207,12 +209,19 @@ const Jobs = () => {
               iconBg: "bg-red-100 text-red-500",
               cardBg: "bg-gradient-to-br from-red-50 to-white",
             },
+            // {
+            //   title: "Total Applicants",
+            //   count: totalApplicants,
+            //   icon: <UsersIcon className="h-7 w-7" />,
+            //   iconBg: "bg-purple-100 text-purple-500",
+            //   cardBg: "bg-gradient-to-br from-purple-50 to-white",
+            // },
             {
-              title: "Total Applicants",
-              count: totalApplicants,
-              icon: <UsersIcon className="h-7 w-7" />,
-              iconBg: "bg-purple-100 text-purple-500",
-              cardBg: "bg-gradient-to-br from-purple-50 to-white",
+              title: "Resumes to Review",
+              count: resumesToReview,
+              icon: <Eye className="h-7 w-7" />,
+              iconBg: "bg-yellow-100 text-yellow-500",
+              cardBg: "bg-gradient-to-br from-yellow-50 to-white",
             }
           ].map((stat, index) => (
             <motion.div
@@ -294,7 +303,7 @@ const Jobs = () => {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Job Title</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
-                    <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[100px]">Applicants</th>
+                    <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[100px]">Resume to Review</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[120px]">Created</th>
                     <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[100px]">Status</th>
                     <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[120px]">Actions</th>
@@ -325,7 +334,7 @@ const Jobs = () => {
                       >
                         <td className="px-6 py-4 font-semibold text-gray-900 truncate max-w-[180px]">{job.title}</td>
                         <td className="px-6 py-4 text-gray-500 truncate max-w-[280px]">{job.description}</td>
-                        <td className="px-6 py-4 text-center text-gray-900 font-medium">{job.total_applicants}</td>
+                        <td className="px-6 py-4 text-center text-gray-900 font-medium">{job.resume_count_in_stage }</td>
                         <td className="px-6 py-4 text-gray-500">{formatDate(job.created_at)}</td>
                         <td className="px-6 py-4 text-center">
                           <Badge className={`${getStatusColor(job.status)} capitalize`}>{job.status}</Badge>

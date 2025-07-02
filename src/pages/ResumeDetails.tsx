@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 interface Resume {
@@ -48,7 +49,7 @@ const ResumeDetails = () => {
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/resumes/${jobId}`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/resumes/${jobId}?stage=Application%20Screening`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -73,7 +74,7 @@ const ResumeDetails = () => {
     queryFn: async () => {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No authentication token found');
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/jobs/${jobId}`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/jobs/${jobId}?stage=Application%20Screening`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -84,6 +85,37 @@ const ResumeDetails = () => {
       return data;
     },
     enabled: !!jobId,
+  });
+
+  // Fetch next step for this resume
+  const { data: nextStepData, isLoading: isNextStepLoading, refetch: refetchNextStep } = useQuery({
+    queryKey: ['nextStep', resumeId],
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/resumes/${resumeId}/next-step`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error('Failed to fetch next step');
+      return response.json();
+    },
+    enabled: !!resumeId,
+  });
+
+  // Advance to next step mutation
+  const advanceStepMutation = useMutation({
+    mutationFn: async () => {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/resumes/${resumeId}/next-step`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error('Failed to advance step');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast.success(`Moved to: ${data.current_step || data.message}`);
+      refetchNextStep();
+    }
   });
 
   const getRecommendationColor = (recommendation: string) => {
@@ -204,11 +236,16 @@ const ResumeDetails = () => {
               transition={{ delay: 0.3 }}
             >
               <Button
-                onClick={handleMoveToAssessment}
+                onClick={() => advanceStepMutation.mutate()}
+                disabled={isNextStepLoading || nextStepData?.next_step === 'Process Complete' || advanceStepMutation.isLoading}
                 className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold px-4 py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
               >
                 <Send className="mr-3 h-5 w-5" />
-                Move to Assessment Stage
+                {isNextStepLoading
+                  ? 'Loading...'
+                  : nextStepData?.next_step === 'Process Complete'
+                    ? 'Process Complete'
+                    : `Move to ${nextStepData?.next_step || 'Next Step'}`}
               </Button>
             </motion.div>
           </div>

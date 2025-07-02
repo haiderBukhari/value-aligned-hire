@@ -56,7 +56,7 @@ const JobDetails = () => {
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/resumes/${jobId}`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/resumes/${jobId}?stage=Application%20Screening`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',

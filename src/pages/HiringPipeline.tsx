@@ -228,7 +228,7 @@ const HiringPipeline = () => {
           className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-300 to-purple-300 rounded-full"
         />
       </div>
-      <div className="relative z-10 max-w-[960px] mx-auto p-6 space-y-8">
+      <div className="relative z-10 max-w-[960px] mx-auto p-2 py-6 space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
