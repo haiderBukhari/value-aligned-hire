@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useQuery } from "@tanstack/react-query";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useResumeNextStep } from "@/hooks/useResumeNextStep";
 
 interface Resume {
   id: string;
@@ -40,6 +41,9 @@ const ResumeDetails = () => {
     type: null,
     url: ''
   });
+
+  // Use the new hook for next step functionality
+  const { nextStep, isLoadingNextStep, moveToNextStep, isMoving } = useResumeNextStep(resumeId || '');
 
   const { data: resumes = [], isLoading } = useQuery({
     queryKey: ['resumes', jobId],
@@ -170,12 +174,12 @@ const ResumeDetails = () => {
     setDocumentModal({ isOpen: false, type: null, url: '' });
   };
 
-  const handleMoveToAssessment = () => {
-    toast.success("Candidate moved to assessment stage successfully!", {
-      description: "They will receive an assessment invitation shortly.",
-    });
-    // Navigate to assessments page
-    navigate('/dashboard/assessments');
+  const handleMoveToNextStep = () => {
+    if (nextStep === 'Process Complete') {
+      toast.success("This candidate has already completed all hiring stages!");
+      return;
+    }
+    moveToNextStep();
   };
 
   if (isLoading) {
@@ -219,7 +223,7 @@ const ResumeDetails = () => {
           ) : null}
         </div>
 
-        {/* Back Button Only */}
+        {/* Back Button and Dynamic Next Step Button */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <Button
