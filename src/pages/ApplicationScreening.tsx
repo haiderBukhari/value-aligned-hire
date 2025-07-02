@@ -9,7 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
   Search, Filter, Eye, Check, X, Star, Clock, 
-  FileText, Download, User, Briefcase, MapPin, Calendar, MoreHorizontal
+  FileText, Download, User, Briefcase, MapPin, Calendar, MoreHorizontal,
+  Users, TrendingUp, AlertCircle, CheckCircle
 } from "lucide-react";
 
 const ApplicationScreening = () => {
@@ -97,13 +98,13 @@ const ApplicationScreening = () => {
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'pending':
-        return 'bg-blue-500 text-white hover:bg-blue-600';
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'approved':
-        return 'bg-gray-200 text-gray-700 hover:bg-gray-300';
+        return 'bg-green-100 text-green-800 border-green-200';
       case 'rejected':
-        return 'bg-gray-200 text-gray-700 hover:bg-gray-300';
+        return 'bg-red-100 text-red-800 border-red-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -122,175 +123,223 @@ const ApplicationScreening = () => {
   });
 
   const stats = [
-    { label: "Total Applications", value: applications.length, color: "bg-blue-500", count: applications.length },
-    { label: "Pending Review", value: applications.filter(a => a.status === 'pending').length, color: "bg-blue-500", count: applications.filter(a => a.status === 'pending').length },
-    { label: "Approved", value: applications.filter(a => a.status === 'approved').length, color: "bg-green-500", count: applications.filter(a => a.status === 'approved').length },
-    { label: "Rejected", value: applications.filter(a => a.status === 'rejected').length, color: "bg-red-500", count: applications.filter(a => a.status === 'rejected').length }
+    { 
+      label: "Total Applications", 
+      value: applications.length, 
+      icon: Users,
+      color: "from-blue-500 to-blue-600",
+      bgColor: "bg-blue-50",
+      iconColor: "text-blue-500"
+    },
+    { 
+      label: "Pending Review", 
+      value: applications.filter(a => a.status === 'pending').length, 
+      icon: Clock,
+      color: "from-yellow-500 to-yellow-600",
+      bgColor: "bg-yellow-50",
+      iconColor: "text-yellow-500"
+    },
+    { 
+      label: "Approved", 
+      value: applications.filter(a => a.status === 'approved').length, 
+      icon: CheckCircle,
+      color: "from-green-500 to-green-600",
+      bgColor: "bg-green-50",
+      iconColor: "text-green-500"
+    },
+    { 
+      label: "Rejected", 
+      value: applications.filter(a => a.status === 'rejected').length, 
+      icon: AlertCircle,
+      color: "from-red-500 to-red-600",
+      bgColor: "bg-red-50",
+      iconColor: "text-red-500"
+    }
   ];
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Application Screening</h1>
-          <p className="text-gray-600 mt-1">Overview</p>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Application Screening</h1>
+            <p className="text-gray-600 mt-1">Review and manage candidate applications</p>
+          </div>
+          <div className="text-sm text-gray-500">
+            July 2, 2025 07:44 AM
+          </div>
         </div>
-        <div className="text-sm text-gray-500">
-          July 2, 2025 07:44 AM
-        </div>
-      </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        {stats.map((stat, index) => (
-          <div key={index} className="bg-white rounded-xl p-6 shadow-sm border">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-medium text-gray-600 mb-2">{stat.label}</h3>
-                <div className="flex items-center space-x-2">
-                  <span className="text-2xl font-bold text-gray-900">{stat.value}</span>
-                  <span className="text-sm text-gray-500">/{stat.count}</span>
-                  <span className="text-sm text-gray-400">2024</span>
+        {/* Enhanced Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {stats.map((stat, index) => (
+            <Card key={index} className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-600">{stat.label}</p>
+                    <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+                  </div>
+                  <div className={`p-4 rounded-full ${stat.bgColor}`}>
+                    <stat.icon className={`h-8 w-8 ${stat.iconColor}`} />
+                  </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Search */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search applications..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+                <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${stat.color}`} />
+              </CardContent>
+            </Card>
+          ))}
         </div>
-        <Button variant="outline" className="ml-4">
-          <Filter className="mr-2 h-4 w-4" />
-          Filter
-        </Button>
-      </div>
 
-      {/* Main Content */}
-      <Card className="shadow-sm">
-        <CardContent className="p-6">
-          <Tabs value={selectedTab} onValueChange={setSelectedTab} className="mb-6">
-            <TabsList className="grid w-full grid-cols-4 bg-gray-100">
-              <TabsTrigger 
-                value="pending" 
-                className="data-[state=active]:bg-blue-500 data-[state=active]:text-white"
-              >
-                Pending
-              </TabsTrigger>
-              <TabsTrigger 
-                value="rejected" 
-                className="data-[state=active]:bg-gray-500 data-[state=active]:text-white"
-              >
-                Rejected
-              </TabsTrigger>
-              <TabsTrigger 
-                value="approved" 
-                className="data-[state=active]:bg-gray-500 data-[state=active]:text-white"
-              >
-                Approved
-              </TabsTrigger>
-              <TabsTrigger 
-                value="all" 
-                className="data-[state=active]:bg-gray-500 data-[state=active]:text-white"
-              >
-                All
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+        {/* Search and Filter */}
+        <Card className="shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search applications..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <Button variant="outline" className="ml-4 border-gray-200 hover:border-blue-500">
+                <Filter className="mr-2 h-4 w-4" />
+                Filter
+              </Button>
+            </div>
 
-          <div className="rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead className="font-semibold text-gray-900">Candidate</TableHead>
-                  <TableHead className="font-semibold text-gray-900">Position</TableHead>
-                  <TableHead className="font-semibold text-gray-900">Applied Date</TableHead>
-                  <TableHead className="font-semibold text-gray-900">Score</TableHead>
-                  <TableHead className="font-semibold text-gray-900">Status</TableHead>
-                  <TableHead className="font-semibold text-gray-900">Reason</TableHead>
-                  <TableHead className="font-semibold text-gray-900">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredApplications.map((application) => (
-                  <TableRow key={application.id} className="hover:bg-gray-50">
-                    <TableCell>
-                      <div className="flex items-center space-x-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-blue-100 text-blue-600 text-xs">
-                            {application.candidate.split(' ').map(n => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium text-gray-900">{application.candidate}</div>
-                          <div className="text-xs text-gray-500">{application.email}</div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium text-gray-900">{application.position}</div>
-                      <div className="text-xs text-gray-500">{application.location}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-gray-900">{application.dateRequested}</div>
-                    </TableCell>
-                    <TableCell>
-                      <span className={getScoreColor(application.score)}>
-                        {application.score}%
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        className={`${getStatusColor(application.status)} border-0`}
-                      >
-                        {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-gray-600">{application.reason}</span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            {/* Tabs */}
+            <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+              <TabsList className="grid w-full max-w-md grid-cols-4 bg-gray-100 p-1">
+                <TabsTrigger 
+                  value="pending" 
+                  className="data-[state=active]:bg-yellow-500 data-[state=active]:text-white"
+                >
+                  Pending
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="approved" 
+                  className="data-[state=active]:bg-green-500 data-[state=active]:text-white"
+                >
+                  Approved
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="rejected" 
+                  className="data-[state=active]:bg-red-500 data-[state=active]:text-white"
+                >
+                  Rejected
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="all" 
+                  className="data-[state=active]:bg-blue-500 data-[state=active]:text-white"
+                >
+                  All
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </CardContent>
+        </Card>
+
+        {/* Enhanced Table */}
+        <Card className="shadow-lg border-0">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                    <TableHead className="font-bold text-gray-900 py-4">Candidate</TableHead>
+                    <TableHead className="font-bold text-gray-900">Position</TableHead>
+                    <TableHead className="font-bold text-gray-900">Applied Date</TableHead>
+                    <TableHead className="font-bold text-gray-900">Score</TableHead>
+                    <TableHead className="font-bold text-gray-900">Status</TableHead>
+                    <TableHead className="font-bold text-gray-900">Reason</TableHead>
+                    <TableHead className="font-bold text-gray-900">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {filteredApplications.map((application, index) => (
+                    <TableRow key={application.id} className={`hover:bg-gray-50 transition-colors border-b border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
+                      <TableCell className="py-4">
+                        <div className="flex items-center space-x-3">
+                          <Avatar className="h-10 w-10 ring-2 ring-gray-100">
+                            <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold text-sm">
+                              {application.candidate.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-semibold text-gray-900">{application.candidate}</div>
+                            <div className="text-sm text-gray-500">{application.email}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium text-gray-900">{application.position}</div>
+                        <div className="text-sm text-gray-500 flex items-center mt-1">
+                          <MapPin className="h-3 w-3 mr-1" />
+                          {application.location}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm text-gray-900 font-medium">{application.dateRequested}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <span className={`text-lg font-bold ${getScoreColor(application.score)}`}>
+                            {application.score}%
+                          </span>
+                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={`${getStatusColor(application.status)} px-3 py-1 text-xs font-medium`}>
+                          {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-gray-600">{application.reason}</span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 text-green-600 hover:bg-green-50 hover:text-green-700"
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-50"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

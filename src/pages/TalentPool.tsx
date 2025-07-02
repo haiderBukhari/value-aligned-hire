@@ -5,8 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Search, Filter, Eye, Users, TrendingUp, Clock, Star, 
   MapPin, Mail, Phone, Calendar, Award, Target, CheckCircle, 
@@ -17,9 +18,10 @@ import { useNavigate } from "react-router-dom";
 const TalentPool = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTab, setSelectedTab] = useState("all");
+  const [jobFilter, setJobFilter] = useState("all");
+  const [stageFilter, setStageFilter] = useState("all");
 
-  // Dummy candidate data with detailed stages
+  // Enhanced candidate data
   const candidates = [
     {
       id: 1,
@@ -138,8 +140,13 @@ const TalentPool = () => {
     return 'text-red-600';
   };
 
+  const getStageDisplayName = (stage: string) => {
+    return stage.replace('_', ' ').split(' ').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+  };
+
   const handleViewCandidate = (candidateId: number) => {
-    // Store candidate data in localStorage for the detail page
     const candidate = candidates.find(c => c.id === candidateId);
     if (candidate) {
       localStorage.setItem('selectedCandidate', JSON.stringify(candidate));
@@ -149,147 +156,233 @@ const TalentPool = () => {
 
   const filteredCandidates = candidates.filter(candidate => {
     const matchesSearch = candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         candidate.position.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
+                         candidate.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         candidate.location.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesJob = jobFilter === 'all' || candidate.position.toLowerCase().includes(jobFilter.toLowerCase());
+    const matchesStage = stageFilter === 'all' || candidate.currentStage === stageFilter;
+    return matchesSearch && matchesJob && matchesStage;
   });
 
+  const uniquePositions = [...new Set(candidates.map(c => c.position))];
+  const uniqueStages = [...new Set(candidates.map(c => c.currentStage))];
+
   const stats = [
-    { label: "Total Candidates", value: candidates.length, color: "bg-blue-50 text-blue-600", icon: Users },
-    { label: "Active Pipeline", value: candidates.filter(c => c.currentStage !== 'hired').length, color: "bg-green-50 text-green-600", icon: TrendingUp },
-    { label: "Avg Score", value: Math.round(candidates.reduce((acc, c) => acc + c.overallScore, 0) / candidates.length), color: "bg-purple-50 text-purple-600", icon: Star },
-    { label: "In Progress", value: candidates.filter(c => c.currentStage.includes('interview')).length, color: "bg-orange-50 text-orange-600", icon: Clock }
+    { 
+      label: "Total Candidates", 
+      value: candidates.length, 
+      icon: Users,
+      color: "from-blue-500 to-blue-600",
+      bgColor: "bg-blue-50",
+      iconColor: "text-blue-500"
+    },
+    { 
+      label: "Active Pipeline", 
+      value: candidates.filter(c => c.currentStage !== 'hired').length, 
+      icon: TrendingUp,
+      color: "from-green-500 to-green-600",
+      bgColor: "bg-green-50",
+      iconColor: "text-green-500"
+    },
+    { 
+      label: "Avg Score", 
+      value: Math.round(candidates.reduce((acc, c) => acc + c.overallScore, 0) / candidates.length), 
+      icon: Star,
+      color: "from-yellow-500 to-yellow-600",
+      bgColor: "bg-yellow-50",
+      iconColor: "text-yellow-500"
+    },
+    { 
+      label: "In Progress", 
+      value: candidates.filter(c => c.currentStage.includes('interview')).length, 
+      icon: Clock,
+      color: "from-purple-500 to-purple-600",
+      bgColor: "bg-purple-50",
+      iconColor: "text-purple-500"
+    }
   ];
 
   return (
-    <div className="space-y-8 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold text-gray-900">Talent Pool</h2>
-          <p className="text-gray-600 mt-1">Manage and track all candidates across different stages</p>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">Talent Pool</h2>
+            <p className="text-gray-600 mt-1">Manage and track all candidates across different stages</p>
+          </div>
         </div>
-      </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
-          <Card key={index} className="border-l-4 border-l-blue-500 shadow-lg hover:shadow-xl transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-2">{stat.value}</p>
+        {/* Enhanced Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {stats.map((stat, index) => (
+            <Card key={index} className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-600">{stat.label}</p>
+                    <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+                  </div>
+                  <div className={`p-4 rounded-full ${stat.bgColor}`}>
+                    <stat.icon className={`h-8 w-8 ${stat.iconColor}`} />
+                  </div>
                 </div>
-                <div className={`p-3 rounded-full ${stat.color}`}>
-                  <stat.icon className="h-6 w-6" />
-                </div>
+                <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${stat.color}`} />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Enhanced Search and Filter */}
+        <Card className="shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row gap-4 items-center">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search candidates, positions, locations..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                />
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              <Select value={jobFilter} onValueChange={setJobFilter}>
+                <SelectTrigger className="w-48 border-gray-200">
+                  <SelectValue placeholder="Filter by Job" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Positions</SelectItem>
+                  {uniquePositions.map((position) => (
+                    <SelectItem key={position} value={position}>{position}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={stageFilter} onValueChange={setStageFilter}>
+                <SelectTrigger className="w-48 border-gray-200">
+                  <SelectValue placeholder="Filter by Stage" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Stages</SelectItem>
+                  {uniqueStages.map((stage) => (
+                    <SelectItem key={stage} value={stage}>{getStageDisplayName(stage)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" className="border-gray-200 hover:border-blue-500">
+                <Filter className="mr-2 h-4 w-4" />
+                More Filters
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Search and Filter */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search candidates, positions..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 border-2 border-gray-200 focus:border-blue-500"
-          />
-        </div>
-        <Button variant="outline" className="shrink-0 border-2 border-gray-200 hover:border-blue-500">
-          <Filter className="mr-2 h-4 w-4" />
-          Filter
-        </Button>
-      </div>
-
-      {/* Candidates List */}
-      <Card className="shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
-          <CardTitle className="text-xl">Candidate Pipeline</CardTitle>
-          <CardDescription>Track candidates through your hiring process</CardDescription>
-        </CardHeader>
-        
-        <CardContent className="p-0">
-          <div className="space-y-1">
-            {filteredCandidates.map((candidate, index) => (
-              <div key={candidate.id} className={`p-6 border-b border-gray-100 hover:bg-gray-50 transition-colors ${index === 0 ? 'bg-blue-25' : ''}`}>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-4">
-                    <Avatar className="h-12 w-12 ring-2 ring-blue-100">
-                      <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold">
-                        {candidate.name.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                    
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center space-x-3">
-                        <h3 className="text-lg font-semibold text-gray-900">{candidate.name}</h3>
-                        <Badge className={getStatusColor(candidate.currentStage)}>
-                          {candidate.currentStage.replace('_', ' ').toUpperCase()}
+        {/* Enhanced Candidates Table */}
+        <Card className="shadow-lg border-0">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
+            <CardTitle className="text-xl text-gray-900">Candidate Pipeline</CardTitle>
+            <CardDescription>Track candidates through your hiring process</CardDescription>
+          </CardHeader>
+          
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                    <TableHead className="font-bold text-gray-900 py-4">Candidate</TableHead>
+                    <TableHead className="font-bold text-gray-900">Position</TableHead>
+                    <TableHead className="font-bold text-gray-900">Current Stage</TableHead>
+                    <TableHead className="font-bold text-gray-900">Score</TableHead>
+                    <TableHead className="font-bold text-gray-900">Progress</TableHead>
+                    <TableHead className="font-bold text-gray-900">Applied</TableHead>
+                    <TableHead className="font-bold text-gray-900">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredCandidates.map((candidate, index) => (
+                    <TableRow key={candidate.id} className={`hover:bg-gray-50 transition-colors border-b border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
+                      <TableCell className="py-4">
+                        <div className="flex items-center space-x-4">
+                          <Avatar className="h-12 w-12 ring-2 ring-blue-100">
+                            <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold">
+                              {candidate.name.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="space-y-1">
+                            <h3 className="font-semibold text-gray-900">{candidate.name}</h3>
+                            <div className="flex items-center space-x-2 text-sm text-gray-500">
+                              <Mail className="h-3 w-3" />
+                              <span>{candidate.email}</span>
+                            </div>
+                            <div className="flex items-center space-x-2 text-sm text-gray-500">
+                              <MapPin className="h-3 w-3" />
+                              <span>{candidate.location}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="font-medium text-gray-900">{candidate.position}</div>
+                          <div className="text-sm text-gray-500">{candidate.experienceYears} years exp.</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={`${getStatusColor(candidate.currentStage)} px-3 py-1 text-xs font-medium`}>
+                          {getStageDisplayName(candidate.currentStage)}
                         </Badge>
-                        <div className="flex items-center space-x-1">
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
                           <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                          <span className={`font-semibold ${getScoreColor(candidate.overallScore)}`}>
+                          <span className={`text-lg font-bold ${getScoreColor(candidate.overallScore)}`}>
                             {candidate.overallScore}%
                           </span>
                         </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-                        <div className="flex items-center space-x-2">
-                          <Briefcase className="h-4 w-4" />
-                          <span>{candidate.position}</span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-2">
+                          <Progress value={candidate.overallScore} className="w-24 h-2" />
+                          <div className="flex flex-wrap gap-1">
+                            {candidate.skills.slice(0, 2).map((skill) => (
+                              <Badge key={skill} variant="secondary" className="text-xs px-2 py-0.5">
+                                {skill}
+                              </Badge>
+                            ))}
+                            {candidate.skills.length > 2 && (
+                              <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                                +{candidate.skills.length - 2}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <MapPin className="h-4 w-4" />
-                          <span>{candidate.location}</span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm text-gray-600">
+                          {new Date(candidate.appliedDate).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                          })}
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Calendar className="h-4 w-4" />
-                          <span>Applied {new Date(candidate.appliedDate).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-500">Skills:</span>
-                        <div className="flex flex-wrap gap-1">
-                          {candidate.skills.slice(0, 3).map((skill) => (
-                            <Badge key={skill} variant="secondary" className="text-xs">
-                              {skill}
-                            </Badge>
-                          ))}
-                          {candidate.skills.length > 3 && (
-                            <Badge variant="secondary" className="text-xs">
-                              +{candidate.skills.length - 3} more
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <Progress value={candidate.overallScore} className="w-full h-2" />
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-blue-600 hover:bg-blue-50"
-                      onClick={() => handleViewCandidate(candidate.id)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+                      </TableCell>
+                      <TableCell>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                          onClick={() => handleViewCandidate(candidate.id)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
