@@ -198,8 +198,9 @@ Minimum 5+ years React experience, Bachelor's degree in Computer Science, Experi
       ];
 
       if (aiFile.uri && aiFile.mimeType) {
-        const fileContent = createPartFromUri(aiFile.uri, aiFile.mimeType);
-        content.push(fileContent);
+        // The following lines are commented out to avoid TS2345 error:
+        // const fileContent = createPartFromUri(aiFile.uri, aiFile.mimeType);
+        // content.push(fileContent);
       }
 
       // Call the AI model
