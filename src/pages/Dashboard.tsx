@@ -13,12 +13,14 @@ import {
 } from "lucide-react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useCompanyInfo } from "@/hooks/useCompanyInfo";
+import { useWorkflow } from "@/hooks/useWorkflow";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState("overview");
   const { companyName } = useCompanyInfo();
+  const { workflowStages, isLoading } = useWorkflow();
 
   // Logout handler
   const handleLogout = () => {
@@ -95,75 +97,91 @@ const Dashboard = () => {
     }
   ];
 
-  // Updated navigation items with Talent Pool
-  const navigationItems = [
-    {
-      icon: Home,
-      label: "Dashboard",
-      path: "/dashboard",
-      count: null
-    },
-    {
-      icon: Building2,
-      label: `Get to know ${companyName}`,
-      path: "/dashboard/company",
-      count: null
-    },
-    {
-      icon: Users,
-      label: "Talent Pool",
-      path: "/dashboard/talent-pool",
-      count: 89
-    },
-    {
-      icon: Plus,
-      label: "Create Job",
-      path: "/dashboard/create-job",
-      count: null
-    },
-    {
-      icon: FileText,
-      label: "Application Screening",
-      path: "/dashboard/jobs",
-      count: 156
-    },
-    {
-      icon: ClipboardList,
-      label: "Assessments",
-      path: "/dashboard/assessments",
-      count: 42
-    },
-    {
-      icon: Users,
-      label: "Initial Interview",
-      path: "/dashboard/initial-interview",
-      count: 18
-    },
-    {
-      icon: UserCheck,
-      label: "Secondary Interview",
-      path: "/dashboard/secondary-interview",
-      count: 12
-    },
-    {
-      icon: Calendar,
-      label: "Final Interview",
-      path: "/dashboard/final-interview",
-      count: 8
-    },
-    {
-      icon: Handshake,
-      label: "Offer Stage",
-      path: "/dashboard/offer-stage",
-      count: 5
-    },
-    {
-      icon: Target,
-      label: "Hiring Pipeline",
-      path: "/dashboard/pipeline",
-      count: 91
+  // Generate navigation items based on workflow stages
+  const getNavigationItems = () => {
+    const baseItems = [
+      {
+        icon: Home,
+        label: "Dashboard",
+        path: "/dashboard",
+        count: null
+      },
+      {
+        icon: Building2,
+        label: `Get to know ${companyName}`,
+        path: "/dashboard/company",
+        count: null
+      },
+      {
+        icon: Users,
+        label: "Talent Pool",
+        path: "/dashboard/talent-pool",
+        count: 89
+      },
+      {
+        icon: Plus,
+        label: "Create Job",
+        path: "/dashboard/create-job",
+        count: null
+      }
+    ];
+
+    if (isLoading) {
+      return baseItems;
     }
-  ];
+
+    const workflowItems = workflowStages.map((stage, index) => {
+      const getIcon = (stageName: string) => {
+        if (stageName.includes('Application Screening')) return FileText;
+        if (stageName.includes('Assessment')) return ClipboardList;
+        if (stageName.includes('Initial Interview')) return Users;
+        if (stageName.includes('Secondary Interview')) return UserCheck;
+        if (stageName.includes('Final Interview')) return Calendar;
+        if (stageName.includes('Offer Stage')) return Handshake;
+        return FileText;
+      };
+
+      const getPath = (stageName: string) => {
+        if (stageName.includes('Application Screening')) return '/dashboard/jobs';
+        if (stageName.includes('Assessment')) return '/dashboard/assessments';
+        if (stageName.includes('Initial Interview')) return '/dashboard/initial-interview';
+        if (stageName.includes('Secondary Interview')) return '/dashboard/secondary-interview';
+        if (stageName.includes('Final Interview')) return '/dashboard/final-interview';
+        if (stageName.includes('Offer Stage')) return '/dashboard/offer-stage';
+        return '/dashboard/jobs';
+      };
+
+      const getCount = (stageName: string) => {
+        if (stageName.includes('Application Screening')) return 156;
+        if (stageName.includes('Assessment')) return 42;
+        if (stageName.includes('Initial Interview')) return 18;
+        if (stageName.includes('Secondary Interview')) return 12;
+        if (stageName.includes('Final Interview')) return 8;
+        if (stageName.includes('Offer Stage')) return 5;
+        return Math.floor(Math.random() * 50) + 10;
+      };
+
+      return {
+        icon: getIcon(stage.name),
+        label: stage.name,
+        path: getPath(stage.name),
+        count: getCount(stage.name)
+      };
+    });
+
+    const endItems = [
+      {
+        icon: Target,
+        label: "Hiring Pipeline",
+        path: "/dashboard/pipeline",
+        count: 91
+      }
+    ];
+
+    return [...baseItems, ...workflowItems, ...endItems];
+  };
+
+  const navigationItems = getNavigationItems();
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -323,7 +341,7 @@ const Dashboard = () => {
       <div className="flex-1 flex flex-col ml-80">
         {/* Enhanced Header */}
         {isDashboardHome && (
-          <header className="bg-white shadow-sm border-b border-gray-200 px-8 py-6">
+          <header="bg-white shadow-sm border-b border-gray-200 px-8 py-6">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-1">

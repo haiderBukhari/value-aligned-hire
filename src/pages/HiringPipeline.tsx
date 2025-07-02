@@ -7,13 +7,17 @@ import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Settings, Plus, Trash2, GripVertical, CheckCircle, Users, Trophy, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
+import { useWorkflow } from "@/hooks/useWorkflow";
 
 const HiringPipeline = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const { toast } = useToast();
+  const { 
+    workflowStages, 
+    setWorkflowStages, 
+    isLoading, 
+    isSaving, 
+    saveWorkflow 
+  } = useWorkflow();
 
   // Available stages that can be added
   const availableStages = [
@@ -22,201 +26,10 @@ const HiringPipeline = () => {
     { id: "assessment", name: "Assessment", description: "Technical or skills assessment" },
   ];
 
-  // Current pipeline configuration
-  const [pipelineStages, setPipelineStages] = useState([
-    {
-      id: "application-screening",
-      name: "Application Screening",
-      description: "Initial review of applications",
-      isMandatory: true,
-      order: 1
-    },
-    {
-      id: "final-interview",
-      name: "Final Interview",
-      description: "Final decision interview",
-      isMandatory: true,
-      order: 2
-    },
-    {
-      id: "offer-stage",
-      name: "Offer Stage",
-      description: "Extending and negotiating offers",
-      isMandatory: true,
-      order: 3
-    }
-  ]);
-
-  // Convert pipeline stages to workflow format
-  const convertToWorkflowFormat = (stages: any[]) => {
-    const workflow: any = {};
-    stages.forEach((stage, index) => {
-      workflow[`step${index + 1}`] = stage.name;
-    });
-    return workflow;
-  };
-
-  // Convert workflow format to pipeline stages
-  const convertFromWorkflowFormat = (workflowProcess: any) => {
-    const stages = [];
-    const stepKeys = Object.keys(workflowProcess).sort((a, b) => {
-      const numA = parseInt(a.replace('step', ''));
-      const numB = parseInt(b.replace('step', ''));
-      return numA - numB;
-    });
-
-    stepKeys.forEach((stepKey, index) => {
-      const stepName = workflowProcess[stepKey];
-      let stageId = stepName.toLowerCase().replace(/\s+/g, '-');
-      let isMandatory = false;
-
-      // Determine if stage is mandatory based on name
-      if (stepName.includes('Application Screening') || stepName.includes('Final Interview') || stepName.includes('Offer Stage')) {
-        isMandatory = true;
-      }
-
-      stages.push({
-        id: stageId,
-        name: stepName,
-        description: getStageDescription(stepName),
-        isMandatory,
-        order: index + 1
-      });
-    });
-
-    return stages;
-  };
-
-  const getStageDescription = (stageName: string) => {
-    const descriptions: any = {
-      'Application Screening': 'Initial review of applications',
-      'Assessment': 'Technical or skills assessment',
-      'Initial Interview': 'First round interview',
-      'Secondary Interview': 'Second round interview',
-      'Final Interview': 'Final decision interview',
-      'Offer Stage': 'Extending and negotiating offers'
-    };
-    return descriptions[stageName] || 'Custom stage';
-  };
-
-  // Fetch workflow from API
-  const fetchWorkflow = async () => {
-    try {
-      setIsLoading(true);
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to access your workflow.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/workflow`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.workflow && data.workflow.workflow_process) {
-          const stages = convertFromWorkflowFormat(data.workflow.workflow_process);
-          setPipelineStages(stages);
-        }
-      } else if (response.status === 401) {
-        toast({
-          title: "Authentication Error",
-          description: "Your session has expired. Please log in again.",
-          variant: "destructive",
-        });
-      } else {
-        console.error('Failed to fetch workflow:', response.statusText);
-      }
-    } catch (error) {
-      console.error('Error fetching workflow:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load workflow. Using default configuration.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Save workflow to API
-  const saveWorkflow = async () => {
-    try {
-      setIsSaving(true);
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to save your workflow.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const workflowProcess = convertToWorkflowFormat(pipelineStages);
-
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/workflow`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          workflow_process: workflowProcess
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        toast({
-          title: "Success",
-          description: `Workflow ${data.action === 'created' ? 'created' : 'updated'} successfully!`,
-        });
-      } else if (response.status === 401) {
-        toast({
-          title: "Authentication Error",
-          description: "Your session has expired. Please log in again.",
-          variant: "destructive",
-        });
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        toast({
-          title: "Error",
-          description: errorData.error || "Failed to save workflow.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('Error saving workflow:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save workflow. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchWorkflow();
-  }, []);
-
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
 
-    const draggableStages = pipelineStages.filter(stage => !stage.isMandatory);
+    const draggableStages = workflowStages.filter(stage => !stage.isMandatory);
     const [reorderedItem] = draggableStages.splice(result.source.index, 1);
     draggableStages.splice(result.destination.index, 0, reorderedItem);
 
@@ -224,15 +37,15 @@ const HiringPipeline = () => {
     const newPipeline = [];
     
     // Add Application Screening (always first)
-    const appScreening = pipelineStages.find(s => s.name === "Application Screening");
+    const appScreening = workflowStages.find(s => s.name === "Application Screening");
     if (appScreening) newPipeline.push(appScreening);
     
     // Add draggable stages
     draggableStages.forEach(stage => newPipeline.push(stage));
     
     // Add Final Interview and Offer Stage (always last two)
-    const finalInterview = pipelineStages.find(s => s.name === "Final Interview");
-    const offerStage = pipelineStages.find(s => s.name === "Offer Stage");
+    const finalInterview = workflowStages.find(s => s.name === "Final Interview");
+    const offerStage = workflowStages.find(s => s.name === "Offer Stage");
     if (finalInterview) newPipeline.push(finalInterview);
     if (offerStage) newPipeline.push(offerStage);
 
@@ -242,11 +55,11 @@ const HiringPipeline = () => {
       order: index + 1
     }));
 
-    setPipelineStages(updatedItems);
+    setWorkflowStages(updatedItems);
   };
 
   const addStage = (stageTemplate: any) => {
-    const currentStages = [...pipelineStages];
+    const currentStages = [...workflowStages];
     let insertIndex;
 
     // Determine insertion order based on stage type
@@ -284,24 +97,28 @@ const HiringPipeline = () => {
       order: index + 1
     }));
     
-    setPipelineStages(updatedStages);
+    setWorkflowStages(updatedStages);
     setIsAddDialogOpen(false);
   };
 
   const removeStage = (stageId: string) => {
-    const updatedStages = pipelineStages
+    const updatedStages = workflowStages
       .filter(stage => stage.id !== stageId)
       .map((stage, index) => ({ ...stage, order: index + 1 }));
     
-    setPipelineStages(updatedStages);
+    setWorkflowStages(updatedStages);
   };
 
   const getAvailableStages = () => {
-    const currentStageIds = pipelineStages.map(stage => stage.id);
+    const currentStageIds = workflowStages.map(stage => stage.id);
     return availableStages.filter(stage => !currentStageIds.includes(stage.id));
   };
 
-  const draggableStages = pipelineStages.filter(stage => !stage.isMandatory);
+  const handleSaveWorkflow = async () => {
+    await saveWorkflow(workflowStages);
+  };
+
+  const draggableStages = workflowStages.filter(stage => !stage.isMandatory);
 
   if (isLoading) {
     return (
@@ -361,7 +178,7 @@ const HiringPipeline = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Stages</p>
-                  <p className="text-3xl font-bold text-gray-900">{pipelineStages.length}</p>
+                  <p className="text-3xl font-bold text-gray-900">{workflowStages.length}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-blue-50">
                   <Settings className="h-6 w-6 text-blue-600" />
@@ -375,7 +192,7 @@ const HiringPipeline = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Mandatory Stages</p>
-                  <p className="text-3xl font-bold text-gray-900">{pipelineStages.filter(s => s.isMandatory).length}</p>
+                  <p className="text-3xl font-bold text-gray-900">{workflowStages.filter(s => s.isMandatory).length}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-red-50">
                   <CheckCircle className="h-6 w-6 text-red-600" />
@@ -389,7 +206,7 @@ const HiringPipeline = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Optional Stages</p>
-                  <p className="text-3xl font-bold text-gray-900">{pipelineStages.filter(s => !s.isMandatory).length}</p>
+                  <p className="text-3xl font-bold text-gray-900">{workflowStages.filter(s => !s.isMandatory).length}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-purple-50">
                   <Trophy className="h-6 w-6 text-purple-600" />
@@ -410,7 +227,7 @@ const HiringPipeline = () => {
           <CardContent className="p-6">
             <div className="space-y-4 w-full">
               {/* Application Screening - Fixed at top */}
-              {pipelineStages.filter(stage => stage.name === "Application Screening").map((stage) => (
+              {workflowStages.filter(stage => stage.name === "Application Screening").map((stage) => (
                 <div key={stage.id} className="w-full bg-white border rounded-lg p-6 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
@@ -484,7 +301,7 @@ const HiringPipeline = () => {
               )}
 
               {/* Final Interview and Offer Stage - Fixed at bottom */}
-              {pipelineStages.filter(stage => stage.name === "Final Interview" || stage.name === "Offer Stage").map((stage) => (
+              {workflowStages.filter(stage => stage.name === "Final Interview" || stage.name === "Offer Stage").map((stage) => (
                 <div key={stage.id} className="w-full bg-white border rounded-lg p-6 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
@@ -516,10 +333,10 @@ const HiringPipeline = () => {
             <div className="space-y-6">
               <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
                 <span>Pipeline Flow</span>
-                <span>{pipelineStages.length} Total Stages</span>
+                <span>{workflowStages.length} Total Stages</span>
               </div>
               <div className="flex items-center space-x-4 overflow-x-auto pb-4">
-                {pipelineStages.map((stage, index) => (
+                {workflowStages.map((stage, index) => (
                   <div key={stage.id} className="flex items-center space-x-4 min-w-0">
                     <div className="flex flex-col items-center space-y-2 min-w-32">
                       <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold ${
@@ -531,7 +348,7 @@ const HiringPipeline = () => {
                         <p className="text-sm font-medium text-gray-900 truncate">{stage.name}</p>
                       </div>
                     </div>
-                    {index < pipelineStages.length - 1 && (
+                    {index < workflowStages.length - 1 && (
                       <div className="flex-shrink-0 w-8 h-0.5 bg-gray-300"></div>
                     )}
                   </div>
@@ -546,7 +363,7 @@ const HiringPipeline = () => {
           <Button 
             size="lg" 
             className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8"
-            onClick={saveWorkflow}
+            onClick={handleSaveWorkflow}
             disabled={isSaving}
           >
             {isSaving ? (
