@@ -20,6 +20,13 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const { companyName } = useCompanyInfo();
 
+  // Logout handler
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
+    navigate('/');
+  };
+
   const isDashboardHome = location.pathname === "/dashboard";
 
   // Sample data for charts
@@ -297,6 +304,18 @@ const Dashboard = () => {
               </div>
             </div>
           </ScrollArea>
+
+          {/* Logout Button at the bottom */}
+          <div className="p-6 border-t border-gray-200 flex-shrink-0">
+            <Button
+              variant="ghost"
+              className="w-full flex items-center justify-start text-gray-600 hover:text-red-600 hover:bg-red-50 font-medium"
+              onClick={handleLogout}
+            >
+              <LogOut className="mr-3 h-5 w-5" />
+              Logout
+            </Button>
+          </div>
         </div>
       </div>
 
