@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useResumeNextStep } from "@/hooks/useResumeNextStep";
 
 interface Resume {
   id: string;
@@ -39,6 +40,9 @@ const ResumeDetails = () => {
     type: null,
     url: ''
   });
+
+  // Use the new hook for next step functionality
+  const { nextStep, isLoadingNextStep, moveToNextStep, isMoving } = useResumeNextStep(resumeId || '');
 
   const { data: resumes = [], isLoading } = useQuery({
     queryKey: ['resumes', jobId],
@@ -138,12 +142,12 @@ const ResumeDetails = () => {
     setDocumentModal({ isOpen: false, type: null, url: '' });
   };
 
-  const handleMoveToAssessment = () => {
-    toast.success("Candidate moved to assessment stage successfully!", {
-      description: "They will receive an assessment invitation shortly.",
-    });
-    // Navigate to assessments page
-    navigate('/dashboard/assessments');
+  const handleMoveToNextStep = () => {
+    if (nextStep === 'Process Complete') {
+      toast.success("This candidate has already completed all hiring stages!");
+      return;
+    }
+    moveToNextStep();
   };
 
   if (isLoading) {
@@ -187,7 +191,7 @@ const ResumeDetails = () => {
           ) : null}
         </div>
 
-        {/* Back Button Only */}
+        {/* Back Button and Dynamic Next Step Button */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <Button
@@ -198,19 +202,42 @@ const ResumeDetails = () => {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Applications
             </Button>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <Button
-                onClick={handleMoveToAssessment}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold px-4 py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+            
+            {/* Dynamic Next Step Button */}
+            {!isLoadingNextStep && nextStep && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
               >
-                <Send className="mr-3 h-5 w-5" />
-                Move to Assessment Stage
-              </Button>
-            </motion.div>
+                <Button
+                  onClick={handleMoveToNextStep}
+                  disabled={isMoving || nextStep === 'Process Complete'}
+                  className={`${
+                    nextStep === 'Process Complete' 
+                      ? 'bg-green-600 hover:bg-green-700' 
+                      : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'
+                  } text-white font-semibold px-4 py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none`}
+                >
+                  {isMoving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                      Moving...
+                    </>
+                  ) : nextStep === 'Process Complete' ? (
+                    <>
+                      <CheckCircle className="mr-3 h-5 w-5" />
+                      Process Complete
+                    </>
+                  ) : (
+                    <>
+                      <Send className="mr-3 h-5 w-5" />
+                      Move to {nextStep}
+                    </>
+                  )}
+                </Button>
+              </motion.div>
+            )}
           </div>
           <div className="flex items-start justify-between">
             <div>
