@@ -90,6 +90,20 @@ const ResumeDetails = () => {
     enabled: !!jobId,
   });
 
+  // Calculate recommendation-based statistics from all resumes for this job
+  const recommendationStats = resumes.reduce((stats: Record<string, number>, resume: Resume) => {
+    const recommendation = resume.final_recommendation?.toLowerCase();
+    if (recommendation === 'strong match') {
+      stats.strongMatches = (stats.strongMatches || 0) + 1;
+    } else if (recommendation === 'moderate fit' || recommendation === 'partial match') {
+      stats.moderateFit = (stats.moderateFit || 0) + 1;
+    } else if (recommendation === 'weak match' || recommendation === 'not a fit' || recommendation === 'no match') {
+      stats.notAFit = (stats.notAFit || 0) + 1;
+    }
+    stats.totalApplicants = (stats.totalApplicants || 0) + 1;
+    return stats;
+  }, {});
+
   const getRecommendationColor = (recommendation: string) => {
     switch (recommendation?.toLowerCase()) {
       case 'strong match':
@@ -175,6 +189,42 @@ const ResumeDetails = () => {
     );
   }
 
+  // Updated stats for recommendation-based display
+  const stats = [
+    { 
+      label: "Strong Matches", 
+      value: recommendationStats.strongMatches || 0, 
+      icon: CheckCircle,
+      color: "from-green-500 to-green-600",
+      bgColor: "bg-green-50",
+      iconColor: "text-green-500"
+    },
+    { 
+      label: "Moderate Fit", 
+      value: recommendationStats.moderateFit || 0, 
+      icon: AlertCircle,
+      color: "from-yellow-500 to-yellow-600",
+      bgColor: "bg-yellow-50",
+      iconColor: "text-yellow-500"
+    },
+    { 
+      label: "Not a Fit", 
+      value: recommendationStats.notAFit || 0, 
+      icon: Info,
+      color: "from-red-500 to-red-600",
+      bgColor: "bg-red-50",
+      iconColor: "text-red-500"
+    },
+    { 
+      label: "Total Applicants", 
+      value: recommendationStats.totalApplicants || 0, 
+      icon: Users,
+      color: "from-blue-500 to-blue-600",
+      bgColor: "bg-blue-50",
+      iconColor: "text-blue-500"
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-full mx-auto p-6 pt-0">
@@ -189,6 +239,26 @@ const ResumeDetails = () => {
               </h1>
             </>
           ) : null}
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {stats.map((stat, index) => (
+            <Card key={index} className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-gray-600">{stat.label}</p>
+                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  </div>
+                  <div className={`p-2 rounded-full ${stat.bgColor}`}>
+                    <stat.icon className={`h-5 w-5 ${stat.iconColor}`} />
+                  </div>
+                </div>
+                <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${stat.color}`} />
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         {/* Back Button and Dynamic Next Step Button */}
