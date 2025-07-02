@@ -1,285 +1,474 @@
-
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
-import { Plus, GripVertical, Trash2, Save, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { Settings, Plus, Trash2, GripVertical, CheckCircle, Users, Trophy, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useWorkflow } from "@/hooks/useWorkflow";
-
-interface WorkflowStage {
-  id: string;
-  name: string;
-  description: string;
-  isMandatory: boolean;
-  order: number;
-}
+import { motion } from "framer-motion";
 
 const HiringPipeline = () => {
-  const { workflowStages, isLoading, isSaving, saveWorkflow, refreshWorkflow } = useWorkflow();
-  const [stages, setStages] = useState<WorkflowStage[]>([]);
-  const [hasChanges, setHasChanges] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const { 
+    workflowStages, 
+    setWorkflowStages, 
+    isLoading, 
+    isSaving, 
+    saveWorkflow, 
+    fetchWorkflow 
+  } = useWorkflow();
 
-  // Update local stages when workflow data changes
-  useEffect(() => {
-    if (workflowStages.length > 0) {
-      setStages(workflowStages);
-      setHasChanges(false);
-    }
-  }, [workflowStages]);
-
-  const addStage = () => {
-    const newStage: WorkflowStage = {
-      id: `stage-${Date.now()}`,
-      name: "New Stage",
-      description: "Add description for this stage",
-      isMandatory: false,
-      order: stages.length + 1
-    };
-    const updatedStages = [...stages, newStage];
-    setStages(updatedStages);
-    setHasChanges(true);
-  };
-
-  const updateStage = (id: string, field: keyof WorkflowStage, value: string | boolean) => {
-    const updatedStages = stages.map(stage =>
-      stage.id === id ? { ...stage, [field]: value } : stage
-    );
-    setStages(updatedStages);
-    setHasChanges(true);
-  };
-
-  const removeStage = (id: string) => {
-    const stageToRemove = stages.find(stage => stage.id === id);
-    if (stageToRemove?.isMandatory) {
-      return; // Cannot remove mandatory stages
-    }
-    
-    const updatedStages = stages.filter(stage => stage.id !== id)
-      .map((stage, index) => ({ ...stage, order: index + 1 }));
-    setStages(updatedStages);
-    setHasChanges(true);
-  };
+  // Available stages that can be added
+  const availableStages = [
+    { id: "initial-interview", name: "Initial Interview", description: "First round interview" },
+    { id: "secondary-interview", name: "Secondary Interview", description: "Second round interview" },
+    { id: "assessment", name: "Assessment", description: "Technical or skills assessment" },
+  ];
 
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
 
-    const reorderedStages = Array.from(stages);
-    const [removed] = reorderedStages.splice(result.source.index, 1);
-    reorderedStages.splice(result.destination.index, 0, removed);
+    const draggableStages = workflowStages.filter(stage => !stage.isMandatory);
+    const [reorderedItem] = draggableStages.splice(result.source.index, 1);
+    draggableStages.splice(result.destination.index, 0, reorderedItem);
 
-    const updatedStages = reorderedStages.map((stage, index) => ({
-      ...stage,
+    // Rebuild the full pipeline with mandatory stages in fixed positions
+    const newPipeline = [];
+    
+    // Add Application Screening (always first)
+    const appScreening = workflowStages.find(s => s.name === "Application Screening");
+    if (appScreening) newPipeline.push(appScreening);
+    
+    // Add draggable stages
+    draggableStages.forEach(stage => newPipeline.push(stage));
+    
+    // Add Final Interview and Offer Stage (always last two)
+    const finalInterview = workflowStages.find(s => s.name === "Final Interview");
+    const offerStage = workflowStages.find(s => s.name === "Offer Stage");
+    if (finalInterview) newPipeline.push(finalInterview);
+    if (offerStage) newPipeline.push(offerStage);
+
+    // Update order numbers
+    const updatedItems = newPipeline.map((item, index) => ({
+      ...item,
       order: index + 1
     }));
 
-    setStages(updatedStages);
-    setHasChanges(true);
+    setWorkflowStages(updatedItems);
   };
 
-  const handleSave = async () => {
-    const success = await saveWorkflow(stages);
+  const addStage = (stageTemplate: any) => {
+    const currentStages = [...workflowStages];
+    let insertIndex;
+
+    // Determine insertion order based on stage type
+    if (stageTemplate.id === "initial-interview") {
+      // Find if secondary interview exists
+      const secondaryIndex = currentStages.findIndex(s => s.id === "secondary-interview");
+      if (secondaryIndex !== -1) {
+        insertIndex = secondaryIndex;
+      } else {
+        // Insert before final interview
+        const finalIndex = currentStages.findIndex(s => s.name === "Final Interview");
+        insertIndex = finalIndex !== -1 ? finalIndex : currentStages.length - 2;
+      }
+    } else if (stageTemplate.id === "secondary-interview") {
+      // Insert before final interview
+      const finalIndex = currentStages.findIndex(s => s.name === "Final Interview");
+      insertIndex = finalIndex !== -1 ? finalIndex : currentStages.length - 2;
+    } else {
+      // Default: insert before final interview
+      const finalIndex = currentStages.findIndex(s => s.name === "Final Interview");
+      insertIndex = finalIndex !== -1 ? finalIndex : currentStages.length - 2;
+    }
+
+    const newStage = {
+      ...stageTemplate,
+      isMandatory: false,
+      order: insertIndex + 1
+    };
+    
+    currentStages.splice(insertIndex, 0, newStage);
+    
+    // Update order numbers
+    const updatedStages = currentStages.map((stage, index) => ({
+      ...stage,
+      order: index + 1
+    }));
+    
+    setWorkflowStages(updatedStages);
+    setIsAddDialogOpen(false);
+  };
+
+  const removeStage = (stageId: string) => {
+    const updatedStages = workflowStages
+      .filter(stage => stage.id !== stageId)
+      .map((stage, index) => ({ ...stage, order: index + 1 }));
+    
+    setWorkflowStages(updatedStages);
+  };
+
+  const getAvailableStages = () => {
+    const currentStageIds = workflowStages.map(stage => stage.id);
+    return availableStages.filter(stage => !currentStageIds.includes(stage.id));
+  };
+
+  const handleSaveWorkflow = async () => {
+    const success = await saveWorkflow(workflowStages);
     if (success) {
-      setHasChanges(false);
-      // Trigger sidebar refresh after successful save
-      setTimeout(() => {
-        refreshWorkflow();
-      }, 500);
+      await fetchWorkflow();
     }
   };
 
+  const draggableStages = workflowStages.filter(stage => !stage.isMandatory);
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6 pt-0 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Loading hiring pipeline...</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <motion.div
+            animate={{
+              x: [0, 100, 0],
+              y: [0, -100, 0],
+              rotate: [0, 180, 360]
+            }}
+            transition={{
+              duration: 20,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+            className="absolute top-10 left-10 w-32 h-32 bg-blue-200 opacity-20 rounded-full"
+          />
+          <motion.div
+            animate={{
+              x: [0, -150, 0],
+              y: [0, 100, 0],
+              rotate: [360, 180, 0]
+            }}
+            transition={{
+              duration: 25,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+            className="absolute bottom-10 right-10 w-48 h-48 bg-purple-200 opacity-20 rounded-full"
+          />
+          <motion.div
+            animate={{
+              scale: [1, 1.2, 1],
+              opacity: [0.1, 0.3, 0.1]
+            }}
+            transition={{
+              duration: 8,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-300 to-purple-300 rounded-full"
+          />
         </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center relative z-10"
+        >
+          <div className="w-16 h-16 border-4 border-blue-500 border-dashed rounded-full animate-spin mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">
+            Loading workflow...
+          </h2>
+          <p className="text-gray-600">
+            Please wait while we fetch your hiring pipeline configuration
+          </p>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 pt-0">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 relative overflow-x-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{
+            x: [0, 100, 0],
+            y: [0, -100, 0],
+            rotate: [0, 180, 360]
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+          className="absolute top-10 left-10 w-32 h-32 bg-blue-200 opacity-20 rounded-full"
+        />
+        <motion.div
+          animate={{
+            x: [0, -150, 0],
+            y: [0, 100, 0],
+            rotate: [360, 180, 0]
+          }}
+          transition={{
+            duration: 25,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+          className="absolute bottom-10 right-10 w-48 h-48 bg-purple-200 opacity-20 rounded-full"
+        />
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.1, 0.3, 0.1]
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-300 to-purple-300 rounded-full"
+        />
+      </div>
+      <div className="relative z-10 max-w-[960px] mx-auto p-6 space-y-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Hiring Pipeline Configuration</h1>
-              <p className="text-gray-600">Customize your recruitment workflow stages and process</p>
-            </div>
-            <div className="flex items-center gap-4">
-              {hasChanges && (
-                <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
-                  Unsaved Changes
-                </Badge>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Hiring Pipeline Configuration</h1>
+            <p className="text-gray-600 mt-2">Configure your hiring stages and process flow</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Stage
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add Pipeline Stage</DialogTitle>
+                  <DialogDescription>
+                    Choose from available stages to add to your hiring pipeline
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  {getAvailableStages().map((stage) => (
+                    <Card key={stage.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => addStage(stage)}>
+                      <CardContent className="p-4">
+                        <h4 className="font-semibold">{stage.name}</h4>
+                        <p className="text-sm text-gray-600">{stage.description}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  {getAvailableStages().length === 0 && (
+                    <p className="text-center text-gray-500 py-4">All available stages are already added to your pipeline.</p>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button 
+              size="lg" 
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8"
+              onClick={handleSaveWorkflow}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Save Pipeline Configuration
+                </>
               )}
-              <Button
-                onClick={handleSave}
-                disabled={!hasChanges || isSaving}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Save Pipeline
-                  </>
-                )}
-              </Button>
-            </div>
+            </Button>
           </div>
         </div>
 
-        {/* Pipeline Stages */}
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xl">Pipeline Stages</CardTitle>
-              <Button onClick={addStage} variant="outline" size="sm">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Stage
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <DragDropContext onDragEnd={handleDragEnd}>
-              <Droppable droppableId="stages">
-                {(provided) => (
-                  <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
-                    {stages.map((stage, index) => (
-                      <Draggable key={stage.id} draggableId={stage.id} index={index}>
-                        {(provided, snapshot) => (
-                          <motion.div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className={`bg-white border rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200 ${
-                              snapshot.isDragging ? 'shadow-lg scale-105' : ''
-                            }`}
-                          >
-                            <div className="flex items-start gap-6">
-                              <div
-                                {...provided.dragHandleProps}
-                                className="mt-3 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing"
-                              >
-                                <GripVertical className="h-5 w-5" />
-                              </div>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Stages</p>
+                  <p className="text-3xl font-bold text-gray-900">{workflowStages.length}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-blue-50">
+                  <Settings className="h-6 w-6 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-                              <div className="flex-1 space-y-4">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Mandatory Stages</p>
+                  <p className="text-3xl font-bold text-gray-900">{workflowStages.filter(s => s.isMandatory).length}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-red-50">
+                  <CheckCircle className="h-6 w-6 text-red-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Optional Stages</p>
+                  <p className="text-3xl font-bold text-gray-900">{workflowStages.filter(s => !s.isMandatory).length}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-purple-50">
+                  <Trophy className="h-6 w-6 text-purple-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Pipeline Configuration */}
+        <Card className="w-full">
+          <CardHeader>
+            <CardTitle>Pipeline Stages Configuration</CardTitle>
+            <CardDescription>
+              Drag and drop to reorder optional stages. Mandatory stages have fixed positions.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-4 w-full">
+              {/* Application Screening - Fixed at top */}
+              {workflowStages.filter(stage => stage.name === "Application Screening").map((stage) => (
+                <div key={stage.id} className="w-full bg-white border rounded-lg p-6 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-semibold text-sm">
+                        {stage.order}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">{stage.name}</h3>
+                        <p className="text-sm text-gray-600">{stage.description}</p>
+                      </div>
+                    </div>
+                    <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200">
+                      Mandatory
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+
+              {/* Draggable Optional Stages */}
+              {draggableStages.length > 0 && (
+                <DragDropContext onDragEnd={handleDragEnd}>
+                  <Droppable droppableId="pipeline-stages">
+                    {(provided) => (
+                      <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4 w-full">
+                        {draggableStages.map((stage, index) => (
+                          <Draggable key={stage.id} draggableId={stage.id} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={`w-full bg-white border rounded-lg p-6 transition-shadow ${
+                                  snapshot.isDragging ? 'shadow-lg' : 'shadow-sm hover:shadow-md'
+                                }`}
+                              >
                                 <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-3">
-                                    <Badge variant="outline" className="px-3 py-1">
-                                      Stage {stage.order}
-                                    </Badge>
-                                    {stage.isMandatory && (
-                                      <Badge className="bg-blue-100 text-blue-800 px-3 py-1">
-                                        <CheckCircle className="mr-1 h-3 w-3" />
-                                        Mandatory
-                                      </Badge>
-                                    )}
+                                  <div className="flex items-center space-x-4">
+                                    <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                                      <GripVertical className="h-5 w-5 text-gray-400" />
+                                    </div>
+                                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-sm">
+                                      {stage.order}
+                                    </div>
+                                    <div>
+                                      <h3 className="text-lg font-semibold text-gray-900">{stage.name}</h3>
+                                      <p className="text-sm text-gray-600">{stage.description}</p>
+                                    </div>
                                   </div>
-                                  {!stage.isMandatory && (
+                                  <div className="flex items-center space-x-2">
+                                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
+                                      Optional
+                                    </Badge>
                                     <Button
-                                      onClick={() => removeStage(stage.id)}
                                       variant="ghost"
                                       size="sm"
-                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      onClick={() => removeStage(stage.id)}
+                                      className="text-red-600 hover:text-red-800 hover:bg-red-50"
                                     >
                                       <Trash2 className="h-4 w-4" />
                                     </Button>
-                                  )}
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div>
-                                    <Label htmlFor={`name-${stage.id}`} className="text-sm font-medium">
-                                      Stage Name
-                                    </Label>
-                                    <Input
-                                      id={`name-${stage.id}`}
-                                      value={stage.name}
-                                      onChange={(e) => updateStage(stage.id, 'name', e.target.value)}
-                                      className="mt-1"
-                                      placeholder="Enter stage name"
-                                    />
                                   </div>
-                                  <div>
-                                    <Label htmlFor={`desc-${stage.id}`} className="text-sm font-medium">
-                                      Description
-                                    </Label>
-                                    <Input
-                                      id={`desc-${stage.id}`}
-                                      value={stage.description}
-                                      onChange={(e) => updateStage(stage.id, 'description', e.target.value)}
-                                      className="mt-1"
-                                      placeholder="Enter stage description"
-                                    />
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center space-x-2">
-                                  <Switch
-                                    id={`mandatory-${stage.id}`}
-                                    checked={stage.isMandatory}
-                                    onCheckedChange={(checked) => updateStage(stage.id, 'isMandatory', checked)}
-                                    disabled={stage.isMandatory} // Prevent disabling existing mandatory stages
-                                  />
-                                  <Label htmlFor={`mandatory-${stage.id}`} className="text-sm">
-                                    Make this stage mandatory
-                                  </Label>
                                 </div>
                               </div>
-                            </div>
-                          </motion.div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </DragDropContext>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
+              )}
 
-            {stages.length === 0 && (
-              <div className="text-center py-12 text-gray-500">
-                <p className="mb-4">No stages configured yet</p>
-                <Button onClick={addStage} variant="outline">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Your First Stage
-                </Button>
-              </div>
-            )}
+              {/* Final Interview and Offer Stage - Fixed at bottom */}
+              {workflowStages.filter(stage => stage.name === "Final Interview" || stage.name === "Offer Stage").map((stage) => (
+                <div key={stage.id} className="w-full bg-white border rounded-lg p-6 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-semibold text-sm">
+                        {stage.order}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">{stage.name}</h3>
+                        <p className="text-sm text-gray-600">{stage.description}</p>
+                      </div>
+                    </div>
+                    <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200">
+                      Mandatory
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
-        {/* Pipeline Preview */}
+        {/* Pipeline Progress Overview */}
         <Card>
           <CardHeader>
-            <CardTitle>Pipeline Preview</CardTitle>
+            <CardTitle>Pipeline Flow Overview</CardTitle>
+            <CardDescription>Visual representation of your hiring pipeline</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-4">
-              {stages.map((stage, index) => (
-                <div key={stage.id} className="flex items-center">
-                  <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-lg font-medium">
-                    {stage.name}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+                <span>Pipeline Flow</span>
+                <span>{workflowStages.length} Total Stages</span>
+              </div>
+              <div className="flex items-center space-x-4 overflow-x-auto pb-4">
+                {workflowStages.map((stage, index) => (
+                  <div key={stage.id} className="flex items-center space-x-4 min-w-0">
+                    <div className="flex flex-col items-center space-y-2 min-w-32">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold ${
+                        stage.isMandatory ? 'bg-red-500' : 'bg-blue-500'
+                      }`}>
+                        {stage.order}
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-medium text-gray-900 truncate">{stage.name}</p>
+                      </div>
+                    </div>
+                    {index < workflowStages.length - 1 && (
+                      <div className="flex-shrink-0 w-8 h-0.5 bg-gray-300"></div>
+                    )}
                   </div>
-                  {index < stages.length - 1 && (
-                    <div className="mx-2 text-gray-400">→</div>
-                  )}
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>

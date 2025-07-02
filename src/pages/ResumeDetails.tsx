@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Download, ExternalLink, Star, Award, Brain, Users, Eye, CheckCircle, AlertTriangle, Info, ArrowRight, Send } from "lucide-react";
@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useResumeNextStep } from "@/hooks/useResumeNextStep";
 
 interface Resume {
   id: string;
@@ -40,8 +39,6 @@ const ResumeDetails = () => {
     type: null,
     url: ''
   });
-  const [nextStepName, setNextStepName] = useState<string>("");
-  const { getNextStep, advanceToNextStep, isLoading: isNextStepLoading } = useResumeNextStep();
 
   const { data: resumes = [], isLoading } = useQuery({
     queryKey: ['resumes', jobId],
@@ -141,36 +138,13 @@ const ResumeDetails = () => {
     setDocumentModal({ isOpen: false, type: null, url: '' });
   };
 
-  const handleMoveToNextStep = async () => {
-    if (!resumeId) return;
-
-    const result = await advanceToNextStep(resumeId);
-    if (result) {
-      if (result.message === "Process Complete") {
-        // Handle process complete case
-        setNextStepName("Process Complete");
-      } else if (result.current_step) {
-        // Update the next step name after successful advancement
-        const newNextStep = await getNextStep(resumeId);
-        if (newNextStep) {
-          setNextStepName(newNextStep);
-        }
-      }
-    }
+  const handleMoveToAssessment = () => {
+    toast.success("Candidate moved to assessment stage successfully!", {
+      description: "They will receive an assessment invitation shortly.",
+    });
+    // Navigate to assessments page
+    navigate('/dashboard/assessments');
   };
-
-  useEffect(() => {
-    const fetchNextStep = async () => {
-      if (resumeId) {
-        const nextStep = await getNextStep(resumeId);
-        if (nextStep) {
-          setNextStepName(nextStep);
-        }
-      }
-    };
-
-    fetchNextStep();
-  }, [resumeId, getNextStep]);
 
   if (isLoading) {
     return (
@@ -213,7 +187,7 @@ const ResumeDetails = () => {
           ) : null}
         </div>
 
-        {/* Back Button and Next Step Button */}
+        {/* Back Button Only */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <Button
@@ -229,30 +203,13 @@ const ResumeDetails = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              {nextStepName && nextStepName !== "Process Complete" ? (
-                <Button
-                  onClick={handleMoveToNextStep}
-                  disabled={isNextStepLoading}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold px-4 py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                >
-                  {isNextStepLoading ? (
-                    <>
-                      <div className="mr-3 h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Moving...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="mr-3 h-5 w-5" />
-                      Move to {nextStepName}
-                    </>
-                  )}
-                </Button>
-              ) : nextStepName === "Process Complete" ? (
-                <Badge className="bg-green-100 text-green-800 px-4 py-3 text-lg font-semibold">
-                  <CheckCircle className="mr-2 h-5 w-5" />
-                  Process Complete
-                </Badge>
-              ) : null}
+              <Button
+                onClick={handleMoveToAssessment}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold px-4 py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              >
+                <Send className="mr-3 h-5 w-5" />
+                Move to Assessment Stage
+              </Button>
             </motion.div>
           </div>
           <div className="flex items-start justify-between">

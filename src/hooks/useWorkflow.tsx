@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -90,7 +89,7 @@ export const useWorkflow = () => {
         return;
       }
 
-      const response = await fetch(`https://talo-recruitment.vercel.app/workflow`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/workflow`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -125,7 +124,7 @@ export const useWorkflow = () => {
     }
   }, [toast]);
 
-  // Save workflow to API and refresh data
+  // Save workflow to API
   const saveWorkflow = useCallback(async (stages: WorkflowStage[]) => {
     try {
       setIsSaving(true);
@@ -142,7 +141,7 @@ export const useWorkflow = () => {
 
       const workflowProcess = convertToWorkflowFormat(stages);
 
-      const response = await fetch(`https://talo-recruitment.vercel.app/workflow`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/workflow`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -160,12 +159,8 @@ export const useWorkflow = () => {
           description: `Workflow ${data.action === 'created' ? 'created' : 'updated'} successfully!`,
         });
         
-        // Update local state with saved stages and trigger refresh
+        // Update local state with saved stages
         setWorkflowStages(stages);
-        
-        // Fetch fresh data to ensure consistency
-        await fetchWorkflow();
-        
         return true;
       } else if (response.status === 401) {
         toast({
@@ -192,12 +187,7 @@ export const useWorkflow = () => {
       setIsSaving(false);
     }
     return false;
-  }, [toast, fetchWorkflow]);
-
-  // Manual refresh function for real-time updates
-  const refreshWorkflow = useCallback(() => {
-    fetchWorkflow();
-  }, [fetchWorkflow]);
+  }, [toast]);
 
   useEffect(() => {
     fetchWorkflow();
@@ -210,7 +200,6 @@ export const useWorkflow = () => {
     isSaving,
     fetchWorkflow,
     saveWorkflow,
-    refreshWorkflow,
     convertToWorkflowFormat,
     convertFromWorkflowFormat
   };
