@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useJobStats } from "@/hooks/useJobStats";
 
 interface Resume {
   id: string;
@@ -28,7 +27,6 @@ interface Resume {
 const JobDetails = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
-  const { stageStats, isLoading: isStatsLoading } = useJobStats(jobId);
 
   // Fetch job details for title
   const { data: job, isLoading: isJobLoading, error: jobError } = useQuery({
@@ -179,50 +177,37 @@ const JobDetails = () => {
           </Button>
         </div>
 
-        {/* Updated Stats Cards with real stage data */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           {[
             {
-              title: "Application Screening",
-              count: stageStats["Application Screening"] || 0,
-              icon: <FileText className="h-6 w-6" />,
-              iconBg: "bg-blue-100 text-blue-500",
-              cardBg: "bg-gradient-to-br from-blue-50 to-white",
-            },
-            {
-              title: "Initial Interview",
-              count: stageStats["Initial Interview"] || 0,
-              icon: <Star className="h-6 w-6" />,
-              iconBg: "bg-yellow-100 text-yellow-500",
-              cardBg: "bg-gradient-to-br from-yellow-50 to-white",
-            },
-            {
-              title: "Assessment",
-              count: stageStats["Assessment"] || 0,
-              icon: <Award className="h-6 w-6" />,
+              title: "Strong Matches",
+              count: resumes.filter(r => r.final_recommendation?.toLowerCase() === 'strong match.').length,
+              icon: <Star className="h-7 w-7" />,
               iconBg: "bg-green-100 text-green-500",
               cardBg: "bg-gradient-to-br from-green-50 to-white",
             },
             {
-              title: "Secondary Interview",
-              count: stageStats["Secondary Interview"] || 0,
-              icon: <CheckCircle className="h-6 w-6" />,
-              iconBg: "bg-purple-100 text-purple-500",
-              cardBg: "bg-gradient-to-br from-purple-50 to-white",
+              title: "Moderate Fit",
+              count: resumes.filter(r => r.final_recommendation?.toLowerCase() === 'moderate fit.').length,
+              icon: <Award className="h-7 w-7" />,
+              iconBg: "bg-yellow-100 text-yellow-500",
+              cardBg: "bg-gradient-to-br from-yellow-50 to-white",
             },
             {
-              title: "Final Interview",
-              count: stageStats["Final Interview"] || 0,
-              icon: <TrendingUp className="h-6 w-6" />,
-              iconBg: "bg-orange-100 text-orange-500",
-              cardBg: "bg-gradient-to-br from-orange-50 to-white",
-            },
-            {
-              title: "Offer Stage",
-              count: stageStats["Offer Stage"] || 0,
-              icon: <AlertTriangle className="h-6 w-6" />,
+              title: "Not a Fit",
+              count: resumes.filter(r => r.final_recommendation?.toLowerCase() === 'not a fit.').length,
+              icon: <FileText className="h-7 w-7" />,
               iconBg: "bg-red-100 text-red-500",
               cardBg: "bg-gradient-to-br from-red-50 to-white",
+            },
+            {
+              title: "Total Applicants",
+              count: resumes.length,
+              icon: <FileText className="h-7 w-7" />,
+              iconBg: "bg-orange-100 text-orange-500",
+              cardBg: "bg-gradient-to-br from-orange-50 to-white",
             }
           ].map((stat, index) => (
             <motion.div
@@ -233,20 +218,14 @@ const JobDetails = () => {
               transition={{ delay: index * 0.1 }}
             >
               <div
-                className={`rounded-2xl shadow-lg p-4 flex items-center justify-between transition-transform duration-200 hover:scale-105 hover:ring-2 hover:ring-blue-200 ${stat.cardBg}`}
-                style={{ minHeight: 90 }}
+                className={`rounded-2xl shadow-lg p-6 flex items-center justify-between transition-transform duration-200 hover:scale-105 hover:ring-2 hover:ring-blue-200 ${stat.cardBg}`}
+                style={{ minHeight: 110 }}
               >
                 <div>
                   <div className="text-xs font-semibold text-gray-500 mb-1">{stat.title}</div>
-                  <div className="text-2xl font-extrabold text-gray-900 leading-tight">
-                    {isStatsLoading ? (
-                      <div className="h-6 w-8 bg-gray-200 rounded animate-pulse" />
-                    ) : (
-                      stat.count
-                    )}
-                  </div>
+                  <div className="text-4xl font-extrabold text-gray-900 leading-tight">{stat.count}</div>
                 </div>
-                <div className={`flex items-center justify-center rounded-full ${stat.iconBg} shadow-md h-10 w-10 transition-transform duration-200 group-hover:animate-bounce`}>
+                <div className={`flex items-center justify-center rounded-full ${stat.iconBg} shadow-md h-12 w-12 transition-transform duration-200 group-hover:animate-bounce`}>
                   {stat.icon}
                 </div>
               </div>
