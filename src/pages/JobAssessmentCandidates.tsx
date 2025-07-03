@@ -277,7 +277,11 @@ const JobAssessmentCandidates = () => {
                           </td>
                           <td className="px-4 py-4 w-[180px] text-center whitespace-normal break-words">
                             {candidate.assignment_submission ? (
-                              <Button size="sm" className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white">
+                              <Button 
+                                size="sm" 
+                                className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white"
+                                onClick={() => navigate(`/dashboard/jobs/${jobId}/assignment-review/${candidate.id}`)}
+                              >
                                 <Eye className="h-4 w-4 mr-1" />
                                 Review Assignment
                               </Button>
@@ -290,9 +294,17 @@ const JobAssessmentCandidates = () => {
                                 Create Assignment
                               </Button>
                             ) : (
-                              <Button size="sm" variant="outline" disabled className="opacity-50 cursor-not-allowed">
-                                Pending Assignment
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white border-0"
+                                  onClick={() => navigate(`/dashboard/jobs/${jobId}/create-assignment?resume_id=${candidate.id}&edit=true`)}
+                                >
+                                  <Edit className="h-4 w-4 mr-1" />
+                                  Edit
+                                </Button>
+                              </div>
                             )}
                           </td>
                         </motion.tr>
