@@ -19,6 +19,7 @@ const CreateAssignment = () => {
     description: "",
     content: "",
     duration: "",
+    deadline: "",
     instructions: "",
     resources: [] as string[],
     images: [] as string[]
@@ -26,6 +27,7 @@ const CreateAssignment = () => {
   
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedResumeId, setSelectedResumeId] = useState("");
 
   const uploadToCloudinary = async (file: File): Promise<string> => {
     const data = new FormData();
@@ -122,23 +124,50 @@ const CreateAssignment = () => {
       return;
     }
 
+    if (!selectedResumeId) {
+      toast({
+        title: "Error",
+        description: "Please select a candidate",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSaving(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/jobs/${jobId}/assignments`, {
+      
+      // Prepare assignment details
+      const assignmentDetails = {
+        title: assignment.title,
+        description: assignment.description,
+        content: assignment.content,
+        duration: assignment.duration,
+        deadline: assignment.deadline,
+        instructions: assignment.instructions,
+        images: assignment.images,
+        resources: assignment.resources
+      };
+
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/assessments/create`, {
         method: "POST",
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(assignment),
+        body: JSON.stringify({
+          resume_id: selectedResumeId,
+          details: assignmentDetails
+        }),
       });
 
       if (!response.ok) throw new Error('Failed to create assignment');
 
+      const result = await response.json();
+      
       toast({
         title: "Success",
-        description: "Assignment created successfully!",
+        description: result.message || "Assignment created and sent to candidate!",
       });
       
       navigate(-1);
@@ -169,6 +198,22 @@ const CreateAssignment = () => {
             <CardTitle className="text-xl">Assignment Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Candidate Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Candidate *
+              </label>
+              <Input
+                value={selectedResumeId}
+                onChange={(e) => setSelectedResumeId(e.target.value)}
+                placeholder="Enter candidate resume ID"
+                className="w-full"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                You can get the resume ID from the candidate list
+              </p>
+            </div>
+
             {/* Basic Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -193,6 +238,19 @@ const CreateAssignment = () => {
                   className="w-full"
                 />
               </div>
+            </div>
+
+            {/* Deadline */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Deadline
+              </label>
+              <Input
+                type="datetime-local"
+                value={assignment.deadline}
+                onChange={(e) => setAssignment(prev => ({ ...prev, deadline: e.target.value }))}
+                className="w-full"
+              />
             </div>
 
             {/* Description */}
@@ -357,7 +415,7 @@ const CreateAssignment = () => {
                 className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
               >
                 <Save className="h-4 w-4 mr-2" />
-                {isSaving ? "Saving..." : "Save Assignment"}
+                {isSaving ? "Creating..." : "Create & Send Assignment"}
               </Button>
             </div>
           </CardContent>

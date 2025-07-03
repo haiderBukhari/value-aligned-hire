@@ -241,7 +241,7 @@ const ResumeDetails = () => {
             >
               <Button
                 onClick={() => advanceStepMutation.mutate()}
-                disabled={isNextStepLoading || nextStepData?.next_step === 'Process Complete' || advanceStepMutation.isLoading}
+                disabled={isNextStepLoading || nextStepData?.next_step === 'Process Complete' || advanceStepMutation.isPending}
                 className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold px-4 py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
               >
                 <Send className="mr-3 h-5 w-5" />
