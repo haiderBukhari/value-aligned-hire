@@ -1,6 +1,5 @@
-
-import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,8 @@ const CreateAssignment = () => {
   const { jobId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const resumeId = searchParams.get('resume_id');
   
   const [assignment, setAssignment] = useState({
     title: "",
@@ -27,7 +28,6 @@ const CreateAssignment = () => {
   
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [selectedResumeId, setSelectedResumeId] = useState("");
 
   const uploadToCloudinary = async (file: File): Promise<string> => {
     const data = new FormData();
@@ -124,10 +124,10 @@ const CreateAssignment = () => {
       return;
     }
 
-    if (!selectedResumeId) {
+    if (!resumeId) {
       toast({
         title: "Error",
-        description: "Please select a candidate",
+        description: "Resume ID is required",
         variant: "destructive",
       });
       return;
@@ -156,7 +156,7 @@ const CreateAssignment = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          resume_id: selectedResumeId,
+          resume_id: resumeId,
           details: assignmentDetails
         }),
       });
@@ -198,20 +198,17 @@ const CreateAssignment = () => {
             <CardTitle className="text-xl">Assignment Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Candidate Selection */}
+            {/* Resume ID Display */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Candidate *
+                Candidate Resume ID
               </label>
               <Input
-                value={selectedResumeId}
-                onChange={(e) => setSelectedResumeId(e.target.value)}
-                placeholder="Enter candidate resume ID"
-                className="w-full"
+                value={resumeId || ""}
+                readOnly
+                className="w-full bg-gray-50"
+                placeholder="Resume ID will be loaded from URL"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                You can get the resume ID from the candidate list
-              </p>
             </div>
 
             {/* Basic Info */}
@@ -411,7 +408,7 @@ const CreateAssignment = () => {
               </Button>
               <Button 
                 onClick={handleSave}
-                disabled={isSaving || isUploading}
+                disabled={isSaving || isUploading || !resumeId}
                 className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
               >
                 <Save className="h-4 w-4 mr-2" />

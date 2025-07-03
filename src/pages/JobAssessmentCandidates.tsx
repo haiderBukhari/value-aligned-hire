@@ -251,7 +251,7 @@ const JobAssessmentCandidates = () => {
                             <Button 
                               size="sm" 
                               className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
-                              onClick={() => navigate(`/dashboard/jobs/${jobId}/create-assignment`)}
+                              onClick={() => navigate(`/dashboard/jobs/${jobId}/create-assignment?resume_id=${candidate.id}`)}
                             >
                               Create Assignment
                             </Button>
