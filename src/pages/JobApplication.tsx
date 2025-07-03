@@ -1,7 +1,8 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Upload, FileText, Mail, User, Briefcase } from "lucide-react";
+import { Upload, FileText, Mail, User, Briefcase, Camera } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,12 +23,15 @@ const JobApplication = () => {
   const [formData, setFormData] = useState({
     applicant_name: '',
     email: '',
+    picture: '',
     cv_link: '',
     coverletter_link: ''
   });
+  const [pictureFile, setPictureFile] = useState<File | null>(null);
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [coverLetterFile, setCoverLetterFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const pictureInputRef = useRef<HTMLInputElement>(null);
   const cvInputRef = useRef<HTMLInputElement>(null);
   const coverLetterInputRef = useRef<HTMLInputElement>(null);
   const [applicationSubmitted, setApplicationSubmitted] = useState(false);
@@ -70,9 +74,11 @@ const JobApplication = () => {
       setFormData({
         applicant_name: '',
         email: '',
+        picture: '',
         cv_link: '',
         coverletter_link: ''
       });
+      setPictureFile(null);
       setCvFile(null);
       setCoverLetterFile(null);
       setApplicationSubmitted(true);
@@ -99,20 +105,23 @@ const JobApplication = () => {
     return result.secure_url;
   };
 
-  const handleFileUpload = async (file: File, type: 'cv' | 'coverletter') => {
+  const handleFileUpload = async (file: File, type: 'picture' | 'cv' | 'coverletter') => {
     setUploading(true);
     try {
       const url = await uploadToCloudinary(file);
-      if (type === 'cv') {
+      if (type === 'picture') {
+        setFormData(prev => ({ ...prev, picture: url }));
+        setPictureFile(file);
+      } else if (type === 'cv') {
         setFormData(prev => ({ ...prev, cv_link: url }));
         setCvFile(file);
       } else {
         setFormData(prev => ({ ...prev, coverletter_link: url }));
         setCoverLetterFile(file);
       }
-      toast.success(`${type === 'cv' ? 'CV' : 'Cover letter'} uploaded successfully`);
+      toast.success(`${type === 'picture' ? 'Picture' : type === 'cv' ? 'CV' : 'Cover letter'} uploaded successfully`);
     } catch (error) {
-      toast.error(`Failed to upload ${type === 'cv' ? 'CV' : 'cover letter'}`);
+      toast.error(`Failed to upload ${type === 'picture' ? 'picture' : type === 'cv' ? 'CV' : 'cover letter'}`);
     } finally {
       setUploading(false);
     }
@@ -120,8 +129,8 @@ const JobApplication = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.applicant_name || !formData.email || !formData.cv_link) {
-      toast.error('Please fill in all required fields');
+    if (!formData.applicant_name || !formData.email || !formData.picture || !formData.cv_link) {
+      toast.error('Please fill in all required fields and upload your picture and CV');
       return;
     }
     submitApplicationMutation.mutate(formData);
@@ -269,6 +278,40 @@ const JobApplication = () => {
                               onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                               required
                             />
+                          </div>
+                        </div>
+                        {/* Picture Upload */}
+                        <div>
+                          <Label className="text-gray-700 font-medium mb-2 block">
+                            Profile Picture *
+                          </Label>
+                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors bg-gray-50">
+                            <Camera className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                            <p className="text-sm text-gray-600 mb-2">
+                              {pictureFile ? pictureFile.name : 'Upload your profile picture'}
+                            </p>
+                            <Input
+                              ref={pictureInputRef}
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleFileUpload(file, 'picture');
+                              }}
+                              className="hidden"
+                              id="picture-upload"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={uploading}
+                              className="border-gray-300 text-gray-700 hover:bg-gray-100"
+                              onClick={() => pictureInputRef.current?.click()}
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              Choose Picture
+                            </Button>
                           </div>
                         </div>
                         {/* CV Upload */}
