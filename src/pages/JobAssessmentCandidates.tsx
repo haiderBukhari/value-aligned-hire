@@ -1,274 +1,251 @@
-import { useState, useEffect, useMemo } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Eye, Clock, Calendar, ArrowLeft, Award, Users, CheckCircle, Clock as ClockIcon, XCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
-
-const getStatusColor = (status: string) => {
-  switch (status?.toLowerCase()) {
-    case 'assignment received': return 'bg-green-100 text-green-800 border-green-200';
-    case 'assignment pending to be sent': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    case 'assignment pending by the candidate': return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'completed': return 'bg-green-100 text-green-800 border-green-200';
-    case 'submitted': return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'in progress': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    case 'overdue': return 'bg-red-100 text-red-800 border-red-200';
-    default: return 'bg-gray-100 text-gray-800 border-gray-200';
-  }
-};
+import { Badge } from "@/components/ui/badge";
+import { User, Plus, Eye, Edit } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const JobAssessmentCandidates = () => {
-  const { jobId } = useParams();
-  const location = useLocation();
   const navigate = useNavigate();
-  const queryParams = new URLSearchParams(location.search);
-  const stage = queryParams.get("stage") || "Assessment Center";
+  const { toast } = useToast();
+
   const [candidates, setCandidates] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [jobTitle, setJobTitle] = useState<string | null>(null);
-  const [jobLoading, setJobLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCandidates = async () => {
-      setLoading(true);
-      setError(null);
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/jobs/${jobId}/assessments/candidates?stage=${encodeURIComponent(stage)}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/resumes`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
-        if (!response.ok) throw new Error('Failed to fetch candidates');
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch candidates");
+        }
+
         const data = await response.json();
-        setCandidates(data.candidates || []);
+        setCandidates(data);
       } catch (err: any) {
-        setError(err.message || 'Error fetching candidates');
+        setError(err.message || "Error fetching candidates");
+        toast({
+          title: "Error",
+          description: err.message || "Error fetching candidates",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
     };
-    if (jobId) fetchCandidates();
-  }, [jobId, stage]);
 
-  useEffect(() => {
-    const fetchJob = async () => {
-      setJobLoading(true);
-      try {
-        const token = localStorage.getItem("token");
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/jobs/${jobId}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!response.ok) throw new Error('Failed to fetch job');
-        const data = await response.json();
-        setJobTitle(data.job?.title || null);
-      } catch {
-        setJobTitle(null);
-      } finally {
-        setJobLoading(false);
-      }
-    };
-    if (jobId) fetchJob();
-  }, [jobId]);
+    fetchCandidates();
+  }, [toast]);
 
-  const filteredCandidates = useMemo(() => candidates.filter(candidate => {
-    const matchesSearch = candidate.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      candidate.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      candidate.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      candidate.status?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
-  }), [candidates, searchTerm]);
+  const filteredCandidates = candidates.filter((resume) => {
+    const fullName = `${resume.first_name} ${resume.last_name}`.toLowerCase();
+    return fullName.includes(searchTerm.toLowerCase());
+  });
 
-  // Stats
-  const total = candidates.length;
-  const completed = candidates.filter(c => c.status?.toLowerCase() === 'assignment received' || c.status?.toLowerCase() === 'completed' || c.status?.toLowerCase() === 'submitted').length;
-  const pending = candidates.filter(c => c.status?.toLowerCase().includes('pending')).length;
-  const avgScore = candidates.length > 0 ? Math.round(candidates.reduce((sum, c) => sum + (c.score || 0), 0) / candidates.filter(c => c.score !== undefined && c.score !== null).length || 1) : 0;
+  const totalCandidates = candidates.length;
+  const candidatesWithAssignment = candidates.filter((resume) => resume.assignment_sent).length;
+  const candidatesWithoutAssignment = totalCandidates - candidatesWithAssignment;
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString();
+  };
+
+  const isAssignmentPending = (resume: any) => {
+    return resume.assignment_sent && !resume.assignment_submission && !resume.assignment_submission_link;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center"
+        >
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading candidates...</p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-pink-50 to-orange-50 flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Card className="max-w-md w-full mx-4 shadow-xl border-0">
+            <CardContent className="p-8 text-center">
+              <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Candidates</h2>
+              <p className="text-gray-600">{error}</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 p-0">
-      <div className="max-w-6xl mx-auto pt-8 pb-4 px-4">
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6 flex items-center gap-4">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Candidates</p>
-                <p className="text-3xl font-bold text-gray-900">{total}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-blue-50">
-                <Users className="h-6 w-6 text-blue-600" />
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center py-8"
+      >
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+          Job Assessment Candidates
+        </h1>
+        <p className="text-gray-600 text-lg">Manage and assess candidates for the job</p>
+      </motion.div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"
+        >
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-md">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">Total Candidates</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-indigo-700">{totalCandidates}</div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-6 flex items-center gap-4">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Completed</p>
-                <p className="text-3xl font-bold text-gray-900">{completed}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-green-50">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
+
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-md">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">With Assignment</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-green-700">{candidatesWithAssignment}</div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-6 flex items-center gap-4">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Pending</p>
-                <p className="text-3xl font-bold text-gray-900">{pending}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-yellow-50">
-                <ClockIcon className="h-6 w-6 text-yellow-600" />
-              </div>
+
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-md">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">Without Assignment</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-orange-700">{candidatesWithoutAssignment}</div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-6 flex items-center gap-4">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Average Score</p>
-                <p className="text-3xl font-bold text-gray-900">{isNaN(avgScore) ? '-' : avgScore + '%'}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-purple-50">
-                <Award className="h-6 w-6 text-purple-600" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-2">
-          <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {jobLoading ? <span className="animate-pulse text-gray-400">Loading...</span> : jobTitle || "Assessment Candidates"}
-            <span className="ml-2 text-lg font-medium text-gray-500">| {stage}</span>
-          </h1>
-        </div>
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-6">
-          <div className="text-gray-500 text-sm">Candidates for Assessment</div>
-        </div>
-        <Card className="border border-gray-200 rounded-xl shadow-lg bg-white/95">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <Eye className="h-6 w-6" />
-              All candidates for this job and stage
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-4 mb-4">
-              <div className="relative flex-1">
-                <Input
-                  placeholder="Search candidates, email, status..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Candidate</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Title</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Score</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Time Spent</th>
-                    <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-100">
-                  {loading ? (
-                    <tr><td colSpan={7} className="px-6 py-8 text-center text-gray-500">Loading...</td></tr>
-                  ) : error ? (
-                    <tr><td colSpan={7} className="px-6 py-8 text-center text-red-500">{error}</td></tr>
-                  ) : filteredCandidates.length === 0 ? (
-                    <tr><td colSpan={7} className="px-6 py-8 text-center text-gray-500">No candidates found</td></tr>
-                  ) : (
-                    filteredCandidates.map((candidate, index) => (
-                      <motion.tr
-                        key={candidate.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="hover:bg-gray-50 transition-colors"
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mb-6"
+        >
+          <Input
+            type="text"
+            placeholder="Search candidates..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full rounded-full bg-white/90 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+          />
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredCandidates.map((resume, index) => (
+            <motion.div
+              key={resume.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <Card className="h-full hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm">
+                <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-t-md">
+                  <CardTitle className="text-lg font-semibold">{resume.first_name} {resume.last_name}</CardTitle>
+                  <Badge className="ml-auto">{resume.role}</Badge>
+                </CardHeader>
+
+                <CardContent className="p-6">
+                  <div className="text-gray-700">
+                    <p>
+                      <span className="font-semibold">Email:</span> {resume.email}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Phone:</span> {resume.phone}
+                    </p>
+                    {resume.assignment_sent && (
+                      <p>
+                        <span className="font-semibold">Assignment Sent:</span> {formatDate(resume.assignment_sent)}
+                      </p>
+                    )}
+                    {resume.assignment_submission && (
+                      <p>
+                        <span className="font-semibold">Assignment Submitted:</span> {formatDate(resume.assignment_submission)}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    <Button
+                      onClick={() => navigate(`/candidate-details/${resume.id}`)}
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 border-blue-200 text-blue-700 hover:bg-blue-50"
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      View Profile
+                    </Button>
+
+                    {resume.assignment_sent ? (
+                      <div className="flex gap-2 w-full">
+                        <Button
+                          onClick={() => window.open(`/viewassignment/${resume.id}`, '_blank')}
+                          size="sm"
+                          className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Assignment
+                        </Button>
+
+                        {isAssignmentPending(resume) && (
+                          <Button
+                            onClick={() => navigate(`/create-assignment?resume_id=${resume.id}&edit=true`)}
+                            size="sm"
+                            variant="outline"
+                            className="border-orange-200 text-orange-700 hover:bg-orange-50"
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => navigate(`/create-assignment?resume_id=${resume.id}`)}
+                        size="sm"
+                        className="flex-1 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
                       >
-                        <td className="px-6 py-4 font-medium text-gray-900">
-                          <div className="flex items-center space-x-3">
-                            <span>{candidate.candidate_name}</span>
-                          </div>
-                        </td>
-                        <td className="px-3 py-4 text-gray-500">{candidate.email}</td>
-                        <td className="px-3 py-4 text-gray-500">{candidate.job_title}</td>
-                        <td className="px-6 py-4">
-                          <Badge className={`${getStatusColor(
-                            candidate.assignment_submission
-                              ? 'assignment received'
-                              : !candidate.assignment_sent
-                                ? 'assignment pending to be sent'
-                                : 'assignment pending by the candidate')
-                          } font-medium`}>
-                            {candidate.assignment_submission
-                              ? 'Assignment Received'
-                              : !candidate.assignment_sent
-                                ? 'Assignment Pending to be Sent'
-                                : 'Assignment Pending by the Candidate'}
-                          </Badge>
-                        </td>
-                        <td className="px-6 py-4">
-                          {candidate.score !== undefined && candidate.score !== null ? (
-                            <div className="flex items-center space-x-2">
-                              <Award className="h-4 w-4 text-yellow-500" />
-                              <span className="font-bold text-green-600">{candidate.score}%</span>
-                            </div>
-                          ) : (
-                            <span className="text-gray-400 italic">Pending</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4">
-                          {candidate.time_spent ? (
-                            <div className="flex items-center text-gray-600">
-                              <Clock className="mr-1 h-4 w-4" />
-                              {candidate.time_spent}
-                            </div>
-                          ) : (
-                            <span className="text-gray-400 italic">N/A</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          {candidate.assignment_submission ? (
-                            <Button size="sm" className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white">
-                              <Eye className="h-4 w-4 mr-1" />
-                              Review Assignment
-                            </Button>
-                          ) : !candidate.assignment_sent ? (
-                            <Button 
-                              size="sm" 
-                              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
-                              onClick={() => navigate(`/dashboard/jobs/${jobId}/create-assignment?resume_id=${candidate.id}`)}
-                            >
-                              Create Assignment
-                            </Button>
-                          ) : (
-                            <Button size="sm" variant="outline" disabled className="opacity-50 cursor-not-allowed">
-                              Pending Assignment
-                            </Button>
-                          )}
-                        </td>
-                      </motion.tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Assignment
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </div>
   );

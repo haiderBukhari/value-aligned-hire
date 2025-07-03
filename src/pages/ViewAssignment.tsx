@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -125,16 +124,33 @@ const ViewAssignment = () => {
 
     setIsSubmitting(true);
     try {
-      // This would be the actual submission API call
+      const submissionDetails = {
+        answers: answers,
+        uploaded_files: uploadedFiles,
+        submission_time: new Date().toISOString()
+      };
+
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/assignments/${resumeId}/submit`, {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ details: submissionDetails }),
+      });
+
+      if (!response.ok) throw new Error('Failed to submit assignment');
+
+      const result = await response.json();
+      
       toast({
         title: "Success",
-        description: "Assignment submitted successfully!",
+        description: result.message || "Assignment submitted successfully!",
       });
       
       // Refresh the assignment data
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/assignments/${resumeId}`);
-      if (response.ok) {
-        const data = await response.json();
+      const refreshResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/assignments/${resumeId}`);
+      if (refreshResponse.ok) {
+        const data = await refreshResponse.json();
         setAssignment(data);
       }
     } catch (error) {
@@ -154,6 +170,11 @@ const ViewAssignment = () => {
 
   const isOverdue = (deadline: string) => {
     return new Date(deadline) < new Date();
+  };
+
+  const isDeadlinePassed = () => {
+    if (!assignment?.assignment_template?.[0]?.deadline) return false;
+    return isOverdue(assignment.assignment_template[0].deadline);
   };
 
   if (loading) {
@@ -210,6 +231,7 @@ const ViewAssignment = () => {
   }
 
   const assignmentDetails = assignment.assignment_template[0];
+  const deadlinePassed = isDeadlinePassed();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4">
@@ -225,6 +247,30 @@ const ViewAssignment = () => {
           </h1>
           <p className="text-gray-600 text-lg">Complete your assignment with excellence</p>
         </motion.div>
+
+        {/* Deadline Warning */}
+        {deadlinePassed && !assignment.submitted && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <Card className="border-0 shadow-xl bg-red-50 border-red-200">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <AlertCircle className="h-8 w-8 text-red-600" />
+                  <div>
+                    <h3 className="text-xl font-bold text-red-800">Assignment Deadline Has Passed</h3>
+                    <p className="text-red-700">
+                      The deadline for this assignment was {formatDate(assignmentDetails.deadline)}. 
+                      Please contact the administrator if you need an extension.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Status Card */}
         <motion.div
@@ -261,10 +307,12 @@ const ViewAssignment = () => {
                   <Badge 
                     className={`px-4 py-2 text-lg ${assignment.submitted 
                       ? "bg-gradient-to-r from-green-400 to-emerald-400 text-white" 
+                      : deadlinePassed
+                      ? "bg-gradient-to-r from-red-400 to-pink-400 text-white"
                       : "bg-gradient-to-r from-yellow-400 to-orange-400 text-white"
                     }`}
                   >
-                    {assignment.submitted ? "Completed" : "In Progress"}
+                    {assignment.submitted ? "Completed" : deadlinePassed ? "Overdue" : "In Progress"}
                   </Badge>
                 </div>
               </div>
@@ -289,9 +337,17 @@ const ViewAssignment = () => {
               {/* Timeline Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {assignmentDetails.deadline && (
-                  <div className="flex items-center gap-4 p-6 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border-2 border-orange-200">
-                    <div className="p-3 rounded-full bg-orange-100">
-                      <Calendar className="h-6 w-6 text-orange-600" />
+                  <div className={`flex items-center gap-4 p-6 rounded-xl border-2 ${
+                    isOverdue(assignmentDetails.deadline) 
+                      ? 'bg-gradient-to-r from-red-50 to-pink-50 border-red-200' 
+                      : 'bg-gradient-to-r from-orange-50 to-red-50 border-orange-200'
+                  }`}>
+                    <div className={`p-3 rounded-full ${
+                      isOverdue(assignmentDetails.deadline) ? 'bg-red-100' : 'bg-orange-100'
+                    }`}>
+                      <Calendar className={`h-6 w-6 ${
+                        isOverdue(assignmentDetails.deadline) ? 'text-red-600' : 'text-orange-600'
+                      }`} />
                     </div>
                     <div>
                       <p className="font-bold text-gray-900 text-lg">Deadline</p>
@@ -321,9 +377,10 @@ const ViewAssignment = () => {
                 <div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-4">Assignment Details</h3>
                   <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-6 rounded-xl border-2 border-gray-200">
-                    <pre className="whitespace-pre-wrap text-gray-700 font-sans leading-relaxed">
-                      {assignmentDetails.content}
-                    </pre>
+                    <div 
+                      className="prose prose-gray max-w-none"
+                      dangerouslySetInnerHTML={{ __html: assignmentDetails.content }}
+                    />
                   </div>
                 </div>
               )}
@@ -339,7 +396,7 @@ const ViewAssignment = () => {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: index * 0.1 }}
-                        className="group cursor-pointer"
+                        className="relative group cursor-pointer"
                         onClick={() => window.open(url, '_blank')}
                       >
                         <img
@@ -424,7 +481,7 @@ const ViewAssignment = () => {
                         onChange={(e) => handleAnswerChange(index, e.target.value)}
                         placeholder="Type your answer here..."
                         className="w-full h-32 border-2 border-emerald-300 focus:border-emerald-500"
-                        disabled={assignment.submitted}
+                        disabled={assignment.submitted || deadlinePassed}
                       />
                     )}
                     
@@ -441,7 +498,7 @@ const ViewAssignment = () => {
                           type="file"
                           onChange={(e) => handleFileUpload(e, index)}
                           className="hidden"
-                          disabled={isUploading || assignment.submitted}
+                          disabled={isUploading || assignment.submitted || deadlinePassed}
                         />
                         
                         {answers[index] && answers[index].length > 0 && (
@@ -468,7 +525,7 @@ const ViewAssignment = () => {
                               checked={answers[index] === option}
                               onChange={(e) => handleAnswerChange(index, e.target.value)}
                               className="text-emerald-600 focus:ring-emerald-500"
-                              disabled={assignment.submitted}
+                              disabled={assignment.submitted || deadlinePassed}
                             />
                             <span className="text-gray-700">{option}</span>
                           </label>
@@ -511,6 +568,12 @@ const ViewAssignment = () => {
                       View Your Submission
                     </Button>
                   )}
+                </div>
+              ) : deadlinePassed ? (
+                <div className="text-center py-12">
+                  <AlertCircle className="h-20 w-20 text-red-600 mx-auto mb-6" />
+                  <h3 className="text-3xl font-bold text-red-900 mb-4">Submission Deadline Has Passed</h3>
+                  <p className="text-gray-600 text-lg">Please contact the administrator for assistance.</p>
                 </div>
               ) : (
                 <div className="space-y-6">

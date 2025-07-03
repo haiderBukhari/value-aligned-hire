@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -6,8 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Save, Image, FileText, Bold, Italic, Underline, List, ListOrdered, Link, Plus, X, Upload } from "lucide-react";
+import { ArrowLeft, Save, Image, FileText, Plus, X, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 const CreateAssignment = () => {
   const { jobId } = useParams();
@@ -15,6 +16,7 @@ const CreateAssignment = () => {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const resumeId = searchParams.get('resume_id');
+  const isEdit = searchParams.get('edit') === 'true';
   
   const [assignment, setAssignment] = useState({
     title: "",
@@ -31,6 +33,47 @@ const CreateAssignment = () => {
   
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Fetch existing assignment if editing
+  useEffect(() => {
+    if (isEdit && resumeId) {
+      fetchExistingAssignment();
+    }
+  }, [isEdit, resumeId]);
+
+  const fetchExistingAssignment = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/assignments/${resumeId}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.assignment_template && data.assignment_template.length > 0) {
+          const template = data.assignment_template[0];
+          setAssignment({
+            title: template.title || "",
+            description: template.description || "",
+            content: template.content || "",
+            duration: template.duration || "",
+            deadline: template.deadline || "",
+            instructions: template.instructions || "",
+            resources: template.resources || [],
+            images: template.images || [],
+            documents: template.documents || [],
+            questions: template.questions || []
+          });
+        }
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch existing assignment",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const uploadToCloudinary = async (file: File): Promise<string> => {
     const data = new FormData();
@@ -106,40 +149,6 @@ const CreateAssignment = () => {
     } finally {
       setIsUploading(false);
     }
-  };
-
-  const insertTextFormat = (format: string) => {
-    const textarea = document.getElementById('content') as HTMLTextAreaElement;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = assignment.content.substring(start, end);
-    
-    let formattedText = "";
-    switch (format) {
-      case 'bold':
-        formattedText = `**${selectedText || 'bold text'}**`;
-        break;
-      case 'italic':
-        formattedText = `*${selectedText || 'italic text'}*`;
-        break;
-      case 'underline':
-        formattedText = `__${selectedText || 'underlined text'}__`;
-        break;
-      case 'ul':
-        formattedText = `\n- ${selectedText || 'list item'}`;
-        break;
-      case 'ol':
-        formattedText = `\n1. ${selectedText || 'numbered item'}`;
-        break;
-      case 'link':
-        formattedText = `[${selectedText || 'link text'}](url)`;
-        break;
-    }
-
-    const newContent = assignment.content.substring(0, start) + formattedText + assignment.content.substring(end);
-    setAssignment(prev => ({ ...prev, content: newContent }));
   };
 
   const addQuestion = () => {
@@ -254,38 +263,61 @@ const CreateAssignment = () => {
         resources: assignment.resources
       };
 
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/assessments/create`, {
-        method: "POST",
+      const url = isEdit 
+        ? `${import.meta.env.VITE_BACKEND_URL}/assignments/${resumeId}`
+        : `${import.meta.env.VITE_BACKEND_URL}/assessments/create`;
+      
+      const method = isEdit ? "PUT" : "POST";
+      const body = isEdit 
+        ? JSON.stringify({ details: assignmentDetails })
+        : JSON.stringify({ resume_id: resumeId, details: assignmentDetails });
+
+      const response = await fetch(url, {
+        method,
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          resume_id: resumeId,
-          details: assignmentDetails
-        }),
+        body,
       });
 
-      if (!response.ok) throw new Error('Failed to create assignment');
+      if (!response.ok) throw new Error(`Failed to ${isEdit ? 'update' : 'create'} assignment`);
 
       const result = await response.json();
       
       toast({
         title: "Success",
-        description: result.message || "Assignment created and sent to candidate!",
+        description: result.message || `Assignment ${isEdit ? 'updated' : 'created and sent to candidate'}!`,
       });
       
       navigate(-1);
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to create assignment",
+        description: `Failed to ${isEdit ? 'update' : 'create'} assignment`,
         variant: "destructive",
       });
     } finally {
       setIsSaving(false);
     }
   };
+
+  const quillModules = {
+    toolbar: [
+      ['bold', 'italic', 'underline'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      ['link'],
+      ['clean']
+    ],
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-4"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4">
@@ -301,9 +333,11 @@ const CreateAssignment = () => {
           </Button>
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Create Assignment
+              {isEdit ? 'Edit Assignment' : 'Create Assignment'}
             </h1>
-            <p className="text-gray-600 mt-1">Design the perfect assessment for your candidate</p>
+            <p className="text-gray-600 mt-1">
+              {isEdit ? 'Update the assignment details' : 'Design the perfect assessment for your candidate'}
+            </p>
           </div>
         </motion.div>
 
@@ -397,37 +431,18 @@ const CreateAssignment = () => {
                 <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-t-lg">
                   <CardTitle className="text-xl">Assignment Content</CardTitle>
                 </CardHeader>
-                <CardContent className="p-0">
-                  {/* Formatting Toolbar */}
-                  <div className="flex flex-wrap gap-2 p-4 bg-gray-50 border-b">
-                    {[
-                      { icon: Bold, action: 'bold' },
-                      { icon: Italic, action: 'italic' },
-                      { icon: Underline, action: 'underline' },
-                      { icon: List, action: 'ul' },
-                      { icon: ListOrdered, action: 'ol' },
-                      { icon: Link, action: 'link' }
-                    ].map(({ icon: Icon, action }) => (
-                      <Button
-                        key={action}
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => insertTextFormat(action)}
-                        className="h-8 hover:bg-indigo-50 hover:text-indigo-600"
-                      >
-                        <Icon className="h-4 w-4" />
-                      </Button>
-                    ))}
+                <CardContent className="p-6">
+                  <div className="border-2 border-purple-100 rounded-lg overflow-hidden">
+                    <ReactQuill
+                      theme="snow"
+                      value={assignment.content}
+                      onChange={(value) => setAssignment(prev => ({ ...prev, content: value }))}
+                      modules={quillModules}
+                      placeholder="Write your assignment content here..."
+                      className="bg-white"
+                      style={{ minHeight: '200px' }}
+                    />
                   </div>
-                  
-                  <Textarea
-                    id="content"
-                    value={assignment.content}
-                    onChange={(e) => setAssignment(prev => ({ ...prev, content: e.target.value }))}
-                    placeholder="Write your assignment content here..."
-                    className="w-full h-64 border-0 resize-none focus:ring-0"
-                  />
                 </CardContent>
               </Card>
             </motion.div>
