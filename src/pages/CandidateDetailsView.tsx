@@ -92,7 +92,7 @@ const CandidateDetailsView = () => {
   const getStageScore = (candidate: any, stage: string) => {
     switch (stage) {
       case 'Application Screening':
-        return candidate.screening_score || 0;
+        return candidate.screening_score || candidate.total_weighted_score || 0;
       case 'Initial Interview':
         return candidate.initial_interview_score || 0;
       case 'Assessment':
@@ -101,6 +101,8 @@ const CandidateDetailsView = () => {
         return candidate.scondary_interview_score || 0;
       case 'Final Interview':
         return candidate.final_interview_score || 0;
+      case 'Offer Stage':
+        return candidate.is_hired ? 100 : 0;
       default:
         return 0;
     }
@@ -385,7 +387,13 @@ const CandidateDetailsView = () => {
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">Stage Progress</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {Object.values(workflow.workflow_process).map((stage: any) => {
+                      {Object.entries(workflow.workflow_process)
+                        .sort(([a], [b]) => {
+                          const orderA = parseInt(a.replace('step', ''));
+                          const orderB = parseInt(b.replace('step', ''));
+                          return orderA - orderB;
+                        })
+                        .map(([stepKey, stage]: [string, any]) => {
                         const stageScore = getStageScore(candidate, stage);
                         const isCompleted = candidate[WORKFLOW_STEP_TO_COLUMN[stage]];
                         const stageDetails = getStageDetails(candidate, stage);
@@ -402,17 +410,15 @@ const CandidateDetailsView = () => {
                               )}
                             </div>
                             
-                            {stageScore > 0 && (
-                              <div className="flex items-center gap-2 mb-2">
-                                <Progress value={stageScore} className="flex-1 h-2" />
-                                <span className={`text-sm font-bold ${getScoreColor(stageScore)}`}>
-                                  {stageScore}%
-                                </span>
-                              </div>
-                            )}
+                            <div className="flex items-center gap-2 mb-2">
+                              <Progress value={stageScore} className="flex-1 h-2" />
+                              <span className={`text-sm font-bold ${getScoreColor(stageScore)}`}>
+                                {stageScore}%
+                              </span>
+                            </div>
                             
                             {stageDetails && (
-                              <div className="text-xs text-gray-600 space-y-1">
+                              <div className="text-xs text-gray-600 space-y-1 mb-2">
                                 <p><strong>Overall:</strong> {stageDetails.overall}/5</p>
                                 <p><strong>Communication:</strong> {stageDetails.communication}/5</p>
                                 <p><strong>Job Skills:</strong> {stageDetails.job_related_skill}/5</p>
@@ -421,7 +427,7 @@ const CandidateDetailsView = () => {
                             )}
                             
                             {stageSuggestion && (
-                              <div className="mt-2 text-xs text-gray-600">
+                              <div className="text-xs text-gray-600">
                                 <p><strong>Suggestion:</strong> {stageSuggestion}</p>
                               </div>
                             )}

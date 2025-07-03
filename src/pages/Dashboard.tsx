@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,6 +22,73 @@ const Dashboard = () => {
   const { companyName } = useCompanyInfo();
   const { workflowStages, isLoading } = useWorkflow();
 
+  // Dashboard state
+  const [dashboardStats, setDashboardStats] = useState({
+    totalJobs: 0,
+    totalApplications: 0,
+    hiredThisMonth: 0,
+    interviewsScheduled: 0
+  });
+  const [candidates, setCandidates] = useState<any[]>([]);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  // Fetch dashboard data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        // Fetch total jobs
+        const jobsResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/jobs/total`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        // Fetch all candidates
+        const candidatesResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/candidates/all`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        let totalJobs = 0;
+        let candidatesData: any[] = [];
+
+        if (jobsResponse.ok) {
+          const jobsData = await jobsResponse.json();
+          totalJobs = jobsData.total_jobs || 0;
+        }
+
+        if (candidatesResponse.ok) {
+          const candidatesResponseData = await candidatesResponse.json();
+          candidatesData = candidatesResponseData.candidates || [];
+        }
+
+        // Calculate stats from candidates data
+        const totalApplications = candidatesData.length;
+        const hiredThisMonth = candidatesData.filter(c => c.is_hired && 
+          new Date(c.created_at).getMonth() === new Date().getMonth()
+        ).length;
+        const interviewsScheduled = candidatesData.filter(c => 
+          c.initial_interview_schedule || c.final_interview_schedule || c.scondary_interview_schedule
+        ).length;
+
+        setDashboardStats({
+          totalJobs,
+          totalApplications,
+          hiredThisMonth,
+          interviewsScheduled
+        });
+
+        setCandidates(candidatesData);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
   // Logout handler
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -31,22 +98,32 @@ const Dashboard = () => {
 
   const isDashboardHome = location.pathname === "/dashboard";
 
-  // Sample data for charts
+  // Sample data for charts (you can enhance this with real data later)
   const applicationData = [
     { name: 'Jan', applications: 65, hired: 12 },
     { name: 'Feb', applications: 59, hired: 15 },
     { name: 'Mar', applications: 80, hired: 18 },
     { name: 'Apr', applications: 81, hired: 22 },
     { name: 'May', applications: 56, hired: 8 },
-    { name: 'Jun', applications: 95, hired: 25 },
+    { name: 'Jun', applications: dashboardStats.totalApplications, hired: dashboardStats.hiredThisMonth },
   ];
 
-  const statusData = [
-    { name: 'Applied', value: 145, color: '#8884d8' },
-    { name: 'Screening', value: 89, color: '#82ca9d' },
-    { name: 'Interview', value: 45, color: '#ffc658' },
-    { name: 'Hired', value: 23, color: '#ff7300' },
-  ];
+  // Generate status data from candidates
+  const getStatusData = () => {
+    const screening = candidates.filter(c => c.is_screening && !c.is_initial_interview && !c.in_assessment && !c.in_final_interview && !c.is_hired).length;
+    const assessment = candidates.filter(c => c.in_assessment && !c.in_final_interview && !c.is_hired).length;
+    const interview = candidates.filter(c => (c.is_initial_interview || c.is_secondary_interview || c.in_final_interview) && !c.is_hired).length;
+    const hired = candidates.filter(c => c.is_hired).length;
+
+    return [
+      { name: 'Screening', value: screening, color: '#8884d8' },
+      { name: 'Assessment', value: assessment, color: '#82ca9d' },
+      { name: 'Interview', value: interview, color: '#ffc658' },
+      { name: 'Hired', value: hired, color: '#ff7300' },
+    ];
+  };
+
+  const statusData = getStatusData();
 
   const recentJobs = [
     { id: 1, title: "Senior Frontend Developer", applications: 45, status: "Active", posted: "2 days ago" },
@@ -55,17 +132,29 @@ const Dashboard = () => {
     { id: 4, title: "Data Scientist", applications: 67, status: "Active", posted: "5 days ago" },
   ];
 
-  const recentApplicants = [
-    { id: 1, name: "Sarah Johnson", position: "Frontend Developer", score: 92, status: "Interview" },
-    { id: 2, name: "Mike Chen", position: "Product Manager", score: 88, status: "Screening" },
-    { id: 3, name: "Emily Davis", position: "UX Designer", score: 95, status: "Hired" },
-    { id: 4, name: "Alex Rodriguez", position: "Data Scientist", score: 85, status: "Applied" },
-  ];
+  // Get recent top applicants from candidates data
+  const getRecentApplicants = () => {
+    return candidates
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 4)
+      .map(candidate => ({
+        id: candidate.id,
+        name: candidate.applicant_name,
+        position: "Developer", // You might want to fetch job title from job data
+        score: candidate.total_weighted_score || 0,
+        status: candidate.is_hired ? "Hired" : 
+                candidate.in_final_interview ? "Final Interview" :
+                candidate.in_assessment ? "Assessment" :
+                candidate.is_screening ? "Screening" : "Applied"
+      }));
+  };
+
+  const recentApplicants = getRecentApplicants();
 
   const stats = [
     {
       title: "Total Jobs",
-      value: "24",
+      value: dashboardStats.totalJobs.toString(),
       change: "+12%",
       icon: Briefcase,
       color: "text-blue-600",
@@ -73,7 +162,7 @@ const Dashboard = () => {
     },
     {
       title: "Total Applications",
-      value: "1,234",
+      value: dashboardStats.totalApplications.toString(),
       change: "+18%",
       icon: Users,
       color: "text-green-600",
@@ -81,7 +170,7 @@ const Dashboard = () => {
     },
     {
       title: "Hired This Month",
-      value: "23",
+      value: dashboardStats.hiredThisMonth.toString(),
       change: "+8%",
       icon: TrendingUp,
       color: "text-purple-600",
@@ -89,7 +178,7 @@ const Dashboard = () => {
     },
     {
       title: "Interviews Scheduled",
-      value: "15",
+      value: dashboardStats.interviewsScheduled.toString(),
       change: "+5%",
       icon: Calendar,
       color: "text-orange-600",
@@ -116,7 +205,7 @@ const Dashboard = () => {
         icon: Users,
         label: "Talent Pool",
         path: "/dashboard/talent-pool",
-        count: 89
+        count: dashboardStats.totalApplications
       },
       {
         icon: Plus,
@@ -152,13 +241,13 @@ const Dashboard = () => {
       };
 
       const getCount = (stageName: string) => {
-        if (stageName.includes('Application Screening')) return 156;
-        if (stageName.includes('Assessment')) return 42;
-        if (stageName.includes('Initial Interview')) return 18;
-        if (stageName.includes('Secondary Interview')) return 12;
-        if (stageName.includes('Final Interview')) return 8;
-        if (stageName.includes('Offer Stage')) return 5;
-        return Math.floor(Math.random() * 50) + 10;
+        if (stageName.includes('Application Screening')) return candidates.filter(c => c.is_screening).length;
+        if (stageName.includes('Assessment')) return candidates.filter(c => c.in_assessment).length;
+        if (stageName.includes('Initial Interview')) return candidates.filter(c => c.is_initial_interview).length;
+        if (stageName.includes('Secondary Interview')) return candidates.filter(c => c.is_secondary_interview).length;
+        if (stageName.includes('Final Interview')) return candidates.filter(c => c.in_final_interview).length;
+        if (stageName.includes('Offer Stage')) return candidates.filter(c => c.is_hired).length;
+        return candidates.filter(c => c.is_screening).length;
       };
 
       return {
@@ -174,7 +263,7 @@ const Dashboard = () => {
         icon: Target,
         label: "Hiring Pipeline",
         path: "/dashboard/pipeline",
-        count: 91
+        count: dashboardStats.totalApplications
       }
     ];
 
@@ -188,7 +277,9 @@ const Dashboard = () => {
       case 'active': return 'bg-green-100 text-green-800';
       case 'closed': return 'bg-red-100 text-red-800';
       case 'hired': return 'bg-blue-100 text-blue-800';
+      case 'final interview': return 'bg-purple-100 text-purple-800';
       case 'interview': return 'bg-purple-100 text-purple-800';
+      case 'assessment': return 'bg-yellow-100 text-yellow-800';
       case 'screening': return 'bg-yellow-100 text-yellow-800';
       case 'applied': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
@@ -253,11 +344,11 @@ const Dashboard = () => {
         <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50 flex-shrink-0">
           <div className="grid grid-cols-2 gap-3">
             <div className="text-center p-3 bg-white rounded-lg shadow-sm">
-              <p className="text-lg font-bold text-gray-900">24</p>
+              <p className="text-lg font-bold text-gray-900">{loadingStats ? '-' : dashboardStats.totalJobs}</p>
               <p className="text-xs text-gray-600">Active Jobs</p>
             </div>
             <div className="text-center p-3 bg-white rounded-lg shadow-sm">
-              <p className="text-lg font-bold text-gray-900">156</p>
+              <p className="text-lg font-bold text-gray-900">{loadingStats ? '-' : dashboardStats.totalApplications}</p>
               <p className="text-xs text-gray-600">Candidates</p>
             </div>
           </div>
@@ -306,6 +397,11 @@ const Dashboard = () => {
                         <item.icon className="mr-3 h-5 w-5" />
                         {item.label}
                       </div>
+                      {item.count !== null && (
+                        <Badge variant="secondary" className="ml-auto">
+                          {loadingStats ? '-' : item.count}
+                        </Badge>
+                      )}
                     </Button>
                   );
                 })}
@@ -391,7 +487,13 @@ const Dashboard = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                          <p className="text-3xl font-bold text-gray-900 mt-2">{stat.value}</p>
+                          <p className="text-3xl font-bold text-gray-900 mt-2">
+                            {loadingStats ? (
+                              <div className="w-8 h-8 bg-gray-200 animate-pulse rounded"></div>
+                            ) : (
+                              stat.value
+                            )}
+                          </p>
                           <p className="text-sm text-green-600 mt-1">{stat.change} from last month</p>
                         </div>
                         <div className={`p-3 rounded-lg ${stat.bgColor}`}>
