@@ -24,13 +24,13 @@ import FinalInterview from "./pages/FinalInterview";
 import OfferStage from "./pages/OfferStage";
 import NotFound from "./pages/NotFound";
 import TalentPool from "./pages/TalentPool";
-import CandidateDetails from "./pages/CandidateDetails";
 import InterviewDetails from "./pages/InterviewDetails";
 import JobAssessmentCenter from "./pages/JobAssessmentCenter";
 import JobAssessmentCandidates from "./pages/JobAssessmentCandidates";
 import CreateAssignment from "./pages/CreateAssignment";
 import ViewAssignment from "./pages/ViewAssignment";
 import AssignmentReview from "./pages/AssignmentReview";
+import CandidateDetails from "./pages/CandidateDetails";
 
 const queryClient = new QueryClient();
 

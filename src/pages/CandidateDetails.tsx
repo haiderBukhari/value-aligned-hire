@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -105,7 +104,7 @@ const CandidateDetails = () => {
             <div className="flex items-center space-x-6">
               <Avatar className="h-24 w-24">
                 <AvatarFallback className="text-2xl bg-gradient-to-r from-blue-500 to-purple-500 text-white">
-                  {candidate.name.split(' ').map(n => n[0]).join('')}
+                  {(candidate.name || '').split(' ').map(n => n[0]).join('')}
                 </AvatarFallback>
               </Avatar>
               <div>
@@ -134,7 +133,7 @@ const CandidateDetails = () => {
             <div className="text-right">
               <div className="mb-4">
                 <Badge className={`${getStageColor(candidate.currentStage)} px-4 py-2 text-sm font-medium`}>
-                  {candidate.currentStage.replace('_', ' ').toUpperCase()}
+                  {(candidate.currentStage || '').replace('_', ' ').toUpperCase()}
                 </Badge>
               </div>
               <div className="text-right">
@@ -174,7 +173,7 @@ const CandidateDetails = () => {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Skills</span>
-                    <span className="font-medium">{candidate.skills.length}</span>
+                    <span className="font-medium">{(candidate.skills || []).length}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -195,7 +194,7 @@ const CandidateDetails = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
-                    {candidate.skills.map((skill, index) => (
+                    {(candidate.skills || []).map((skill, index) => (
                       <Badge key={index} variant="secondary" className="text-xs">
                         {skill}
                       </Badge>
@@ -271,7 +270,7 @@ const CandidateDetails = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
-                    {candidate.stages.map((stage, index) => (
+                    {(candidate.stages || []).map((stage, index) => (
                       <motion.div
                         key={index}
                         initial={{ opacity: 0, x: 20 }}
@@ -279,7 +278,7 @@ const CandidateDetails = () => {
                         transition={{ delay: 0.1 * index }}
                         className="relative"
                       >
-                        {index < candidate.stages.length - 1 && (
+                        {index < (candidate.stages || []).length - 1 && (
                           <div className="absolute left-6 top-12 w-0.5 h-12 bg-gray-200"></div>
                         )}
                         
