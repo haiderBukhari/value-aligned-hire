@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { 
   ArrowLeft, Mail, MapPin, Calendar, Phone, ExternalLink, FileText, 
   Star, Award, Clock, User, Briefcase, MessageSquare, CheckCircle,
-  Download, Eye, Target, TrendingUp
+  Download, Eye, Target, TrendingUp, DollarSign, Gift, CalendarDays
 } from "lucide-react";
 
 const CandidateDetailsView = () => {
@@ -107,11 +106,111 @@ const CandidateDetailsView = () => {
     }
   };
 
+  const getStageDetails = (candidate: any, stage: string) => {
+    switch (stage) {
+      case 'Initial Interview':
+        return candidate.initial_details;
+      case 'Final Interview':
+        return candidate.final_details;
+      case 'Secondary Interview':
+        return candidate.secondary_details;
+      default:
+        return null;
+    }
+  };
+
+  const getStageSuggestion = (candidate: any, stage: string) => {
+    switch (stage) {
+      case 'Initial Interview':
+        return candidate.initial_interview_suggestion;
+      case 'Final Interview':
+        return candidate.final_interview_suggestion;
+      case 'Secondary Interview':
+        return candidate.scondary_interview_suggestion;
+      default:
+        return null;
+    }
+  };
+
   const getScoreColor = (score: number) => {
     if (score >= 90) return 'text-green-600';
     if (score >= 80) return 'text-blue-600';
     if (score >= 70) return 'text-yellow-600';
     return 'text-red-600';
+  };
+
+  const formatOfferDetails = (offerDetails: any) => {
+    if (!offerDetails) return null;
+
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
+              <DollarSign className="h-6 w-6 text-green-600" />
+              <div>
+                <p className="text-sm font-medium text-green-800">Base Salary</p>
+                <p className="text-2xl font-bold text-green-900">${offerDetails.base_salary?.toLocaleString()}</p>
+              </div>
+            </div>
+            
+            {offerDetails.signing_bonus > 0 && (
+              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <Gift className="h-6 w-6 text-blue-600" />
+                <div>
+                  <p className="text-sm font-medium text-blue-800">Signing Bonus</p>
+                  <p className="text-xl font-bold text-blue-900">${offerDetails.signing_bonus?.toLocaleString()}</p>
+                </div>
+              </div>
+            )}
+            
+            {offerDetails.equity_percentage > 0 && (
+              <div className="flex items-center gap-3 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <TrendingUp className="h-6 w-6 text-purple-600" />
+                <div>
+                  <p className="text-sm font-medium text-purple-800">Equity</p>
+                  <p className="text-xl font-bold text-purple-900">{offerDetails.equity_percentage}%</p>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="space-y-4">
+            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <CalendarDays className="h-4 w-4" />
+                Important Dates
+              </h4>
+              <div className="space-y-2 text-sm">
+                <p><strong>Start Date:</strong> {new Date(offerDetails.start_date).toLocaleDateString()}</p>
+                <p><strong>Response Deadline:</strong> {new Date(offerDetails.response_deadline).toLocaleDateString()}</p>
+                <p><strong>Sent Date:</strong> {new Date(offerDetails.sent_date).toLocaleDateString()}</p>
+              </div>
+            </div>
+            
+            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <h4 className="font-semibold mb-2">Status</h4>
+              <Badge className={`${offerDetails.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' : 
+                                offerDetails.status === 'accepted' ? 'bg-green-100 text-green-800 border-green-200' : 
+                                'bg-red-100 text-red-800 border-red-200'} px-3 py-1`}>
+                {offerDetails.status?.charAt(0).toUpperCase() + offerDetails.status?.slice(1)}
+              </Badge>
+            </div>
+          </div>
+        </div>
+        
+        {offerDetails.benefits && offerDetails.benefits.length > 0 && (
+          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h4 className="font-semibold mb-2">Benefits & Perks</h4>
+            <ul className="list-disc list-inside space-y-1">
+              {offerDetails.benefits.map((benefit: string, index: number) => (
+                <li key={index} className="text-gray-700">{benefit}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
   };
 
   if (loading) {
@@ -289,6 +388,9 @@ const CandidateDetailsView = () => {
                       {Object.values(workflow.workflow_process).map((stage: any) => {
                         const stageScore = getStageScore(candidate, stage);
                         const isCompleted = candidate[WORKFLOW_STEP_TO_COLUMN[stage]];
+                        const stageDetails = getStageDetails(candidate, stage);
+                        const stageSuggestion = getStageSuggestion(candidate, stage);
+                        
                         return (
                           <div key={stage} className={`p-4 rounded-lg border ${isCompleted ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
                             <div className="flex items-center justify-between mb-2">
@@ -299,12 +401,28 @@ const CandidateDetailsView = () => {
                                 <Clock className="h-5 w-5 text-gray-400" />
                               )}
                             </div>
+                            
                             {stageScore > 0 && (
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 mb-2">
                                 <Progress value={stageScore} className="flex-1 h-2" />
                                 <span className={`text-sm font-bold ${getScoreColor(stageScore)}`}>
                                   {stageScore}%
                                 </span>
+                              </div>
+                            )}
+                            
+                            {stageDetails && (
+                              <div className="text-xs text-gray-600 space-y-1">
+                                <p><strong>Overall:</strong> {stageDetails.overall}/5</p>
+                                <p><strong>Communication:</strong> {stageDetails.communication}/5</p>
+                                <p><strong>Job Skills:</strong> {stageDetails.job_related_skill}/5</p>
+                                <p><strong>Professionalism:</strong> {stageDetails.professionalism}/5</p>
+                              </div>
+                            )}
+                            
+                            {stageSuggestion && (
+                              <div className="mt-2 text-xs text-gray-600">
+                                <p><strong>Suggestion:</strong> {stageSuggestion}</p>
                               </div>
                             )}
                           </div>
@@ -347,6 +465,7 @@ const CandidateDetailsView = () => {
 
           <TabsContent value="interviews">
             <div className="space-y-6">
+              {/* Final Interview */}
               {candidate.final_interview_schedule && (
                 <Card>
                   <CardHeader>
@@ -371,11 +490,109 @@ const CandidateDetailsView = () => {
                       {candidate.final_details && (
                         <div>
                           <h4 className="font-medium mb-2">Interview Feedback</h4>
-                          <p><strong>Overall:</strong> {candidate.final_details.overall}/5</p>
-                          <p><strong>Communication:</strong> {candidate.final_details.communication}/5</p>
-                          <p><strong>Job Skills:</strong> {candidate.final_details.job_related_skill}/5</p>
-                          <p><strong>Professionalism:</strong> {candidate.final_details.professionalism}/5</p>
-                          <p className="mt-2"><strong>Feedback:</strong> {candidate.final_details.detailed_feedback}</p>
+                          <div className="space-y-2">
+                            <p><strong>Overall:</strong> {candidate.final_details.overall}/5</p>
+                            <p><strong>Communication:</strong> {candidate.final_details.communication}/5</p>
+                            <p><strong>Job Skills:</strong> {candidate.final_details.job_related_skill}/5</p>
+                            <p><strong>Professionalism:</strong> {candidate.final_details.professionalism}/5</p>
+                            {candidate.final_interview_score && (
+                              <p><strong>Score:</strong> <span className={getScoreColor(candidate.final_interview_score)}>{candidate.final_interview_score}%</span></p>
+                            )}
+                            {candidate.final_interview_suggestion && (
+                              <p><strong>Suggestion:</strong> {candidate.final_interview_suggestion}</p>
+                            )}
+                            <p className="mt-2"><strong>Feedback:</strong> {candidate.final_details.detailed_feedback}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {/* Initial Interview */}
+              {candidate.initial_interview_schedule && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Initial Interview</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="font-medium mb-2">Schedule Details</h4>
+                        <p><strong>Date:</strong> {candidate.initial_interview_schedule.date}</p>
+                        <p><strong>Time:</strong> {candidate.initial_interview_schedule.time}</p>
+                        <p><strong>Notes:</strong> {candidate.initial_interview_schedule.notes}</p>
+                        {candidate.initial_interview_schedule.meet_link && (
+                          <Button asChild className="mt-2">
+                            <a href={candidate.initial_interview_schedule.meet_link} target="_blank" rel="noopener noreferrer">
+                              Join Meeting
+                            </a>
+                          </Button>
+                        )}
+                      </div>
+                      
+                      {candidate.initial_details && (
+                        <div>
+                          <h4 className="font-medium mb-2">Interview Feedback</h4>
+                          <div className="space-y-2">
+                            <p><strong>Overall:</strong> {candidate.initial_details.overall}/5</p>
+                            <p><strong>Communication:</strong> {candidate.initial_details.communication}/5</p>
+                            <p><strong>Job Skills:</strong> {candidate.initial_details.job_related_skill}/5</p>
+                            <p><strong>Professionalism:</strong> {candidate.initial_details.professionalism}/5</p>
+                            {candidate.initial_interview_score && (
+                              <p><strong>Score:</strong> <span className={getScoreColor(candidate.initial_interview_score)}>{candidate.initial_interview_score}%</span></p>
+                            )}
+                            {candidate.initial_interview_suggestion && (
+                              <p><strong>Suggestion:</strong> {candidate.initial_interview_suggestion}</p>
+                            )}
+                            <p className="mt-2"><strong>Feedback:</strong> {candidate.initial_details.detailed_feedback}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {/* Secondary Interview */}
+              {candidate.scondary_interview_schedule && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Secondary Interview</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="font-medium mb-2">Schedule Details</h4>
+                        <p><strong>Date:</strong> {candidate.scondary_interview_schedule.date}</p>
+                        <p><strong>Time:</strong> {candidate.scondary_interview_schedule.time}</p>
+                        <p><strong>Notes:</strong> {candidate.scondary_interview_schedule.notes}</p>
+                        {candidate.scondary_interview_schedule.meet_link && (
+                          <Button asChild className="mt-2">
+                            <a href={candidate.scondary_interview_schedule.meet_link} target="_blank" rel="noopener noreferrer">
+                              Join Meeting
+                            </a>
+                          </Button>
+                        )}
+                      </div>
+                      
+                      {candidate.secondary_details && (
+                        <div>
+                          <h4 className="font-medium mb-2">Interview Feedback</h4>
+                          <div className="space-y-2">
+                            <p><strong>Overall:</strong> {candidate.secondary_details.overall}/5</p>
+                            <p><strong>Communication:</strong> {candidate.secondary_details.communication}/5</p>
+                            <p><strong>Job Skills:</strong> {candidate.secondary_details.job_related_skill}/5</p>
+                            <p><strong>Professionalism:</strong> {candidate.secondary_details.professionalism}/5</p>
+                            {candidate.scondary_interview_score && (
+                              <p><strong>Score:</strong> <span className={getScoreColor(candidate.scondary_interview_score)}>{candidate.scondary_interview_score}%</span></p>
+                            )}
+                            {candidate.scondary_interview_suggestion && (
+                              <p><strong>Suggestion:</strong> {candidate.scondary_interview_suggestion}</p>
+                            )}
+                            <p className="mt-2"><strong>Feedback:</strong> {candidate.secondary_details.detailed_feedback}</p>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -436,11 +653,9 @@ const CandidateDetailsView = () => {
               <CardContent>
                 {candidate.offer_details ? (
                   <div className="space-y-4">
-                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                      <h3 className="font-semibold text-green-800 mb-2">Offer Details</h3>
-                      <pre className="bg-white p-4 rounded text-sm border">
-                        {JSON.stringify(candidate.offer_details, null, 2)}
-                      </pre>
+                    <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+                      <h3 className="font-semibold text-green-800 mb-4">Offer Details</h3>
+                      {formatOfferDetails(candidate.offer_details)}
                     </div>
                   </div>
                 ) : (
