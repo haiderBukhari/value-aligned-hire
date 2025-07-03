@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -145,8 +146,8 @@ const AssignmentReview = () => {
     );
   }
 
-  const assignmentTemplate = submission.assignment_template[0] || {};
-  const submissionData = submission.full_assignment_submission[0] || {};
+  const assignmentTemplate = submission.assignment_template?.[0];
+  const submissionData = submission.full_assignment_submission?.[0];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 p-4">
@@ -184,7 +185,7 @@ const AssignmentReview = () => {
                   <div>
                     <h3 className="text-xl font-bold text-gray-900">Assignment Completed</h3>
                     <p className="text-gray-600">
-                      Submitted: {formatDate(submissionData.submission_time || submission.assignment_submission)}
+                      Submitted: {formatDate(submissionData?.submission_time || submission.assignment_submission)}
                     </p>
                   </div>
                 </div>
@@ -197,74 +198,76 @@ const AssignmentReview = () => {
         </motion.div>
 
         {/* Assignment Template */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <Card className="mb-8 border-0 shadow-xl bg-white/95 backdrop-blur-sm">
-            <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-t-lg">
-              <CardTitle className="text-2xl flex items-center gap-3">
-                <FileText className="h-6 w-6" />
-                Original Assignment
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{assignmentTemplate.title}</h3>
-                {assignmentTemplate.description && (
-                  <p className="text-gray-700 mb-4">{assignmentTemplate.description}</p>
-                )}
-              </div>
+        {assignmentTemplate && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card className="mb-8 border-0 shadow-xl bg-white/95 backdrop-blur-sm">
+              <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-t-lg">
+                <CardTitle className="text-2xl flex items-center gap-3">
+                  <FileText className="h-6 w-6" />
+                  Original Assignment
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{assignmentTemplate.title}</h3>
+                  {assignmentTemplate.description && (
+                    <p className="text-gray-700 mb-4">{assignmentTemplate.description}</p>
+                  )}
+                </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {assignmentTemplate.deadline && (
-                  <div className="flex items-center gap-3 p-4 bg-orange-50 rounded-lg border border-orange-200">
-                    <Calendar className="h-5 w-5 text-orange-600" />
-                    <div>
-                      <p className="font-semibold text-gray-900">Deadline</p>
-                      <p className="text-gray-600">{formatDate(assignmentTemplate.deadline)}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {assignmentTemplate.deadline && (
+                    <div className="flex items-center gap-3 p-4 bg-orange-50 rounded-lg border border-orange-200">
+                      <Calendar className="h-5 w-5 text-orange-600" />
+                      <div>
+                        <p className="font-semibold text-gray-900">Deadline</p>
+                        <p className="text-gray-600">{formatDate(assignmentTemplate.deadline)}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {assignmentTemplate.duration && (
+                    <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <Clock className="h-5 w-5 text-blue-600" />
+                      <div>
+                        <p className="font-semibold text-gray-900">Duration</p>
+                        <p className="text-gray-600">{assignmentTemplate.duration}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {assignmentTemplate.content && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3">Assignment Details</h4>
+                    <div className="bg-gray-50 p-4 rounded-lg border">
+                      <div 
+                        className="prose prose-gray max-w-none"
+                        dangerouslySetInnerHTML={{ __html: assignmentTemplate.content }}
+                      />
                     </div>
                   </div>
                 )}
 
-                {assignmentTemplate.duration && (
-                  <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <Clock className="h-5 w-5 text-blue-600" />
-                    <div>
-                      <p className="font-semibold text-gray-900">Duration</p>
-                      <p className="text-gray-600">{assignmentTemplate.duration}</p>
+                {assignmentTemplate.instructions && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3">Instructions</h4>
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <p className="text-gray-700">{assignmentTemplate.instructions}</p>
                     </div>
                   </div>
                 )}
-              </div>
-
-              {assignmentTemplate.content && (
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Assignment Details</h4>
-                  <div className="bg-gray-50 p-4 rounded-lg border">
-                    <div 
-                      className="prose prose-gray max-w-none"
-                      dangerouslySetInnerHTML={{ __html: assignmentTemplate.content }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {assignmentTemplate.instructions && (
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Instructions</h4>
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <p className="text-gray-700">{assignmentTemplate.instructions}</p>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Questions and Answers */}
-        {assignmentTemplate.questions && assignmentTemplate.questions.length > 0 && (
+        {assignmentTemplate?.questions && assignmentTemplate.questions.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -299,7 +302,7 @@ const AssignmentReview = () => {
                     <div className="bg-white p-3 rounded border">
                       <p className="font-medium text-green-800 mb-1">Answer:</p>
                       <p className="text-gray-700">
-                        {submissionData.answers?.[index.toString()] || 'No answer provided'}
+                        {submissionData?.answers?.[index.toString()] || 'No answer provided'}
                       </p>
                     </div>
                   </div>
@@ -310,7 +313,7 @@ const AssignmentReview = () => {
         )}
 
         {/* Uploaded Files */}
-        {submissionData.uploaded_files && submissionData.uploaded_files.length > 0 && (
+        {submissionData?.uploaded_files && submissionData.uploaded_files.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
