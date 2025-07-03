@@ -19,6 +19,7 @@ const CandidateDetailsView = () => {
   const [candidate, setCandidate] = useState<any>(null);
   const [workflow, setWorkflow] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const WORKFLOW_STEP_TO_COLUMN = {
     'Application Screening': 'is_screening',
@@ -30,29 +31,46 @@ const CandidateDetailsView = () => {
   };
 
   useEffect(() => {
-    const storedCandidate = localStorage.getItem('selectedCandidate');
-    if (storedCandidate) {
-      setCandidate(JSON.parse(storedCandidate));
-    }
-    
-    const fetchWorkflow = async () => {
+    const fetchCandidateAndWorkflow = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/workflow`, {
+        if (!token) {
+          setError("No authentication token found");
+          return;
+        }
+
+        // Fetch candidate details
+        const candidateResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/candidates/${candidateId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (response.ok) {
-          const data = await response.json();
-          setWorkflow(data.workflow);
+
+        if (!candidateResponse.ok) {
+          throw new Error('Failed to fetch candidate details');
         }
-      } catch (error) {
-        console.error('Error fetching workflow:', error);
+
+        const candidateData = await candidateResponse.json();
+        setCandidate(candidateData.candidate);
+
+        // Fetch workflow
+        const workflowResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/workflow`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (workflowResponse.ok) {
+          const workflowData = await workflowResponse.json();
+          setWorkflow(workflowData.workflow);
+        }
+      } catch (err: any) {
+        setError(err.message || 'Error fetching candidate details');
+        console.error('Error fetching data:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchWorkflow();
+    if (candidateId) {
+      fetchCandidateAndWorkflow();
+    }
   }, [candidateId]);
 
   const getCurrentStage = (candidate: any) => {
@@ -81,7 +99,7 @@ const CandidateDetailsView = () => {
       case 'Assessment':
         return candidate.score || 0;
       case 'Secondary Interview':
-        return candidate.secondary_interview_score || 0;
+        return candidate.scondary_interview_score || 0;
       case 'Final Interview':
         return candidate.final_interview_score || 0;
       default:
@@ -96,8 +114,37 @@ const CandidateDetailsView = () => {
     return 'text-red-600';
   };
 
-  if (loading || !candidate) {
-    return <div className="p-8 text-center">Loading candidate details...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          <p className="mt-4 text-gray-600">Loading candidate details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="text-center py-12">
+          <p className="text-red-600 mb-4">Error: {error}</p>
+          <Button onClick={() => navigate(-1)}>Go Back</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!candidate) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="text-center py-12">
+          <p className="text-gray-600 mb-4">Candidate not found</p>
+          <Button onClick={() => navigate(-1)}>Go Back</Button>
+        </div>
+      </div>
+    );
   }
 
   const currentStage = getCurrentStage(candidate);
@@ -389,10 +436,12 @@ const CandidateDetailsView = () => {
               <CardContent>
                 {candidate.offer_details ? (
                   <div className="space-y-4">
-                    <p>Offer details available</p>
-                    <pre className="bg-gray-50 p-4 rounded-lg text-sm">
-                      {JSON.stringify(candidate.offer_details, null, 2)}
-                    </pre>
+                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                      <h3 className="font-semibold text-green-800 mb-2">Offer Details</h3>
+                      <pre className="bg-white p-4 rounded text-sm border">
+                        {JSON.stringify(candidate.offer_details, null, 2)}
+                      </pre>
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-8 text-gray-500">

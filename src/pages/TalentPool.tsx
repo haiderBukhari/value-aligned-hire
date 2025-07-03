@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -110,11 +109,7 @@ const TalentPool = () => {
   };
 
   const handleViewCandidate = (candidateId: string) => {
-    const candidate = candidates.find(c => c.id === candidateId);
-    if (candidate) {
-      localStorage.setItem('selectedCandidate', JSON.stringify(candidate));
-      navigate(`/dashboard/talent-pool/${candidateId}`);
-    }
+    navigate(`/dashboard/talent-pool/${candidateId}`);
   };
 
   const filteredCandidates = candidates.filter(candidate => {
