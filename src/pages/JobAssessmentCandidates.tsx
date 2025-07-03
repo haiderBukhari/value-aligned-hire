@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Eye, Clock, Calendar, ArrowLeft, Award, Users, CheckCircle, Clock as ClockIcon, XCircle } from "lucide-react";
+import { Eye, Clock, Calendar, ArrowLeft, Award, Users, CheckCircle, Clock as ClockIcon, XCircle, Edit, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 const getStatusColor = (status: string) => {
@@ -139,19 +139,27 @@ const JobAssessmentCandidates = () => {
             </CardContent>
           </Card>
         </div>
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-2">
-          <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {jobLoading ? <span className="animate-pulse text-gray-400">Loading...</span> : jobTitle || "Assessment Candidates"}
-            <span className="ml-2 text-lg font-medium text-gray-500">| {stage}</span>
-          </h1>
+        
+        {/* Header - Improved UI */}
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-4">
+            <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {jobLoading ? <span className="animate-pulse text-gray-400">Loading...</span> : jobTitle || "Assessment Candidates"}
+              </h1>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant="outline" className="text-sm font-medium">
+                  {stage}
+                </Badge>
+                <span className="text-gray-500 text-sm">• Candidates for Assessment</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-6">
-          <div className="text-gray-500 text-sm">Candidates for Assessment</div>
-        </div>
+
         <Card className="border border-gray-200 rounded-xl shadow-lg bg-white/95">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl">
@@ -242,24 +250,37 @@ const JobAssessmentCandidates = () => {
                           )}
                         </td>
                         <td className="px-6 py-4 text-center">
-                          {candidate.assignment_submission ? (
-                            <Button size="sm" className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white">
-                              <Eye className="h-4 w-4 mr-1" />
-                              Review Assignment
-                            </Button>
-                          ) : !candidate.assignment_sent ? (
-                            <Button 
-                              size="sm" 
-                              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
-                              onClick={() => navigate(`/dashboard/jobs/${jobId}/create-assignment?resume_id=${candidate.id}`)}
-                            >
-                              Create Assignment
-                            </Button>
-                          ) : (
-                            <Button size="sm" variant="outline" disabled className="opacity-50 cursor-not-allowed">
-                              Pending Assignment
-                            </Button>
-                          )}
+                          <div className="flex items-center justify-center gap-2">
+                            {candidate.assignment_submission ? (
+                              <Button size="sm" className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white">
+                                <Eye className="h-4 w-4 mr-1" />
+                                Review Assignment
+                              </Button>
+                            ) : !candidate.assignment_sent ? (
+                              <Button 
+                                size="sm" 
+                                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
+                                onClick={() => navigate(`/dashboard/jobs/${jobId}/create-assignment?resume_id=${candidate.id}`)}
+                              >
+                                Create Assignment
+                              </Button>
+                            ) : (
+                              <>
+                                <Button size="sm" variant="outline" disabled className="opacity-50 cursor-not-allowed">
+                                  Pending Assignment
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                                  onClick={() => navigate(`/dashboard/jobs/${jobId}/create-assignment?resume_id=${candidate.id}&edit=true`)}
+                                >
+                                  <Edit className="h-4 w-4 mr-1" />
+                                  Edit Assignment
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </motion.tr>
                     ))
