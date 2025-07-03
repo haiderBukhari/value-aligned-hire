@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,21 +15,25 @@ import {
   Handshake, DollarSign, Calendar, Clock, FileText, Search, Filter, Plus, 
   CheckCircle, XCircle, AlertTriangle, Send, Download, Edit, Trophy, Gift,
   Star, TrendingUp, Users, Target, Briefcase, MapPin, Phone, Mail, 
-  GraduationCap, Award, Sparkles, Crown, Zap
+  GraduationCap, Award, Sparkles, Crown, Zap, Brain, Code, Database
 } from "lucide-react";
 
 interface Candidate {
-  id: number;
-  name: string;
+  id: string;
+  applicant_name: string;
   email: string;
-  phone: string;
-  position: string;
-  job_title: string;
-  location: string;
-  experience_years: number;
-  education: string;
-  skills: string[];
-  photo_url?: string;
+  picture?: string;
+  cv_link: string;
+  company_fit_score: number;
+  culture_score: number;
+  experience_score: number;
+  skill_score: number;
+  final_interview_score: number;
+  total_weighted_score: number;
+  assignment_feedback?: string;
+  experience_facts: string[];
+  final_recommendation: string;
+  level_suggestion: string;
   offer_details?: {
     base_salary: number;
     signing_bonus: number;
@@ -39,8 +44,6 @@ interface Candidate {
     sent_date: string;
     response_deadline: string;
   };
-  total_weighted_score?: number;
-  assessment_score?: number;
 }
 
 const OfferStage = () => {
@@ -109,7 +112,7 @@ const OfferStage = () => {
         response_deadline: offerForm.response_deadline
       };
 
-      const response = await fetch('/offers/make', {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/offers/make`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -176,45 +179,49 @@ const OfferStage = () => {
     return diffDays;
   };
 
+  const getScoreColor = (score: number) => {
+    if (score >= 90) return 'text-emerald-600 bg-emerald-50 border-emerald-200';
+    if (score >= 80) return 'text-blue-600 bg-blue-50 border-blue-200';
+    if (score >= 70) return 'text-amber-600 bg-amber-50 border-amber-200';
+    return 'text-red-600 bg-red-50 border-red-200';
+  };
+
   const filteredCandidates = candidates.filter(candidate =>
-    (candidate.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (candidate.position || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (candidate.applicant_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (candidate.email || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const pendingOffers = filteredCandidates.filter(c => c.offer_details?.status === 'pending');
-  const acceptedOffers = filteredCandidates.filter(c => c.offer_details?.status === 'accepted');
-  const negotiatingOffers = filteredCandidates.filter(c => c.offer_details?.status === 'negotiating');
-  const noOfferCandidates = filteredCandidates.filter(c => !c.offer_details);
+  const readyForOffers = filteredCandidates.filter(c => !c.offer_details);
+  const activeOffers = filteredCandidates.filter(c => c.offer_details);
 
   const stats = [
     { 
       label: "Ready for Offers", 
-      value: noOfferCandidates.length, 
+      value: readyForOffers.length, 
       icon: Target, 
       gradient: "from-purple-500 to-violet-600",
       description: "Qualified candidates awaiting offers"
     },
     { 
       label: "Active Offers", 
-      value: pendingOffers.length, 
+      value: activeOffers.length, 
       icon: Handshake, 
       gradient: "from-amber-500 to-orange-600",
       description: "Outstanding offers pending response"
     },
     { 
       label: "Acceptance Rate", 
-      value: candidates.length > 0 ? Math.round((acceptedOffers.length / Math.max(1, pendingOffers.length + acceptedOffers.length + filteredCandidates.filter(c => c.offer_details?.status === 'declined').length)) * 100) + "%" : "0%", 
+      value: activeOffers.length > 0 ? Math.round((activeOffers.filter(c => c.offer_details?.status === 'accepted').length / activeOffers.length) * 100) + "%" : "0%", 
       icon: Trophy, 
       gradient: "from-emerald-500 to-green-600",
       description: "Offer acceptance success rate"
     },
     { 
-      label: "Avg Offer Value", 
-      value: acceptedOffers.length > 0 ? "$" + Math.round(acceptedOffers.reduce((acc, c) => acc + (c.offer_details?.base_salary || 0), 0) / acceptedOffers.length / 1000) + "k" : "$0k", 
+      label: "Avg Score", 
+      value: candidates.length > 0 ? Math.round(candidates.reduce((acc, c) => acc + (c.total_weighted_score || 0), 0) / candidates.length) : 0, 
       icon: DollarSign, 
       gradient: "from-blue-500 to-cyan-600",
-      description: "Average accepted offer amount"
+      description: "Average candidate score"
     }
   ];
 
@@ -262,41 +269,29 @@ const OfferStage = () => {
         <div className="relative flex-1">
           <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
           <Input
-            placeholder="Search candidates, positions, skills..."
+            placeholder="Search candidates by name or email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-12 h-12 border-2 border-gray-200 focus:border-indigo-500 rounded-2xl text-base shadow-sm"
           />
         </div>
-        <div className="flex space-x-3">
-          <Button variant="outline" className="h-12 px-6 rounded-2xl border-2 border-gray-200 hover:border-indigo-500">
-            <Filter className="mr-2 h-5 w-5" />
-            Filter
-          </Button>
-        </div>
       </div>
 
       {/* Offer Management Tabs */}
-      <Tabs defaultValue="no-offer" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 bg-gray-100 p-2 rounded-2xl h-14">
-          <TabsTrigger value="no-offer" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg font-semibold">
-            Ready ({noOfferCandidates.length})
+      <Tabs defaultValue="ready" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 bg-gray-100 p-2 rounded-2xl h-14">
+          <TabsTrigger value="ready" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg font-semibold">
+            Ready for Offers ({readyForOffers.length})
           </TabsTrigger>
-          <TabsTrigger value="pending" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg font-semibold">
-            Pending ({pendingOffers.length})
-          </TabsTrigger>
-          <TabsTrigger value="negotiating" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg font-semibold">
-            Negotiating ({negotiatingOffers.length})
-          </TabsTrigger>
-          <TabsTrigger value="accepted" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg font-semibold">
-            Accepted ({acceptedOffers.length})
+          <TabsTrigger value="active" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg font-semibold">
+            Active Offers ({activeOffers.length})
           </TabsTrigger>
         </TabsList>
 
         {/* Ready for Offers Tab */}
-        <TabsContent value="no-offer">
+        <TabsContent value="ready">
           <div className="grid gap-6">
-            {noOfferCandidates.map((candidate) => (
+            {readyForOffers.map((candidate) => (
               <Card key={candidate.id} className="border-2 border-purple-200 hover:border-purple-400 transition-all duration-300 rounded-3xl overflow-hidden hover:shadow-xl group">
                 <div className="bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50 p-1">
                   <div className="bg-white rounded-2xl">
@@ -305,9 +300,9 @@ const OfferStage = () => {
                         <div className="flex items-start space-x-6">
                           <div className="relative">
                             <Avatar className="h-20 w-20 ring-4 ring-purple-200 shadow-lg">
-                              <AvatarImage src={candidate.photo_url} />
+                              <AvatarImage src={candidate.picture} />
                               <AvatarFallback className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold text-xl">
-                                {(candidate.name || '').split(' ').map(n => n[0]).join('')}
+                                {(candidate.applicant_name || '').split(' ').map(n => n[0]).join('')}
                               </AvatarFallback>
                             </Avatar>
                             <div className="absolute -bottom-1 -right-1 h-6 w-6 bg-purple-500 rounded-full flex items-center justify-center">
@@ -317,62 +312,55 @@ const OfferStage = () => {
                           
                           <div className="space-y-3 flex-1">
                             <div>
-                              <h3 className="text-2xl font-bold text-gray-900">{candidate.name}</h3>
-                              <p className="text-lg text-gray-600 font-semibold">{candidate.position}</p>
+                              <h3 className="text-2xl font-bold text-gray-900">{candidate.applicant_name}</h3>
+                              <p className="text-lg text-gray-600 font-semibold">{candidate.level_suggestion} Level</p>
                               <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
                                 <div className="flex items-center space-x-1">
                                   <Mail className="h-4 w-4" />
                                   <span>{candidate.email}</span>
                                 </div>
-                                <div className="flex items-center space-x-1">
-                                  <MapPin className="h-4 w-4" />
-                                  <span>{candidate.location}</span>
-                                </div>
-                                {candidate.experience_years && (
-                                  <div className="flex items-center space-x-1">
-                                    <Briefcase className="h-4 w-4" />
-                                    <span>{candidate.experience_years} years</span>
-                                  </div>
-                                )}
+                                <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                  {candidate.final_recommendation}
+                                </Badge>
                               </div>
                             </div>
                             
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                              {candidate.assessment_score && (
-                                <div className="bg-green-50 rounded-xl p-3 border border-green-200">
-                                  <p className="text-lg font-bold text-green-600">{candidate.assessment_score}/100</p>
-                                  <p className="text-xs text-green-700 font-semibold">Assessment Score</p>
-                                </div>
-                              )}
-                              {candidate.total_weighted_score && (
-                                <div className="bg-blue-50 rounded-xl p-3 border border-blue-200">
-                                  <p className="text-lg font-bold text-blue-600">{candidate.total_weighted_score}/100</p>
-                                  <p className="text-xs text-blue-700 font-semibold">Overall Score</p>
-                                </div>
-                              )}
-                              <div className="bg-purple-50 rounded-xl p-3 border border-purple-200">
-                                <p className="text-lg font-bold text-purple-600">Ready</p>
-                                <p className="text-xs text-purple-700 font-semibold">Status</p>
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                              <div className={`rounded-xl p-3 border ${getScoreColor(candidate.total_weighted_score)}`}>
+                                <p className="text-lg font-bold">{candidate.total_weighted_score}</p>
+                                <p className="text-xs font-semibold">Total Score</p>
+                              </div>
+                              <div className={`rounded-xl p-3 border ${getScoreColor(candidate.skill_score)}`}>
+                                <p className="text-lg font-bold">{candidate.skill_score}</p>
+                                <p className="text-xs font-semibold">Skills</p>
+                              </div>
+                              <div className={`rounded-xl p-3 border ${getScoreColor(candidate.experience_score)}`}>
+                                <p className="text-lg font-bold">{candidate.experience_score}</p>
+                                <p className="text-xs font-semibold">Experience</p>
+                              </div>
+                              <div className={`rounded-xl p-3 border ${getScoreColor(candidate.culture_score)}`}>
+                                <p className="text-lg font-bold">{candidate.culture_score}</p>
+                                <p className="text-xs font-semibold">Culture</p>
+                              </div>
+                              <div className={`rounded-xl p-3 border ${getScoreColor(candidate.final_interview_score)}`}>
+                                <p className="text-lg font-bold">{candidate.final_interview_score}</p>
+                                <p className="text-xs font-semibold">Interview</p>
                               </div>
                             </div>
 
-                            {candidate.skills && candidate.skills.length > 0 && (
+                            {candidate.experience_facts && candidate.experience_facts.length > 0 && (
                               <div>
                                 <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
                                   <Zap className="h-4 w-4 mr-2 text-purple-600" />
-                                  Skills
+                                  Key Strengths
                                 </h4>
-                                <div className="flex flex-wrap gap-2">
-                                  {candidate.skills.slice(0, 6).map((skill, index) => (
-                                    <Badge key={index} variant="secondary" className="bg-purple-100 text-purple-800 border border-purple-200 px-3 py-1 rounded-full">
-                                      {skill}
-                                    </Badge>
+                                <div className="space-y-1">
+                                  {candidate.experience_facts.slice(0, 3).map((fact, index) => (
+                                    <div key={index} className="text-sm text-gray-600 flex items-start">
+                                      <span className="text-purple-500 mr-2">•</span>
+                                      <span>{fact}</span>
+                                    </div>
                                   ))}
-                                  {candidate.skills.length > 6 && (
-                                    <Badge variant="secondary" className="bg-gray-100 text-gray-600 border border-gray-200 px-3 py-1 rounded-full">
-                                      +{candidate.skills.length - 6} more
-                                    </Badge>
-                                  )}
                                 </div>
                               </div>
                             )}
@@ -394,7 +382,7 @@ const OfferStage = () => {
                               <DialogHeader>
                                 <DialogTitle className="flex items-center space-x-2">
                                   <Gift className="h-5 w-5 text-purple-600" />
-                                  <span>Create Offer for {selectedCandidate?.name}</span>
+                                  <span>Create Offer for {selectedCandidate?.applicant_name}</span>
                                 </DialogTitle>
                                 <DialogDescription>
                                   Craft a competitive offer package for this top candidate.
@@ -487,10 +475,10 @@ const OfferStage = () => {
           </div>
         </TabsContent>
 
-        {/* Pending Offers Tab */}
-        <TabsContent value="pending">
+        {/* Active Offers Tab */}
+        <TabsContent value="active">
           <div className="grid gap-6">
-            {pendingOffers.map((candidate) => (
+            {activeOffers.map((candidate) => (
               <Card key={candidate.id} className="border-2 border-amber-200 hover:border-amber-400 transition-all duration-300 rounded-3xl overflow-hidden hover:shadow-xl">
                 <div className="bg-gradient-to-r from-amber-50 via-orange-50 to-yellow-50 p-1">
                   <div className="bg-white rounded-2xl">
@@ -499,24 +487,24 @@ const OfferStage = () => {
                         <div className="flex items-start space-x-6">
                           <div className="relative">
                             <Avatar className="h-16 w-16 ring-4 ring-amber-200 shadow-lg">
-                              <AvatarImage src={candidate.photo_url} />
+                              <AvatarImage src={candidate.picture} />
                               <AvatarFallback className="bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold">
-                                {(candidate.name || '').split(' ').map(n => n[0]).join('')}
+                                {(candidate.applicant_name || '').split(' ').map(n => n[0]).join('')}
                               </AvatarFallback>
                             </Avatar>
                             <div className="absolute -bottom-1 -right-1 h-6 w-6 bg-amber-500 rounded-full flex items-center justify-center">
-                              <Clock className="h-3 w-3 text-white" />
+                              {getStatusIcon(candidate.offer_details?.status)}
                             </div>
                           </div>
                           
                           <div className="space-y-3">
                             <div>
-                              <h3 className="text-xl font-bold text-gray-900">{candidate.name}</h3>
-                              <p className="text-gray-600 font-semibold">{candidate.position}</p>
+                              <h3 className="text-xl font-bold text-gray-900">{candidate.applicant_name}</h3>
+                              <p className="text-gray-600 font-semibold">{candidate.level_suggestion} Level</p>
                               <div className="flex items-center space-x-4 mt-1 text-sm text-gray-500">
                                 <span>{candidate.email}</span>
                                 <span>•</span>
-                                <span>{candidate.location}</span>
+                                <span>Score: {candidate.total_weighted_score}</span>
                               </div>
                             </div>
                             
@@ -564,95 +552,6 @@ const OfferStage = () => {
                     </CardContent>
                   </div>
                 </div>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* Negotiating Tab */}
-        <TabsContent value="negotiating">
-          <div className="grid gap-6">
-            {negotiatingOffers.map((candidate) => (
-              <Card key={candidate.id} className="border-2 border-blue-200 hover:border-blue-400 transition-all duration-300 rounded-3xl overflow-hidden hover:shadow-xl">
-                <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 p-1">
-                  <div className="bg-white rounded-2xl">
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <Avatar className="h-14 w-14 ring-4 ring-blue-200">
-                            <AvatarImage src={candidate.photo_url} />
-                            <AvatarFallback className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold">
-                              {(candidate.name || '').split(' ').map(n => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <h4 className="font-bold text-lg">{candidate.name}</h4>
-                            <p className="text-gray-600">{candidate.position}</p>
-                            <p className="text-sm text-blue-600 font-semibold">In active negotiation</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xl font-bold text-green-600">${candidate.offer_details?.base_salary?.toLocaleString()}</p>
-                          <Badge className="bg-blue-500 text-white">Negotiating</Badge>
-                          <div className="mt-2 flex space-x-2">
-                            <Button size="sm" variant="outline" className="rounded-xl">
-                              <AlertTriangle className="h-4 w-4 mr-1" />
-                              Counter
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* Accepted Tab */}
-        <TabsContent value="accepted">
-          <div className="grid gap-6">
-            {acceptedOffers.map((candidate) => (
-              <Card key={candidate.id} className="border-2 border-green-200 hover:border-green-400 transition-all duration-300 rounded-3xl overflow-hidden hover:shadow-xl bg-green-50">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="relative">
-                        <Avatar className="h-14 w-14 ring-4 ring-green-300">
-                          <AvatarImage src={candidate.photo_url} />
-                          <AvatarFallback className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold">
-                            {(candidate.name || '').split(' ').map(n => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="absolute -bottom-1 -right-1 h-6 w-6 bg-green-500 rounded-full flex items-center justify-center">
-                          <CheckCircle className="h-3 w-3 text-white" />
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-lg">{candidate.name}</h4>
-                        <p className="text-gray-600">{candidate.position}</p>
-                        <p className="text-sm text-green-600 font-semibold">
-                          Starts {candidate.offer_details?.start_date}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xl font-bold text-green-600">${candidate.offer_details?.base_salary?.toLocaleString()}</p>
-                      <Badge className="bg-green-500 text-white mb-2">Accepted</Badge>
-                      <div className="flex space-x-2">
-                        <Button size="sm" variant="outline" className="rounded-xl">
-                          <FileText className="h-4 w-4 mr-1" />
-                          Contract
-                        </Button>
-                        <Button size="sm" className="bg-green-500 hover:bg-green-600 rounded-xl">
-                          <Users className="h-4 w-4 mr-1" />
-                          Onboard
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
               </Card>
             ))}
           </div>
