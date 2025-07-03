@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -13,7 +12,7 @@ interface MoveToNextStepResponse {
   message?: string;
 }
 
-export const useResumeNextStep = (resumeId: string) => {
+export const useResumeNextStep = (resumeId: string, onSuccessNavigate?: () => void) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -73,7 +72,7 @@ export const useResumeNextStep = (resumeId: string) => {
           description: `Candidate moved to ${data.current_step} successfully!`,
         });
       }
-      
+      if (onSuccessNavigate) onSuccessNavigate();
       // Invalidate and refetch related queries
       queryClient.invalidateQueries({ queryKey: ['resume-next-step', resumeId] });
       queryClient.invalidateQueries({ queryKey: ['resumes'] });

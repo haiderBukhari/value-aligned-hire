@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -6,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, Clock, FileText, Download, User, Award, CheckCircle } from "lucide-react";
+import { toast } from "sonner";
 
 interface Question {
   question: string;
@@ -46,6 +46,8 @@ const AssignmentReview = () => {
   const [submission, setSubmission] = useState<SubmissionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [nextStep, setNextStep] = useState<string | null>(null);
+  const [isMoving, setIsMoving] = useState(false);
 
   useEffect(() => {
     const fetchSubmission = async () => {
@@ -73,6 +75,25 @@ const AssignmentReview = () => {
     }
   }, [resumeId]);
 
+  // Fetch next step
+  useEffect(() => {
+    const fetchNextStep = async () => {
+      if (!resumeId) return;
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/resumes/${resumeId}/next-step`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Failed to fetch next step');
+        const data = await response.json();
+        setNextStep(data.next_step || null);
+      } catch {
+        setNextStep(null);
+      }
+    };
+    fetchNextStep();
+  }, [resumeId]);
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
   };
@@ -85,6 +106,27 @@ const AssignmentReview = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  // Move to next stage
+  const handleMoveToNextStage = async () => {
+    if (!resumeId) return;
+    setIsMoving(true);
+    try {
+      const token = localStorage.getItem("token");
+      const moveResp = await fetch(`${import.meta.env.VITE_BACKEND_URL}/resumes/${resumeId}/next-step`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!moveResp.ok) throw new Error('Failed to move to next stage');
+      const moveData = await moveResp.json();
+      toast.success(`Moved to: ${moveData.current_step || moveData.message}`);
+      setIsMoving(false);
+      navigate('/dashboard'); // Go to dashboard after moving
+    } catch (err) {
+      toast.error('Could not move to next stage.');
+      setIsMoving(false);
+    }
   };
 
   if (loading) {
@@ -158,14 +200,25 @@ const AssignmentReview = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <div className="flex items-center gap-4 mb-4">
-            <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Assignment Review</h1>
-              <p className="text-gray-600">Candidate submission details</p>
+          <div className="flex items-center gap-4 mb-4 justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Assignment Review</h1>
+                <p className="text-gray-600">Candidate submission details</p>
+              </div>
             </div>
+            {nextStep && (
+              <Button
+                className="bg-gradient-to-r from-green-600 to-blue-600 text-white font-semibold px-6 py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                onClick={handleMoveToNextStage}
+                disabled={isMoving}
+              >
+                {isMoving ? 'Moving...' : `Move to ${nextStep}`}
+              </Button>
+            )}
           </div>
         </motion.div>
 

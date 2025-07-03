@@ -313,6 +313,7 @@ const InterviewDetails = () => {
       toast.success(`Moved to: ${moveData.current_step || moveData.message}`);
       setMoveModal(false);
       setIsSubmittingFeedback(false);
+      navigate('/dashboard');
     } catch (err) {
       toast.error('Could not move to next stage.');
       setIsSubmittingFeedback(false);

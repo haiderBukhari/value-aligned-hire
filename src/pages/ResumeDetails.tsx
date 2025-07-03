@@ -119,6 +119,7 @@ const ResumeDetails = () => {
     onSuccess: (data) => {
       toast.success(`Moved to: ${data.current_step || data.message}`);
       refetchNextStep();
+      navigate('/dashboard');
     }
   });
 

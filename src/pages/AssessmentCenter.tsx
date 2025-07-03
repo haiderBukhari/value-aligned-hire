@@ -9,37 +9,37 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Eye, Clock, FileText, CheckCircle, XCircle, Search } from "lucide-react";
 
-const templates = [
-  {
-    id: 1,
-    title: "Frontend React Challenge",
-    type: "Coding",
-    difficulty: "Advanced",
-    duration: "4 hours",
-    description: "Build a responsive dashboard with React and TypeScript",
-    skills: ["React", "TypeScript", "CSS", "API Integration"]
-  },
-  {
-    id: 2,
-    title: "Data Science Project",
-    type: "Technical",
-    difficulty: "Expert",
-    duration: "6 hours",
-    description: "Analyze dataset and create predictive models",
-    skills: ["Python", "Pandas", "Machine Learning", "Data Visualization"]
-  },
-  {
-    id: 3,
-    title: "UX Research Study",
-    type: "Design",
-    difficulty: "Intermediate",
-    duration: "3 hours",
-    description: "Conduct user research and create design recommendations",
-    skills: ["User Research", "Prototyping", "Design Thinking", "Figma"]
-  }
-];
+  const templates = [
+    {
+      id: 1,
+      title: "Frontend React Challenge",
+      type: "Coding",
+      difficulty: "Advanced",
+      duration: "4 hours",
+      description: "Build a responsive dashboard with React and TypeScript",
+      skills: ["React", "TypeScript", "CSS", "API Integration"]
+    },
+    {
+      id: 2,
+      title: "Data Science Project",
+      type: "Technical",
+      difficulty: "Expert",
+      duration: "6 hours",
+      description: "Analyze dataset and create predictive models",
+      skills: ["Python", "Pandas", "Machine Learning", "Data Visualization"]
+    },
+    {
+      id: 3,
+      title: "UX Research Study",
+      type: "Design",
+      difficulty: "Intermediate",
+      duration: "3 hours",
+      description: "Conduct user research and create design recommendations",
+      skills: ["User Research", "Prototyping", "Design Thinking", "Figma"]
+    }
+  ];
 
-const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string) => {
   switch(status) {
     case "active":
       return "bg-green-100 text-green-800";
@@ -47,30 +47,30 @@ const getStatusColor = (status: string) => {
       return "bg-red-100 text-red-800";
     default:
       return "bg-gray-100 text-gray-800";
-  }
-};
+    }
+  };
 
-const getDifficultyColor = (difficulty: string) => {
-  switch (difficulty.toLowerCase()) {
-    case 'beginner': return 'bg-green-100 text-green-800';
-    case 'intermediate': return 'bg-yellow-100 text-yellow-800';
-    case 'advanced': return 'bg-orange-100 text-orange-800';
-    case 'expert': return 'bg-red-100 text-red-800';
-    default: return 'bg-gray-100 text-gray-800';
-  }
-};
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty.toLowerCase()) {
+      case 'beginner': return 'bg-green-100 text-green-800';
+      case 'intermediate': return 'bg-yellow-100 text-yellow-800';
+      case 'advanced': return 'bg-orange-100 text-orange-800';
+      case 'expert': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
 
-const getTypeIcon = (type: string) => {
-  switch (type.toLowerCase()) {
-    case 'coding challenge':
+  const getTypeIcon = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'coding challenge':
     case 'coding': return <FileText className="h-4 w-4" />;
-    case 'technical assessment':
-    case 'technical': return <FileText className="h-4 w-4" />;
-    case 'design challenge':
-    case 'design': return <Eye className="h-4 w-4" />;
-    default: return <FileText className="h-4 w-4" />;
-  }
-};
+      case 'technical assessment':
+      case 'technical': return <FileText className="h-4 w-4" />;
+      case 'design challenge':
+      case 'design': return <Eye className="h-4 w-4" />;
+      default: return <FileText className="h-4 w-4" />;
+    }
+  };
 
 const AssessmentCenter = () => {
   const navigate = useNavigate();
@@ -119,25 +119,25 @@ const AssessmentCenter = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 p-0">
       <div className="max-w-6xl mx-auto pt-8 pb-4 px-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <div>
+              <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-1">Assessment Center</h1>
             <p className="text-gray-600 text-base">Manage all job assessments and templates for this stage</p>
-          </div>
-        </div>
+              </div>
+            </div>
         <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as 'jobs')} className="mb-6">
           <TabsList className="grid w-full grid-cols-1">
             <TabsTrigger value="jobs">All Jobs</TabsTrigger>
-          </TabsList>
+        </TabsList>
           <TabsContent value="jobs">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
               <div className="relative w-full md:w-80">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
-                <Input
+              <Input
                   className="pl-10"
                   placeholder="Search jobs..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
               </div>
             </div>
             <Card className="border border-gray-200 rounded-xl shadow-lg bg-white/95">
@@ -175,7 +175,7 @@ const AssessmentCenter = () => {
                         </tr>
                       ) : (
                         filteredJobs.map((job: any) => (
-                          <motion.tr
+                      <motion.tr
                             key={job.id}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -207,12 +207,12 @@ const AssessmentCenter = () => {
                       )}
                     </tbody>
                   </table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
         </Tabs>
-      </div>
+          </div>
     </div>
   );
 };
