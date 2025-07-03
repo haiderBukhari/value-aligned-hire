@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const JobAssessmentCandidates = () => {
   const navigate = useNavigate();
+  const { jobId } = useParams();
   const { toast } = useToast();
 
   const [candidates, setCandidates] = useState<any[]>([]);
@@ -22,7 +22,7 @@ const JobAssessmentCandidates = () => {
     const fetchCandidates = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/resumes`, {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/jobs/${jobId}/assessments/candidates`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -33,7 +33,7 @@ const JobAssessmentCandidates = () => {
         }
 
         const data = await response.json();
-        setCandidates(data);
+        setCandidates(data.candidates || data || []);
       } catch (err: any) {
         setError(err.message || "Error fetching candidates");
         toast({
@@ -46,8 +46,10 @@ const JobAssessmentCandidates = () => {
       }
     };
 
-    fetchCandidates();
-  }, [toast]);
+    if (jobId) {
+      fetchCandidates();
+    }
+  }, [toast, jobId]);
 
   const filteredCandidates = candidates.filter((resume) => {
     const fullName = `${resume.first_name} ${resume.last_name}`.toLowerCase();
