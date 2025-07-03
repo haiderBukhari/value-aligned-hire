@@ -30,6 +30,7 @@ const Dashboard = () => {
     interviewsScheduled: 0
   });
   const [candidates, setCandidates] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
 
   // Fetch dashboard data
@@ -39,7 +40,7 @@ const Dashboard = () => {
         const token = localStorage.getItem('token');
         if (!token) return;
 
-        // Fetch total jobs
+        // Fetch all jobs
         const jobsResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/jobs/total`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -49,12 +50,13 @@ const Dashboard = () => {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
-        let totalJobs = 0;
+        let jobsData: any[] = [];
         let candidatesData: any[] = [];
 
         if (jobsResponse.ok) {
-          const jobsData = await jobsResponse.json();
-          totalJobs = jobsData.total_jobs || 0;
+          const jobsResponseData = await jobsResponse.json();
+          jobsData = jobsResponseData.jobs || [];
+          setJobs(jobsData);
         }
 
         if (candidatesResponse.ok) {
@@ -62,7 +64,8 @@ const Dashboard = () => {
           candidatesData = candidatesResponseData.candidates || [];
         }
 
-        // Calculate stats from candidates data
+        // Calculate stats from real data
+        const totalJobs = jobsData.length;
         const totalApplications = candidatesData.length;
         const hiredThisMonth = candidatesData.filter(c => c.is_hired && 
           new Date(c.created_at).getMonth() === new Date().getMonth()
@@ -125,12 +128,24 @@ const Dashboard = () => {
 
   const statusData = getStatusData();
 
-  const recentJobs = [
-    { id: 1, title: "Senior Frontend Developer", applications: 45, status: "Active", posted: "2 days ago" },
-    { id: 2, title: "Product Manager", applications: 32, status: "Active", posted: "1 week ago" },
-    { id: 3, title: "UX Designer", applications: 28, status: "Closed", posted: "3 days ago" },
-    { id: 4, title: "Data Scientist", applications: 67, status: "Active", posted: "5 days ago" },
-  ];
+  // Get real recent jobs from API data
+  const getRecentJobs = () => {
+    return jobs
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 4)
+      .map(job => ({
+        id: job.id,
+        title: job.title,
+        applications: job.total_applicants || 0,
+        status: job.status === 'active' ? 'Active' : 'Closed',
+        posted: new Date(job.created_at).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric'
+        })
+      }));
+  };
+
+  const recentJobs = getRecentJobs();
 
   // Get recent top applicants from candidates data
   const getRecentApplicants = () => {
@@ -564,7 +579,7 @@ const Dashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {recentJobs.map((job) => (
+                      {recentJobs.length > 0 ? recentJobs.map((job) => (
                         <div key={job.id} className="flex items-center justify-between p-4 rounded-lg border border-gray-100">
                           <div className="flex-1">
                             <h4 className="font-medium text-gray-900">{job.title}</h4>
@@ -574,7 +589,11 @@ const Dashboard = () => {
                             {job.status}
                           </Badge>
                         </div>
-                      ))}
+                      )) : (
+                        <div className="text-center py-4 text-gray-500">
+                          <p>No jobs posted yet.</p>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -586,7 +605,7 @@ const Dashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {recentApplicants.map((applicant) => (
+                      {recentApplicants.length > 0 ? recentApplicants.map((applicant) => (
                         <div key={applicant.id} className="flex items-center justify-between p-4 rounded-lg border border-gray-100">
                           <div className="flex items-center space-x-3">
                             <Avatar>
@@ -606,7 +625,11 @@ const Dashboard = () => {
                             </div>
                           </div>
                         </div>
-                      ))}
+                      )) : (
+                        <div className="text-center py-4 text-gray-500">
+                          <p>No applicants yet.</p>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

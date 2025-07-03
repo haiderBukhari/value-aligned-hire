@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,11 +69,10 @@ const TalentPool = () => {
     if (!workflow) return 'Unknown';
     
     const workflowSteps = workflow.workflow_process;
-    const stepOrder = ['step1', 'step2', 'step3', 'step4'];
+    const stepOrder = ['step4', 'step3', 'step2', 'step1'];
     
-    // Check stages in reverse order to find the most advanced stage
-    for (let i = stepOrder.length - 1; i >= 0; i--) {
-      const stepName = workflowSteps[stepOrder[i]];
+    for (const step of stepOrder) {
+      const stepName = workflowSteps[step];
       const columnName = WORKFLOW_STEP_TO_COLUMN[stepName];
       if (candidate[columnName]) {
         return stepName;
@@ -115,8 +115,24 @@ const TalentPool = () => {
   const filteredCandidates = candidates.filter(candidate => {
     const matchesSearch = candidate.applicant_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          candidate.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (selectedTab === 'all') {
+      return matchesSearch;
+    }
+    
     const currentStage = getCurrentStage(candidate);
-    const matchesTab = selectedTab === 'all' || currentStage.toLowerCase().includes(selectedTab.toLowerCase());
+    
+    // Fix the tab matching logic
+    const tabStageMap = {
+      'application_screening': 'Application Screening',
+      'assessment': 'Assessment',
+      'final_interview': 'Final Interview',
+      'offer_stage': 'Offer Stage'
+    };
+    
+    const expectedStage = tabStageMap[selectedTab as keyof typeof tabStageMap];
+    const matchesTab = currentStage === expectedStage;
+    
     return matchesSearch && matchesTab;
   });
 
@@ -216,15 +232,30 @@ const TalentPool = () => {
                 >
                   All
                 </TabsTrigger>
-                {uniqueStages.slice(0, 4).map((stage: string) => (
-                  <TabsTrigger 
-                    key={stage}
-                    value={stage.toLowerCase().replace(' ', '_')} 
-                    className="data-[state=active]:bg-blue-500 data-[state=active]:text-white text-xs"
-                  >
-                    {stage}
-                  </TabsTrigger>
-                ))}
+                <TabsTrigger 
+                  value="application_screening" 
+                  className="data-[state=active]:bg-blue-500 data-[state=active]:text-white text-xs"
+                >
+                  Application Screening
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="assessment" 
+                  className="data-[state=active]:bg-blue-500 data-[state=active]:text-white text-xs"
+                >
+                  Assessment
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="final_interview" 
+                  className="data-[state=active]:bg-blue-500 data-[state=active]:text-white text-xs"
+                >
+                  Final Interview
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="offer_stage" 
+                  className="data-[state=active]:bg-blue-500 data-[state=active]:text-white text-xs"
+                >
+                  Offer Stage
+                </TabsTrigger>
               </TabsList>
             </Tabs>
           </CardContent>
@@ -276,8 +307,7 @@ const TalentPool = () => {
                           </TableCell>
                           <TableCell>
                             <div className="font-medium text-gray-900">
-                              {/* You might need to fetch job title separately or it might be in the candidate data */}
-                              Developer Role
+                              Full Stack Developer
                             </div>
                           </TableCell>
                           <TableCell>
