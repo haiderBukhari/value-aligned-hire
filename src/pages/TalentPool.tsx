@@ -1,152 +1,115 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
-  Search, Filter, Eye, Users, TrendingUp, Clock, Star, 
-  MapPin, Mail, Phone, Calendar, Award, Target, CheckCircle, 
-  AlertTriangle, FileText, Briefcase
+  Search, Filter, Eye, Star, 
+  MapPin, Mail, User, Briefcase, Calendar, MoreHorizontal,
+  Users, TrendingUp, AlertCircle, CheckCircle, Clock, Award
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const TalentPool = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  const [jobFilter, setJobFilter] = useState("all");
-  const [stageFilter, setStageFilter] = useState("all");
+  const [selectedTab, setSelectedTab] = useState("all");
+  const [candidates, setCandidates] = useState<any[]>([]);
+  const [workflow, setWorkflow] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Enhanced candidate data
-  const candidates = [
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      email: "sarah.johnson@email.com",
-      phone: "+1 (555) 123-4567",
-      location: "San Francisco, CA",
-      position: "Senior Frontend Developer",
-      appliedDate: "2024-06-15",
-      currentStage: "final_interview",
-      overallScore: 92,
-      experienceYears: 5,
-      education: "BS Computer Science, Stanford",
-      skills: ["React", "TypeScript", "Node.js", "GraphQL", "AWS"],
-      summary: "Experienced frontend developer with strong leadership skills and passion for creating user-centric applications.",
-      stages: [
-        {
-          name: "Application Screening",
-          status: "completed",
-          score: 95,
-          feedback: "Excellent technical background with relevant experience in React and TypeScript. Strong portfolio showcasing modern web applications.",
-          aiRecommendation: "Highly recommended candidate. Technical skills align perfectly with job requirements.",
-          completedAt: "2024-06-16T10:30:00Z"
-        },
-        {
-          name: "Technical Assessment",
-          status: "completed",
-          score: 88,
-          feedback: "Solid performance on coding challenges. Demonstrated good problem-solving approach and clean code practices.",
-          aiRecommendation: "Good technical execution with room for optimization in algorithm complexity.",
-          completedAt: "2024-06-18T14:15:00Z"
-        },
-        {
-          name: "Initial Interview",
-          status: "completed",
-          score: 90,
-          feedback: "Great communication skills and cultural fit. Showed enthusiasm for the role and company mission.",
-          aiRecommendation: "Excellent interpersonal skills and strong motivation.",
-          completedAt: "2024-06-20T16:00:00Z"
-        },
-        {
-          name: "Final Interview",
-          status: "in_progress",
-          score: 0,
-          feedback: "",
-          aiRecommendation: "",
-          completedAt: null
+  const WORKFLOW_STEP_TO_COLUMN = {
+    'Application Screening': 'is_screening',
+    'Initial Interview': 'is_initial_interview',
+    'Assessment': 'in_assessment',
+    'Secondary Interview': 'is_secondary_interview',
+    'Final Interview': 'in_final_interview',
+    'Offer Stage': 'is_hired',
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const token = localStorage.getItem("token");
+        
+        // Fetch candidates
+        const candidatesResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/candidates/all`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!candidatesResponse.ok) throw new Error('Failed to fetch candidates');
+        const candidatesData = await candidatesResponse.json();
+        setCandidates(candidatesData.candidates || []);
+
+        // Fetch workflow
+        const workflowResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/workflow`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (workflowResponse.ok) {
+          const workflowData = await workflowResponse.json();
+          setWorkflow(workflowData.workflow);
         }
-      ]
-    },
-    {
-      id: 2,
-      name: "Alex Rodriguez",
-      email: "alex.rodriguez@email.com",
-      phone: "+1 (555) 987-6543",
-      location: "New York, NY",
-      position: "Data Scientist",
-      appliedDate: "2024-06-12",
-      currentStage: "secondary_interview",
-      overallScore: 85,
-      experienceYears: 3,
-      education: "MS Data Science, MIT",
-      skills: ["Python", "Machine Learning", "SQL", "TensorFlow", "R"],
-      summary: "Data scientist with expertise in machine learning and statistical analysis, passionate about deriving insights from complex datasets.",
-      stages: [
-        {
-          name: "Application Screening",
-          status: "completed",
-          score: 87,
-          feedback: "Strong academic background and relevant project experience in machine learning.",
-          aiRecommendation: "Good candidate with solid foundation in data science principles.",
-          completedAt: "2024-06-13T09:00:00Z"
-        },
-        {
-          name: "Technical Assessment",
-          status: "completed",
-          score: 82,
-          feedback: "Good analytical skills demonstrated through data analysis challenges.",
-          aiRecommendation: "Competent in technical execution with good problem-solving approach.",
-          completedAt: "2024-06-15T11:30:00Z"
-        },
-        {
-          name: "Initial Interview",
-          status: "completed",
-          score: 85,
-          feedback: "Good communication of technical concepts and project experience.",
-          aiRecommendation: "Solid candidate with good potential for growth.",
-          completedAt: "2024-06-17T15:00:00Z"
-        },
-        {
-          name: "Secondary Interview",
-          status: "in_progress",
-          score: 0,
-          feedback: "",
-          aiRecommendation: "",
-          completedAt: null
-        }
-      ]
+      } catch (err: any) {
+        setError(err.message || 'Error fetching data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const getCurrentStage = (candidate: any) => {
+    if (!workflow) return 'Unknown';
+    
+    const workflowSteps = workflow.workflow_process;
+    const stepOrder = ['step1', 'step2', 'step3', 'step4'];
+    
+    // Check stages in reverse order to find the most advanced stage
+    for (let i = stepOrder.length - 1; i >= 0; i--) {
+      const stepName = workflowSteps[stepOrder[i]];
+      const columnName = WORKFLOW_STEP_TO_COLUMN[stepName];
+      if (candidate[columnName]) {
+        return stepName;
+      }
     }
-  ];
+    
+    return workflowSteps.step1 || 'Application Screening';
+  };
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'completed': return 'bg-green-100 text-green-800 border-green-300';
-      case 'in_progress': return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'failed': return 'bg-red-100 text-red-800 border-red-300';
-      default: return 'bg-gray-100 text-gray-800 border-gray-300';
+  const getStatusColor = (stage: string) => {
+    switch (stage?.toLowerCase()) {
+      case 'application screening':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'initial interview':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'assessment':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'secondary interview':
+        return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+      case 'final interview':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'offer stage':
+        return 'bg-green-100 text-green-800 border-green-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 90) return 'text-green-600';
-    if (score >= 80) return 'text-blue-600';
-    if (score >= 70) return 'text-yellow-600';
-    return 'text-red-600';
+    if (score >= 90) return 'text-green-600 font-bold';
+    if (score >= 80) return 'text-blue-600 font-bold';
+    if (score >= 70) return 'text-yellow-600 font-bold';
+    return 'text-red-600 font-bold';
   };
 
-  const getStageDisplayName = (stage: string) => {
-    return stage.replace('_', ' ').split(' ').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(' ');
-  };
-
-  const handleViewCandidate = (candidateId: number) => {
+  const handleViewCandidate = (candidateId: string) => {
     const candidate = candidates.find(c => c.id === candidateId);
     if (candidate) {
       localStorage.setItem('selectedCandidate', JSON.stringify(candidate));
@@ -155,16 +118,12 @@ const TalentPool = () => {
   };
 
   const filteredCandidates = candidates.filter(candidate => {
-    const matchesSearch = candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         candidate.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         candidate.location.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesJob = jobFilter === 'all' || candidate.position.toLowerCase().includes(jobFilter.toLowerCase());
-    const matchesStage = stageFilter === 'all' || candidate.currentStage === stageFilter;
-    return matchesSearch && matchesJob && matchesStage;
+    const matchesSearch = candidate.applicant_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         candidate.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    const currentStage = getCurrentStage(candidate);
+    const matchesTab = selectedTab === 'all' || currentStage.toLowerCase().includes(selectedTab.toLowerCase());
+    return matchesSearch && matchesTab;
   });
-
-  const uniquePositions = [...new Set(candidates.map(c => c.position))];
-  const uniqueStages = [...new Set(candidates.map(c => c.currentStage))];
 
   const stats = [
     { 
@@ -176,30 +135,32 @@ const TalentPool = () => {
       iconColor: "text-blue-500"
     },
     { 
-      label: "Active Pipeline", 
-      value: candidates.filter(c => c.currentStage !== 'hired').length, 
-      icon: TrendingUp,
+      label: "In Progress", 
+      value: candidates.filter(c => !c.is_hired).length, 
+      icon: Clock,
+      color: "from-yellow-500 to-yellow-600",
+      bgColor: "bg-yellow-50",
+      iconColor: "text-yellow-500"
+    },
+    { 
+      label: "Hired", 
+      value: candidates.filter(c => c.is_hired).length, 
+      icon: CheckCircle,
       color: "from-green-500 to-green-600",
       bgColor: "bg-green-50",
       iconColor: "text-green-500"
     },
     { 
       label: "Avg Score", 
-      value: Math.round(candidates.reduce((acc, c) => acc + c.overallScore, 0) / candidates.length), 
+      value: candidates.length > 0 ? Math.round(candidates.reduce((acc, c) => acc + (c.total_weighted_score || 0), 0) / candidates.length) : 0, 
       icon: Star,
-      color: "from-yellow-500 to-yellow-600",
-      bgColor: "bg-yellow-50",
-      iconColor: "text-yellow-500"
-    },
-    { 
-      label: "In Progress", 
-      value: candidates.filter(c => c.currentStage.includes('interview')).length, 
-      icon: Clock,
       color: "from-purple-500 to-purple-600",
       bgColor: "bg-purple-50",
       iconColor: "text-purple-500"
     }
   ];
+
+  const uniqueStages = workflow ? Object.values(workflow.workflow_process) : [];
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -207,7 +168,7 @@ const TalentPool = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900">Talent Pool</h2>
+            <h1 className="text-3xl font-bold text-gray-900">Talent Pool</h1>
             <p className="text-gray-600 mt-1">Manage and track all candidates across different stages</p>
           </div>
         </div>
@@ -232,154 +193,138 @@ const TalentPool = () => {
           ))}
         </div>
 
-        {/* Enhanced Search and Filter */}
+        {/* Search and Filter */}
         <Card className="shadow-sm">
           <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row gap-4 items-center">
-              <div className="relative flex-1">
+            <div className="flex items-center justify-between mb-6">
+              <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
-                  placeholder="Search candidates, positions, locations..."
+                  placeholder="Search candidates..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
-              <Select value={jobFilter} onValueChange={setJobFilter}>
-                <SelectTrigger className="w-48 border-gray-200">
-                  <SelectValue placeholder="Filter by Job" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Positions</SelectItem>
-                  {uniquePositions.map((position) => (
-                    <SelectItem key={position} value={position}>{position}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={stageFilter} onValueChange={setStageFilter}>
-                <SelectTrigger className="w-48 border-gray-200">
-                  <SelectValue placeholder="Filter by Stage" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Stages</SelectItem>
-                  {uniqueStages.map((stage) => (
-                    <SelectItem key={stage} value={stage}>{getStageDisplayName(stage)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button variant="outline" className="border-gray-200 hover:border-blue-500">
+              <Button variant="outline" className="ml-4 border-gray-200 hover:border-blue-500">
                 <Filter className="mr-2 h-4 w-4" />
-                More Filters
+                Filter
               </Button>
             </div>
+
+            {/* Tabs */}
+            <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+              <TabsList className="grid w-full max-w-2xl grid-cols-5 bg-gray-100 p-1">
+                <TabsTrigger 
+                  value="all" 
+                  className="data-[state=active]:bg-blue-500 data-[state=active]:text-white"
+                >
+                  All
+                </TabsTrigger>
+                {uniqueStages.slice(0, 4).map((stage: string) => (
+                  <TabsTrigger 
+                    key={stage}
+                    value={stage.toLowerCase().replace(' ', '_')} 
+                    className="data-[state=active]:bg-blue-500 data-[state=active]:text-white text-xs"
+                  >
+                    {stage}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
           </CardContent>
         </Card>
 
-        {/* Enhanced Candidates Table */}
+        {/* Enhanced Table */}
         <Card className="shadow-lg border-0">
-          <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
-            <CardTitle className="text-xl text-gray-900">Candidate Pipeline</CardTitle>
-            <CardDescription>Track candidates through your hiring process</CardDescription>
-          </CardHeader>
-          
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
-                    <TableHead className="font-bold text-gray-900 py-4">Candidate</TableHead>
-                    <TableHead className="font-bold text-gray-900">Position</TableHead>
-                    <TableHead className="font-bold text-gray-900">Current Stage</TableHead>
-                    <TableHead className="font-bold text-gray-900">Score</TableHead>
-                    <TableHead className="font-bold text-gray-900">Progress</TableHead>
-                    <TableHead className="font-bold text-gray-900">Applied</TableHead>
-                    <TableHead className="font-bold text-gray-900">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredCandidates.map((candidate, index) => (
-                    <TableRow key={candidate.id} className={`hover:bg-gray-50 transition-colors border-b border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
-                      <TableCell className="py-4">
-                        <div className="flex items-center space-x-4">
-                          <Avatar className="h-12 w-12 ring-2 ring-blue-100">
-                            <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold">
-                              {candidate.name.split(' ').map(n => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="space-y-1">
-                            <h3 className="font-semibold text-gray-900">{candidate.name}</h3>
-                            <div className="flex items-center space-x-2 text-sm text-gray-500">
-                              <Mail className="h-3 w-3" />
-                              <span>{candidate.email}</span>
-                            </div>
-                            <div className="flex items-center space-x-2 text-sm text-gray-500">
-                              <MapPin className="h-3 w-3" />
-                              <span>{candidate.location}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="font-medium text-gray-900">{candidate.position}</div>
-                          <div className="text-sm text-gray-500">{candidate.experienceYears} years exp.</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={`${getStatusColor(candidate.currentStage)} px-3 py-1 text-xs font-medium`}>
-                          {getStageDisplayName(candidate.currentStage)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                          <span className={`text-lg font-bold ${getScoreColor(candidate.overallScore)}`}>
-                            {candidate.overallScore}%
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-2">
-                          <Progress value={candidate.overallScore} className="w-24 h-2" />
-                          <div className="flex flex-wrap gap-1">
-                            {candidate.skills.slice(0, 2).map((skill) => (
-                              <Badge key={skill} variant="secondary" className="text-xs px-2 py-0.5">
-                                {skill}
-                              </Badge>
-                            ))}
-                            {candidate.skills.length > 2 && (
-                              <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                                +{candidate.skills.length - 2}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm text-gray-600">
-                          {new Date(candidate.appliedDate).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric'
-                          })}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-blue-600 hover:bg-blue-50 hover:text-blue-700"
-                          onClick={() => handleViewCandidate(candidate.id)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                      </TableCell>
+            {loading ? (
+              <div className="p-8 text-center">Loading candidates...</div>
+            ) : error ? (
+              <div className="p-8 text-center text-red-500">{error}</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                      <TableHead className="font-bold text-gray-900 py-4">Candidate</TableHead>
+                      <TableHead className="font-bold text-gray-900">Job Title</TableHead>
+                      <TableHead className="font-bold text-gray-900">Current Stage</TableHead>
+                      <TableHead className="font-bold text-gray-900">Total Score</TableHead>
+                      <TableHead className="font-bold text-gray-900">Applied Date</TableHead>
+                      <TableHead className="font-bold text-gray-900">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredCandidates.map((candidate, index) => {
+                      const currentStage = getCurrentStage(candidate);
+                      return (
+                        <TableRow key={candidate.id} className={`hover:bg-gray-50 transition-colors border-b border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
+                          <TableCell className="py-4">
+                            <div className="flex items-center space-x-3">
+                              <Avatar className="h-12 w-12 ring-2 ring-gray-100">
+                                {candidate.picture ? (
+                                  <AvatarImage src={candidate.picture} alt={candidate.applicant_name} />
+                                ) : null}
+                                <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold text-sm">
+                                  {candidate.applicant_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <div className="font-semibold text-gray-900">{candidate.applicant_name}</div>
+                                <div className="text-sm text-gray-500 flex items-center">
+                                  <Mail className="h-3 w-3 mr-1" />
+                                  {candidate.email}
+                                </div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium text-gray-900">
+                              {/* You might need to fetch job title separately or it might be in the candidate data */}
+                              Developer Role
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={`${getStatusColor(currentStage)} px-3 py-1 text-xs font-medium`}>
+                              {currentStage}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <span className={`text-lg font-bold ${getScoreColor(candidate.total_weighted_score || 0)}`}>
+                                {candidate.total_weighted_score || 0}%
+                              </span>
+                              <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm text-gray-900 font-medium">
+                              {candidate.created_at ? new Date(candidate.created_at).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              }) : 'N/A'}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                              onClick={() => handleViewCandidate(candidate.id)}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View Details
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
