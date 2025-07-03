@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -5,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Save, Image, Bold, Italic, Underline, List, ListOrdered, Link } from "lucide-react";
+import { ArrowLeft, Save, Image, FileText, Bold, Italic, Underline, List, ListOrdered, Link, Plus, X, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const CreateAssignment = () => {
@@ -23,7 +24,9 @@ const CreateAssignment = () => {
     deadline: "",
     instructions: "",
     resources: [] as string[],
-    images: [] as string[]
+    images: [] as string[],
+    documents: [] as { name: string; url: string }[],
+    questions: [] as { question: string; type: 'text' | 'file' | 'multiple_choice'; options?: string[] }[]
   });
   
   const [isUploading, setIsUploading] = useState(false);
@@ -73,6 +76,38 @@ const CreateAssignment = () => {
     }
   };
 
+  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    setIsUploading(true);
+    try {
+      const uploadPromises = Array.from(files).map(async (file) => {
+        const url = await uploadToCloudinary(file);
+        return { name: file.name, url };
+      });
+      const uploadedDocs = await Promise.all(uploadPromises);
+      
+      setAssignment(prev => ({
+        ...prev,
+        documents: [...prev.documents, ...uploadedDocs]
+      }));
+      
+      toast({
+        title: "Success",
+        description: `${uploadedDocs.length} document(s) uploaded successfully!`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to upload documents",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const insertTextFormat = (format: string) => {
     const textarea = document.getElementById('content') as HTMLTextAreaElement;
     if (!textarea) return;
@@ -107,10 +142,79 @@ const CreateAssignment = () => {
     setAssignment(prev => ({ ...prev, content: newContent }));
   };
 
+  const addQuestion = () => {
+    setAssignment(prev => ({
+      ...prev,
+      questions: [...prev.questions, { question: "", type: "text" }]
+    }));
+  };
+
+  const updateQuestion = (index: number, field: string, value: any) => {
+    setAssignment(prev => ({
+      ...prev,
+      questions: prev.questions.map((q, i) => 
+        i === index ? { ...q, [field]: value } : q
+      )
+    }));
+  };
+
+  const removeQuestion = (index: number) => {
+    setAssignment(prev => ({
+      ...prev,
+      questions: prev.questions.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addOption = (questionIndex: number) => {
+    setAssignment(prev => ({
+      ...prev,
+      questions: prev.questions.map((q, i) => 
+        i === questionIndex 
+          ? { ...q, options: [...(q.options || []), ""] }
+          : q
+      )
+    }));
+  };
+
+  const updateOption = (questionIndex: number, optionIndex: number, value: string) => {
+    setAssignment(prev => ({
+      ...prev,
+      questions: prev.questions.map((q, i) => 
+        i === questionIndex 
+          ? { 
+              ...q, 
+              options: q.options?.map((opt, oi) => oi === optionIndex ? value : opt) 
+            }
+          : q
+      )
+    }));
+  };
+
+  const removeOption = (questionIndex: number, optionIndex: number) => {
+    setAssignment(prev => ({
+      ...prev,
+      questions: prev.questions.map((q, i) => 
+        i === questionIndex 
+          ? { 
+              ...q, 
+              options: q.options?.filter((_, oi) => oi !== optionIndex) 
+            }
+          : q
+      )
+    }));
+  };
+
   const removeImage = (index: number) => {
     setAssignment(prev => ({
       ...prev,
       images: prev.images.filter((_, i) => i !== index)
+    }));
+  };
+
+  const removeDocument = (index: number) => {
+    setAssignment(prev => ({
+      ...prev,
+      documents: prev.documents.filter((_, i) => i !== index)
     }));
   };
 
@@ -137,7 +241,6 @@ const CreateAssignment = () => {
     try {
       const token = localStorage.getItem("token");
       
-      // Prepare assignment details
       const assignmentDetails = {
         title: assignment.title,
         description: assignment.description,
@@ -146,6 +249,8 @@ const CreateAssignment = () => {
         deadline: assignment.deadline,
         instructions: assignment.instructions,
         images: assignment.images,
+        documents: assignment.documents,
+        questions: assignment.questions,
         resources: assignment.resources
       };
 
@@ -183,240 +288,395 @@ const CreateAssignment = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 p-4">
-      <div className="max-w-4xl mx-auto pt-8">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4">
+      <div className="max-w-5xl mx-auto pt-8">
+        {/* Animated Header */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-4 mb-8"
+        >
+          <Button variant="outline" size="icon" onClick={() => navigate(-1)} className="hover:scale-110 transition-transform">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-3xl font-bold text-gray-900">Create Assignment</h1>
-        </div>
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              Create Assignment
+            </h1>
+            <p className="text-gray-600 mt-1">Design the perfect assessment for your candidate</p>
+          </div>
+        </motion.div>
 
-        <Card className="border border-gray-200 rounded-xl shadow-lg bg-white/95">
-          <CardHeader>
-            <CardTitle className="text-xl">Assignment Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Resume ID Display */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Candidate Resume ID
-              </label>
-              <Input
-                value={resumeId || ""}
-                readOnly
-                className="w-full bg-gray-50"
-                placeholder="Resume ID will be loaded from URL"
-              />
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Basic Info Card */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+                <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-t-lg">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    Assignment Details
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Candidate Resume ID
+                    </label>
+                    <Input
+                      value={resumeId || ""}
+                      readOnly
+                      className="w-full bg-gradient-to-r from-gray-50 to-gray-100 border-0"
+                    />
+                  </div>
 
-            {/* Basic Info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Assignment Title *
-                </label>
-                <Input
-                  value={assignment.title}
-                  onChange={(e) => setAssignment(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="Enter assignment title"
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Duration
-                </label>
-                <Input
-                  value={assignment.duration}
-                  onChange={(e) => setAssignment(prev => ({ ...prev, duration: e.target.value }))}
-                  placeholder="e.g., 2 hours, 3 days"
-                  className="w-full"
-                />
-              </div>
-            </div>
-
-            {/* Deadline */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Deadline
-              </label>
-              <Input
-                type="datetime-local"
-                value={assignment.deadline}
-                onChange={(e) => setAssignment(prev => ({ ...prev, deadline: e.target.value }))}
-                className="w-full"
-              />
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description
-              </label>
-              <Textarea
-                value={assignment.description}
-                onChange={(e) => setAssignment(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Brief description of the assignment"
-                className="w-full h-20"
-              />
-            </div>
-
-            {/* Rich Text Editor */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Assignment Content *
-              </label>
-              
-              {/* Formatting Toolbar */}
-              <div className="flex flex-wrap gap-2 p-3 bg-gray-50 border border-gray-200 rounded-t-lg">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => insertTextFormat('bold')}
-                  className="h-8"
-                >
-                  <Bold className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => insertTextFormat('italic')}
-                  className="h-8"
-                >
-                  <Italic className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => insertTextFormat('underline')}
-                  className="h-8"
-                >
-                  <Underline className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => insertTextFormat('ul')}
-                  className="h-8"
-                >
-                  <List className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => insertTextFormat('ol')}
-                  className="h-8"
-                >
-                  <ListOrdered className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => insertTextFormat('link')}
-                  className="h-8"
-                >
-                  <Link className="h-4 w-4" />
-                </Button>
-              </div>
-              
-              {/* Content Textarea */}
-              <Textarea
-                id="content"
-                value={assignment.content}
-                onChange={(e) => setAssignment(prev => ({ ...prev, content: e.target.value }))}
-                placeholder="Write your assignment content here. Use the toolbar above for formatting."
-                className="w-full h-64 rounded-t-none border-t-0 resize-none"
-              />
-            </div>
-
-            {/* Image Upload */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Images
-              </label>
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <label htmlFor="image-upload" className="cursor-pointer">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors">
-                      <Image className="h-4 w-4" />
-                      {isUploading ? "Uploading..." : "Upload Images"}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Assignment Title *
+                      </label>
+                      <Input
+                        value={assignment.title}
+                        onChange={(e) => setAssignment(prev => ({ ...prev, title: e.target.value }))}
+                        placeholder="Enter assignment title"
+                        className="w-full border-2 border-indigo-100 focus:border-indigo-400"
+                      />
                     </div>
-                  </label>
-                  <input
-                    id="image-upload"
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                    disabled={isUploading}
-                  />
-                </div>
-                
-                {/* Image Preview */}
-                {assignment.images.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {assignment.images.map((url, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={url}
-                          alt={`Upload ${index + 1}`}
-                          className="w-full h-32 object-cover rounded-lg border border-gray-200"
-                        />
-                        <button
-                          onClick={() => removeImage(index)}
-                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          ×
-                        </button>
-                      </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Duration
+                      </label>
+                      <Input
+                        value={assignment.duration}
+                        onChange={(e) => setAssignment(prev => ({ ...prev, duration: e.target.value }))}
+                        placeholder="e.g., 2 hours, 3 days"
+                        className="w-full border-2 border-indigo-100 focus:border-indigo-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Deadline
+                    </label>
+                    <Input
+                      type="datetime-local"
+                      value={assignment.deadline}
+                      onChange={(e) => setAssignment(prev => ({ ...prev, deadline: e.target.value }))}
+                      className="w-full border-2 border-indigo-100 focus:border-indigo-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Description
+                    </label>
+                    <Textarea
+                      value={assignment.description}
+                      onChange={(e) => setAssignment(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Brief description of the assignment"
+                      className="w-full h-20 border-2 border-indigo-100 focus:border-indigo-400"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Content Editor Card */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+                <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-t-lg">
+                  <CardTitle className="text-xl">Assignment Content</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {/* Formatting Toolbar */}
+                  <div className="flex flex-wrap gap-2 p-4 bg-gray-50 border-b">
+                    {[
+                      { icon: Bold, action: 'bold' },
+                      { icon: Italic, action: 'italic' },
+                      { icon: Underline, action: 'underline' },
+                      { icon: List, action: 'ul' },
+                      { icon: ListOrdered, action: 'ol' },
+                      { icon: Link, action: 'link' }
+                    ].map(({ icon: Icon, action }) => (
+                      <Button
+                        key={action}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => insertTextFormat(action)}
+                        className="h-8 hover:bg-indigo-50 hover:text-indigo-600"
+                      >
+                        <Icon className="h-4 w-4" />
+                      </Button>
                     ))}
                   </div>
-                )}
-              </div>
-            </div>
+                  
+                  <Textarea
+                    id="content"
+                    value={assignment.content}
+                    onChange={(e) => setAssignment(prev => ({ ...prev, content: e.target.value }))}
+                    placeholder="Write your assignment content here..."
+                    className="w-full h-64 border-0 resize-none focus:ring-0"
+                  />
+                </CardContent>
+              </Card>
+            </motion.div>
 
-            {/* Instructions */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Additional Instructions
-              </label>
-              <Textarea
-                value={assignment.instructions}
-                onChange={(e) => setAssignment(prev => ({ ...prev, instructions: e.target.value }))}
-                placeholder="Any additional instructions for candidates"
-                className="w-full h-24"
-              />
-            </div>
+            {/* Questions Card */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+                <CardHeader className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-t-lg">
+                  <CardTitle className="text-xl flex items-center justify-between">
+                    Questions & Answers
+                    <Button
+                      onClick={addQuestion}
+                      size="sm"
+                      className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Question
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-4">
+                  {assignment.questions.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>No questions added yet. Click "Add Question" to get started.</p>
+                    </div>
+                  ) : (
+                    assignment.questions.map((question, index) => (
+                      <div key={index} className="p-4 border-2 border-emerald-100 rounded-lg bg-emerald-50/50">
+                        <div className="flex justify-between items-start mb-3">
+                          <h4 className="font-semibold text-emerald-800">Question {index + 1}</h4>
+                          <Button
+                            onClick={() => removeQuestion(index)}
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <Input
+                            value={question.question}
+                            onChange={(e) => updateQuestion(index, 'question', e.target.value)}
+                            placeholder="Enter your question"
+                            className="border-emerald-200 focus:border-emerald-400"
+                          />
+                          
+                          <select
+                            value={question.type}
+                            onChange={(e) => updateQuestion(index, 'type', e.target.value)}
+                            className="w-full p-2 border-2 border-emerald-200 rounded-md focus:border-emerald-400"
+                          >
+                            <option value="text">Text Answer</option>
+                            <option value="file">File Upload</option>
+                            <option value="multiple_choice">Multiple Choice</option>
+                          </select>
+
+                          {question.type === 'multiple_choice' && (
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <label className="text-sm font-medium text-emerald-700">Options</label>
+                                <Button
+                                  onClick={() => addOption(index)}
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-emerald-300 text-emerald-600 hover:bg-emerald-50"
+                                >
+                                  <Plus className="h-3 w-3 mr-1" />
+                                  Add Option
+                                </Button>
+                              </div>
+                              {question.options?.map((option, optionIndex) => (
+                                <div key={optionIndex} className="flex gap-2">
+                                  <Input
+                                    value={option}
+                                    onChange={(e) => updateOption(index, optionIndex, e.target.value)}
+                                    placeholder={`Option ${optionIndex + 1}`}
+                                    className="border-emerald-200 focus:border-emerald-400"
+                                  />
+                                  <Button
+                                    onClick={() => removeOption(index, optionIndex)}
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-red-500 hover:text-red-700"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Media Upload Card */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+                <CardHeader className="bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-t-lg">
+                  <CardTitle className="text-lg">Media & Documents</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 space-y-4">
+                  {/* Image Upload */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Images</label>
+                    <label htmlFor="image-upload" className="cursor-pointer block">
+                      <div className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 rounded-lg border-2 border-blue-200 hover:from-blue-100 hover:to-indigo-100 transition-all">
+                        <Image className="h-4 w-4" />
+                        {isUploading ? "Uploading..." : "Upload Images"}
+                      </div>
+                    </label>
+                    <input
+                      id="image-upload"
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      disabled={isUploading}
+                    />
+                    
+                    {assignment.images.length > 0 && (
+                      <div className="grid grid-cols-2 gap-2 mt-3">
+                        {assignment.images.map((url, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={url}
+                              alt={`Upload ${index + 1}`}
+                              className="w-full h-20 object-cover rounded-lg border-2 border-gray-200"
+                            />
+                            <button
+                              onClick={() => removeImage(index)}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Document Upload */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Documents</label>
+                    <label htmlFor="document-upload" className="cursor-pointer block">
+                      <div className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-green-50 to-emerald-50 text-green-600 rounded-lg border-2 border-green-200 hover:from-green-100 hover:to-emerald-100 transition-all">
+                        <FileText className="h-4 w-4" />
+                        {isUploading ? "Uploading..." : "Upload Documents"}
+                      </div>
+                    </label>
+                    <input
+                      id="document-upload"
+                      type="file"
+                      multiple
+                      accept=".pdf,.doc,.docx,.txt,.xlsx,.pptx"
+                      onChange={handleDocumentUpload}
+                      className="hidden"
+                      disabled={isUploading}
+                    />
+                    
+                    {assignment.documents.length > 0 && (
+                      <div className="space-y-2 mt-3">
+                        {assignment.documents.map((doc, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border">
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-gray-500" />
+                              <span className="text-sm text-gray-700 truncate">{doc.name}</span>
+                            </div>
+                            <button
+                              onClick={() => removeDocument(index)}
+                              className="text-red-500 hover:text-red-700 p-1"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Instructions Card */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+                <CardHeader className="bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-t-lg">
+                  <CardTitle className="text-lg">Additional Instructions</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <Textarea
+                    value={assignment.instructions}
+                    onChange={(e) => setAssignment(prev => ({ ...prev, instructions: e.target.value }))}
+                    placeholder="Any additional instructions for candidates..."
+                    className="w-full h-24 border-2 border-amber-100 focus:border-amber-400"
+                  />
+                </CardContent>
+              </Card>
+            </motion.div>
 
             {/* Action Buttons */}
-            <div className="flex justify-end gap-4 pt-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="flex flex-col gap-3"
+            >
+              <Button 
+                onClick={handleSave}
+                disabled={isSaving || isUploading || !resumeId}
+                className="w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
+              >
+                <Save className="h-5 w-5 mr-2" />
+                {isSaving ? "Creating..." : "Create & Send Assignment"}
+              </Button>
+              
               <Button 
                 variant="outline" 
                 onClick={() => navigate(-1)}
                 disabled={isSaving}
+                className="w-full border-2 border-gray-300 hover:bg-gray-50"
               >
                 Cancel
               </Button>
-              <Button 
-                onClick={handleSave}
-                disabled={isSaving || isUploading || !resumeId}
-                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {isSaving ? "Creating..." : "Create & Send Assignment"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </motion.div>
+          </div>
+        </div>
       </div>
     </div>
   );
