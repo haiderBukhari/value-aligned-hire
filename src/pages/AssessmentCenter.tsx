@@ -78,7 +78,7 @@ const AssessmentCenter = () => {
   const queryParams = new URLSearchParams(location.search);
   const stage = queryParams.get("stage") || "Assessment";
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTab, setSelectedTab] = useState<'jobs' | 'templates'>('jobs');
+  const [selectedTab, setSelectedTab] = useState<'jobs'>('jobs');
 
   // Fetch all jobs for the current stage
   const { data: jobs = [], isLoading, error } = useQuery({
@@ -124,10 +124,9 @@ const AssessmentCenter = () => {
             <p className="text-gray-600 text-base">Manage all job assessments and templates for this stage</p>
           </div>
         </div>
-        <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as 'jobs' | 'templates')} className="mb-6">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as 'jobs')} className="mb-6">
+          <TabsList className="grid w-full grid-cols-1">
             <TabsTrigger value="jobs">All Jobs</TabsTrigger>
-            <TabsTrigger value="templates">Assessment Templates</TabsTrigger>
           </TabsList>
           <TabsContent value="jobs">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
@@ -211,53 +210,6 @@ const AssessmentCenter = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-          <TabsContent value="templates" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {templates.map((template) => (
-                <Card key={template.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center">
-                        {getTypeIcon(template.type)}
-                        <span className="ml-2">{template.title}</span>
-                      </CardTitle>
-                      <Badge className={getDifficultyColor(template.difficulty)}>
-                        {template.difficulty}
-                      </Badge>
-                    </div>
-                    <CardDescription>{template.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Clock className="mr-1 h-4 w-4" />
-                        {template.duration}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-700 mb-2">Skills Required:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {template.skills.map((skill, index) => (
-                            <Badge key={index} variant="secondary" className="text-xs">
-                              {skill}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="flex space-x-2 pt-4">
-                        <Button variant="outline" size="sm" className="flex-1">
-                          <Eye className="h-4 w-4 mr-1" />
-                          Preview
-                        </Button>
-                        <Button size="sm" className="flex-1">
-                          Use Template
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
           </TabsContent>
         </Tabs>
       </div>
