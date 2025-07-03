@@ -1,16 +1,41 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Clock, FileText, ExternalLink, User, Award, CheckCircle } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, FileText, Download, User, Award, CheckCircle } from "lucide-react";
+
+interface Question {
+  question: string;
+  type: string;
+  options?: string[];
+}
+
+interface AssignmentTemplate {
+  title: string;
+  description: string;
+  content: string;
+  deadline: string;
+  duration: string;
+  instructions: string;
+  questions: Question[];
+  images: string[];
+  documents: string[];
+  resources: string[];
+}
 
 interface SubmissionData {
   assignment_submission: string;
-  full_assignment_submission: any[];
-  assignment_template: any[];
+  full_assignment_submission: {
+    answers: Record<string, string>;
+    submission_time: string;
+    uploaded_files: {
+      name: string;
+      url: string;
+    }[];
+  }[];
+  assignment_template: AssignmentTemplate[];
 }
 
 const AssignmentReview = () => {
@@ -49,6 +74,16 @@ const AssignmentReview = () => {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
+  };
+
+  const handleDownload = (fileUrl: string, fileName: string) => {
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.download = fileName;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (loading) {
@@ -111,6 +146,7 @@ const AssignmentReview = () => {
   }
 
   const assignmentTemplate = submission.assignment_template[0] || {};
+  const submissionData = submission.full_assignment_submission[0] || {};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 p-4">
@@ -148,7 +184,7 @@ const AssignmentReview = () => {
                   <div>
                     <h3 className="text-xl font-bold text-gray-900">Assignment Completed</h3>
                     <p className="text-gray-600">
-                      Submitted: {formatDate(submission.assignment_submission)}
+                      Submitted: {formatDate(submissionData.submission_time || submission.assignment_submission)}
                     </p>
                   </div>
                 </div>
@@ -214,83 +250,105 @@ const AssignmentReview = () => {
                   </div>
                 </div>
               )}
+
+              {assignmentTemplate.instructions && (
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Instructions</h4>
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <p className="text-gray-700">{assignmentTemplate.instructions}</p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Submission Details */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Card className="mb-8 border-0 shadow-xl bg-white/95 backdrop-blur-sm">
-            <CardHeader className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-t-lg">
-              <CardTitle className="text-2xl flex items-center gap-3">
-                <Award className="h-6 w-6" />
-                Candidate Submission
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              {submission.full_assignment_submission.map((submissionItem, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="p-6 bg-green-50 rounded-xl border border-green-200"
-                >
-                  <h4 className="text-lg font-semibold text-green-900 mb-4">
-                    Submission {index + 1}
-                  </h4>
-                  
-                  {Object.entries(submissionItem).map(([key, value]) => (
-                    <div key={key} className="mb-4">
-                      <h5 className="font-medium text-gray-900 capitalize mb-2">
-                        {key.replace(/_/g, ' ')}:
+        {/* Questions and Answers */}
+        {assignmentTemplate.questions && assignmentTemplate.questions.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card className="mb-8 border-0 shadow-xl bg-white/95 backdrop-blur-sm">
+              <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-t-lg">
+                <CardTitle className="text-2xl flex items-center gap-3">
+                  <User className="h-6 w-6" />
+                  Questions & Answers
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                {assignmentTemplate.questions.map((question, index) => (
+                  <div key={index} className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                    <div className="mb-3">
+                      <h5 className="font-semibold text-indigo-900 mb-1">
+                        Question {index + 1}:
                       </h5>
-                      
-                      {key.includes('link') && typeof value === 'string' && value.startsWith('http') ? (
-                        <Button
-                          variant="outline"
-                          onClick={() => window.open(value, '_blank')}
-                          className="gap-2"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                          View Submission
-                        </Button>
-                      ) : Array.isArray(value) ? (
-                        <div className="space-y-2">
-                          {value.map((item, itemIndex) => (
-                            <div key={itemIndex} className="p-3 bg-white rounded-lg border">
-                              {typeof item === 'object' ? (
-                                <pre className="text-sm text-gray-700 whitespace-pre-wrap">
-                                  {JSON.stringify(item, null, 2)}
-                                </pre>
-                              ) : (
-                                <p className="text-gray-700">{String(item)}</p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ) : typeof value === 'object' ? (
-                        <div className="p-3 bg-white rounded-lg border">
-                          <pre className="text-sm text-gray-700 whitespace-pre-wrap">
-                            {JSON.stringify(value, null, 2)}
-                          </pre>
-                        </div>
-                      ) : (
-                        <div className="p-3 bg-white rounded-lg border">
-                          <p className="text-gray-700 whitespace-pre-wrap">{String(value)}</p>
+                      <p className="text-gray-700">{question.question}</p>
+                      {question.type === 'multiple_choice' && question.options && (
+                        <div className="mt-2">
+                          <p className="text-sm text-gray-600">Options:</p>
+                          <ul className="list-disc list-inside text-sm text-gray-600 ml-2">
+                            {question.options.map((option, optIndex) => (
+                              <li key={optIndex}>{option}</li>
+                            ))}
+                          </ul>
                         </div>
                       )}
                     </div>
+                    <div className="bg-white p-3 rounded border">
+                      <p className="font-medium text-green-800 mb-1">Answer:</p>
+                      <p className="text-gray-700">
+                        {submissionData.answers?.[index.toString()] || 'No answer provided'}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Uploaded Files */}
+        {submissionData.uploaded_files && submissionData.uploaded_files.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Card className="mb-8 border-0 shadow-xl bg-white/95 backdrop-blur-sm">
+              <CardHeader className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-t-lg">
+                <CardTitle className="text-2xl flex items-center gap-3">
+                  <Award className="h-6 w-6" />
+                  Uploaded Files
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {submissionData.uploaded_files.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-8 w-8 text-green-600" />
+                        <div>
+                          <p className="font-medium text-gray-900">{file.name}</p>
+                          <p className="text-sm text-gray-600">Uploaded file</p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => handleDownload(file.url, file.name)}
+                        className="gap-2"
+                        size="sm"
+                      >
+                        <Download className="h-4 w-4" />
+                        Download
+                      </Button>
+                    </div>
                   ))}
-                </motion.div>
-              ))}
-            </CardContent>
-          </Card>
-        </motion.div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
       </div>
     </div>
   );
