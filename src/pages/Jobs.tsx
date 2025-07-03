@@ -156,7 +156,7 @@ const Jobs = () => {
   };
 
   const handleViewDetails = (jobId: string) => {
-    navigate(`/dashboard/jobs/${jobId}`);
+    navigate(`/dashboard/jobs/${jobId}?stage=Application Screening`);
   };
 
   if (error) {

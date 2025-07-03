@@ -25,6 +25,8 @@ import NotFound from "./pages/NotFound";
 import TalentPool from "./pages/TalentPool";
 import CandidateDetails from "./pages/CandidateDetails";
 import InterviewDetails from "./pages/InterviewDetails";
+import JobAssessmentCenter from "./pages/JobAssessmentCenter";
+import JobAssessmentCandidates from "./pages/JobAssessmentCandidates";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +46,8 @@ const App = () => (
             <Route path="jobs/:jobId" element={<JobDetails />} />
             <Route path="jobs/:jobId/resume/:resumeId" element={<ResumeDetails />} />
             <Route path="jobs/:jobId/interview/:resumeId" element={<InterviewDetails />} />
+            <Route path="jobs/:jobId/assessments" element={<JobAssessmentCenter />} />
+            <Route path="jobs/:jobId/assessments/candidates" element={<JobAssessmentCandidates />} />
             <Route path="create-job" element={<CreateJob />} />
             <Route path="talent-pool" element={<TalentPool />} />
             <Route path="talent-pool/:candidateId" element={<CandidateDetails />} />

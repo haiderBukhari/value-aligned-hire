@@ -118,10 +118,10 @@ const HiringPipeline = () => {
   const handleSaveWorkflow = async () => {
     const success = await saveWorkflow(workflowStages);
     if (success) {
-      await fetchWorkflow();
+      window.location.reload(); // <-- full page reload
     }
   };
-
+  
   const draggableStages = workflowStages.filter(stage => !stage.isMandatory);
 
   if (isLoading) {

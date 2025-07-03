@@ -136,7 +136,7 @@ const InitialInterview = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 p-0">
-      {/* Header */}
+        {/* Header */}
       <div className="max-w-6xl mx-auto pt-8 pb-4 px-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
@@ -190,7 +190,7 @@ const InitialInterview = () => {
                 <div>
                   <div className="text-xs font-semibold text-gray-500 mb-1">{stat.title}</div>
                   <div className="text-4xl font-extrabold text-gray-900 leading-tight">{stat.count}</div>
-                </div>
+                  </div>
                 <div className={`flex items-center justify-center rounded-full ${stat.iconBg} shadow-md h-12 w-12 transition-transform duration-200 group-hover:animate-bounce`}>
                   {stat.icon}
                 </div>
@@ -202,31 +202,31 @@ const InitialInterview = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
           <div className="relative w-full md:w-80">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
-            <Input
+                <Input
               className="pl-10"
               placeholder="Search jobs..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
           <Button variant="outline" className="gap-2">
             <Filter className="h-4 w-4" />
-            Filter
-          </Button>
-        </div>
+                Filter
+              </Button>
+            </div>
         <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as 'all' | 'upcoming' | 'past')} className="mb-6">
           <TabsList>
             <TabsTrigger value="all">All Jobs</TabsTrigger>
             <TabsTrigger value="upcoming">Upcoming Scheduled Interviews</TabsTrigger>
             <TabsTrigger value="past">Past Interview</TabsTrigger>
-          </TabsList>
-        </Tabs>
+              </TabsList>
+            </Tabs>
       </div>
       {/* Jobs Table */}
       <div className="max-w-6xl mx-auto px-4 pb-10">
         {selectedTab === 'all' ? (
           <Card className="border border-gray-200 rounded-xl shadow-lg bg-white/95">
-            <CardContent className="p-0">
+          <CardContent className="p-0">
               <div className="w-full overflow-x-auto">
                 <table className="w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
@@ -271,14 +271,14 @@ const InitialInterview = () => {
                           </td>
                           <td className="px-6 py-4 text-right text-sm font-medium">
                             <div className="flex items-center justify-end gap-2">
-                              <Button
-                                variant="ghost"
+                          <Button 
+                            variant="ghost" 
                                 size="icon"
                                 onClick={() => handleViewDetails(job.id)}
                                 className="h-8 w-8"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
                             </div>
                           </td>
                         </motion.tr>
@@ -316,14 +316,14 @@ const InitialInterview = () => {
                           <td className="px-6 py-4 text-gray-500">{interview.applicant_name}</td>
                           <td className="px-6 py-4 text-gray-500">{interview.schedule.date} {interview.schedule.time}</td>
                           <td className="px-6 py-4 text-right">
-                            <Button
-                              variant="ghost"
+                          <Button 
+                            variant="ghost" 
                               size="icon"
                               onClick={() => handleViewInterview(interview.job_id, interview.resume_id, interview.stage)}
                               className="h-8 w-8"
-                            >
+                          >
                               <Eye className="h-4 w-4" />
-                            </Button>
+                          </Button>
                           </td>
                         </tr>
                       ))
@@ -360,23 +360,23 @@ const InitialInterview = () => {
                           <td className="px-6 py-4 text-gray-500">{interview.applicant_name}</td>
                           <td className="px-6 py-4 text-gray-500">{interview.schedule.date} {interview.schedule.time}</td>
                           <td className="px-6 py-4 text-right">
-                            <Button
-                              variant="ghost"
+                          <Button 
+                            variant="ghost" 
                               size="icon"
                               onClick={() => handleViewInterview(interview.job_id, interview.resume_id, interview.stage)}
                               className="h-8 w-8"
-                            >
+                          >
                               <Eye className="h-4 w-4" />
-                            </Button>
+                          </Button>
                           </td>
                         </tr>
                       ))
                     )}
                   </tbody>
                 </table>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
         )}
       </div>
     </div>

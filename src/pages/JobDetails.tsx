@@ -170,8 +170,8 @@ const JobDetails = () => {
             <div className="h-10 w-48 bg-gray-200 rounded animate-pulse mb-4 mx-auto" />
           ) : job && job.title ? (
             <>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-                {job.title}
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+                {stage} for {job.title}
               </h1>
             </>
           ) : (
@@ -182,7 +182,20 @@ const JobDetails = () => {
         <div className="mb-3">
           <Button
             variant="ghost"
-            onClick={() => navigate(`/dashboard/jobs`)}
+            onClick={() => {
+              if(stage == 'Application Screening'){
+                navigate(`/dashboard/jobs`)
+              }
+              else if(stage == 'Initial Interview'){
+                navigate(`/dashboard/initial-interview`)
+              }
+              if(stage == 'Secondary Interview'){
+                navigate(`/dashboard/secondary-interview`)
+              }
+              if(stage == 'Final Interview'){
+                navigate(`/dashboard/final-interview`)
+              }
+            }}
             className="mb-4 text-gray-600 hover:text-gray-900"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />

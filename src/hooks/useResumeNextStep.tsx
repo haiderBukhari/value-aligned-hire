@@ -24,7 +24,7 @@ export const useResumeNextStep = (resumeId: string) => {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No authentication token found');
 
-      const response = await fetch(`https://talo-recruitment.vercel.app/resumes/${resumeId}/next-step`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/resumes/${resumeId}/next-step`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -47,7 +47,7 @@ export const useResumeNextStep = (resumeId: string) => {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No authentication token found');
 
-      const response = await fetch(`https://talo-recruitment.vercel.app/resumes/${resumeId}/next-step`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/resumes/${resumeId}/next-step`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
