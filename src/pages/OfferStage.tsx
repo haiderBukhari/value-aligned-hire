@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,7 +65,7 @@ const OfferStage = () => {
   const fetchOfferCandidates = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/offers/candidates', {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/offers/candidates`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -178,9 +177,9 @@ const OfferStage = () => {
   };
 
   const filteredCandidates = candidates.filter(candidate =>
-    candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    candidate.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    candidate.email.toLowerCase().includes(searchTerm.toLowerCase())
+    (candidate.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (candidate.position || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (candidate.email || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const pendingOffers = filteredCandidates.filter(c => c.offer_details?.status === 'pending');
@@ -308,7 +307,7 @@ const OfferStage = () => {
                             <Avatar className="h-20 w-20 ring-4 ring-purple-200 shadow-lg">
                               <AvatarImage src={candidate.photo_url} />
                               <AvatarFallback className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold text-xl">
-                                {candidate.name.split(' ').map(n => n[0]).join('')}
+                                {(candidate.name || '').split(' ').map(n => n[0]).join('')}
                               </AvatarFallback>
                             </Avatar>
                             <div className="absolute -bottom-1 -right-1 h-6 w-6 bg-purple-500 rounded-full flex items-center justify-center">
@@ -502,7 +501,7 @@ const OfferStage = () => {
                             <Avatar className="h-16 w-16 ring-4 ring-amber-200 shadow-lg">
                               <AvatarImage src={candidate.photo_url} />
                               <AvatarFallback className="bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold">
-                                {candidate.name.split(' ').map(n => n[0]).join('')}
+                                {(candidate.name || '').split(' ').map(n => n[0]).join('')}
                               </AvatarFallback>
                             </Avatar>
                             <div className="absolute -bottom-1 -right-1 h-6 w-6 bg-amber-500 rounded-full flex items-center justify-center">
@@ -583,7 +582,7 @@ const OfferStage = () => {
                           <Avatar className="h-14 w-14 ring-4 ring-blue-200">
                             <AvatarImage src={candidate.photo_url} />
                             <AvatarFallback className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold">
-                              {candidate.name.split(' ').map(n => n[0]).join('')}
+                              {(candidate.name || '').split(' ').map(n => n[0]).join('')}
                             </AvatarFallback>
                           </Avatar>
                           <div>
@@ -623,7 +622,7 @@ const OfferStage = () => {
                         <Avatar className="h-14 w-14 ring-4 ring-green-300">
                           <AvatarImage src={candidate.photo_url} />
                           <AvatarFallback className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold">
-                            {candidate.name.split(' ').map(n => n[0]).join('')}
+                            {(candidate.name || '').split(' ').map(n => n[0]).join('')}
                           </AvatarFallback>
                         </Avatar>
                         <div className="absolute -bottom-1 -right-1 h-6 w-6 bg-green-500 rounded-full flex items-center justify-center">
