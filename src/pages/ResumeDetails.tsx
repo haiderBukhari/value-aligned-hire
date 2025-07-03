@@ -15,6 +15,7 @@ interface Resume {
   id: string;
   applicant_name: string;
   email: string;
+  picture: string;
   cv_link: string;
   coverletter_link: string;
   company_fit_score: number;
@@ -255,16 +256,37 @@ const ResumeDetails = () => {
             </motion.div>
           </div>
           <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900">{resume.applicant_name}</h1>
-              <p className="text-gray-600 mt-2 text-lg">{resume.email}</p>
-              <div className="flex items-center gap-4 mt-4">
-                <Badge className={`${getRecommendationColor(resume.final_recommendation)} border-0 font-medium px-4 py-2 text-sm`}>
-                  {resume.final_recommendation}
-                </Badge>
-                <Badge className={`${getLevelColor(resume.level_suggestion)} px-4 py-2 text-sm font-medium`}>
-                  {resume.level_suggestion} Level
-                </Badge>
+            <div className="flex items-center gap-6">
+              {/* Circular Profile Picture */}
+              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-xl bg-gradient-to-br from-blue-400 to-purple-500 flex-shrink-0">
+                {resume.picture && resume.picture.trim() !== '' ? (
+                  <img 
+                    src={resume.picture} 
+                    alt={`${resume.applicant_name}'s profile`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div className={`w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-2xl ${resume.picture && resume.picture.trim() !== '' ? 'hidden' : 'flex'}`}>
+                  {resume.applicant_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                </div>
+              </div>
+              
+              {/* Name and Email */}
+              <div>
+                <h1 className="text-4xl font-bold text-gray-900">{resume.applicant_name}</h1>
+                <p className="text-gray-600 mt-2 text-lg">{resume.email}</p>
+                <div className="flex items-center gap-4 mt-4">
+                  <Badge className={`${getRecommendationColor(resume.final_recommendation)} border-0 font-medium px-4 py-2 text-sm`}>
+                    {resume.final_recommendation}
+                  </Badge>
+                  <Badge className={`${getLevelColor(resume.level_suggestion)} px-4 py-2 text-sm font-medium`}>
+                    {resume.level_suggestion} Level
+                  </Badge>
+                </div>
               </div>
             </div>
             <div className="text-right">

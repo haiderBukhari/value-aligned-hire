@@ -12,6 +12,7 @@ interface Resume {
   id: string;
   applicant_name: string;
   email: string;
+  picture: string;
   cv_link: string;
   coverletter_link: string;
   company_fit_score: number;
@@ -313,13 +314,36 @@ const JobDetails = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    {/* Enhanced CV Preview */}
-                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl h-40 flex flex-col items-center justify-center mb-6 group-hover:from-blue-50 group-hover:to-blue-100 transition-all duration-300 border border-gray-200">
-                      <div className="bg-white p-4 rounded-lg shadow-sm mb-2 w-16 h-20 flex items-center justify-center">
-                        <FileText className="h-8 w-8 text-blue-500" />
-                      </div>
-                      <span className="text-sm text-gray-600 font-medium">CV Preview</span>
-                      <div className="w-12 h-1 bg-blue-500 rounded-full mt-2 opacity-60"></div>
+                    {/* Enhanced Picture Preview */}
+                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl h-40 flex flex-col items-center justify-center mb-6 group-hover:from-blue-50 group-hover:to-blue-100 transition-all duration-300 border border-gray-200 overflow-hidden">
+                      {resume.picture && resume.picture.trim() !== '' ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center p-4">
+                          <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white shadow-lg mb-2">
+                            <img 
+                              src={resume.picture} 
+                              alt={`${resume.applicant_name}'s profile`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling.style.display = 'flex';
+                              }}
+                            />
+                            <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-lg" style={{ display: 'none' }}>
+                              {resume.applicant_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                            </div>
+                          </div>
+                          <span className="text-sm text-gray-600 font-medium">Profile Picture</span>
+                          <div className="w-12 h-1 bg-blue-500 rounded-full mt-2 opacity-60"></div>
+                        </div>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center">
+                          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-lg mb-2 shadow-lg">
+                            {resume.applicant_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                          </div>
+                          <span className="text-sm text-gray-600 font-medium">No Picture</span>
+                          <div className="w-12 h-1 bg-gray-400 rounded-full mt-2 opacity-60"></div>
+                        </div>
+                      )}
                     </div>
                     {/* Scores */}
                     <div className="space-y-4">
