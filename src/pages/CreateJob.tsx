@@ -329,7 +329,7 @@ Minimum 5+ years React experience, Bachelor's degree in Computer Science, Experi
         />
       </div>
 
-      <div className="relative z-10 max-w-4xl mx-auto p-8">
+      <div className="relative z-10 max-w-full mx-auto p-8">
         {/* Page Header */}
         <div className="text-center mb-8 pt-10">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">

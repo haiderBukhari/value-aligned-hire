@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -472,6 +471,11 @@ const OfferStage = () => {
                 </div>
               </Card>
             ))}
+            {readyForOffers.length === 0 && (
+              <div className="text-center py-8 text-gray-500 text-lg font-medium">
+                There are no candidates ready for offers.
+              </div>
+            )}
           </div>
         </TabsContent>
 
@@ -554,6 +558,11 @@ const OfferStage = () => {
                 </div>
               </Card>
             ))}
+            {activeOffers.length === 0 && (
+              <div className="text-center py-8 text-gray-500 text-lg font-medium">
+                There are no active offers.
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
