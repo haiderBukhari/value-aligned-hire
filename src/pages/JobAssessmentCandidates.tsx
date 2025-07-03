@@ -248,7 +248,11 @@ const JobAssessmentCandidates = () => {
                               Review Assignment
                             </Button>
                           ) : !candidate.assignment_sent ? (
-                            <Button size="sm" className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white">
+                            <Button 
+                              size="sm" 
+                              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
+                              onClick={() => navigate(`/dashboard/jobs/${jobId}/create-assignment`)}
+                            >
                               Create Assignment
                             </Button>
                           ) : (
@@ -270,4 +274,4 @@ const JobAssessmentCandidates = () => {
   );
 };
 
-export default JobAssessmentCandidates; 
+export default JobAssessmentCandidates;

@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -27,6 +28,7 @@ import CandidateDetails from "./pages/CandidateDetails";
 import InterviewDetails from "./pages/InterviewDetails";
 import JobAssessmentCenter from "./pages/JobAssessmentCenter";
 import JobAssessmentCandidates from "./pages/JobAssessmentCandidates";
+import CreateAssignment from "./pages/CreateAssignment";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +50,7 @@ const App = () => (
             <Route path="jobs/:jobId/interview/:resumeId" element={<InterviewDetails />} />
             <Route path="jobs/:jobId/assessments" element={<JobAssessmentCenter />} />
             <Route path="jobs/:jobId/assessments/candidates" element={<JobAssessmentCandidates />} />
+            <Route path="jobs/:jobId/create-assignment" element={<CreateAssignment />} />
             <Route path="create-job" element={<CreateJob />} />
             <Route path="talent-pool" element={<TalentPool />} />
             <Route path="talent-pool/:candidateId" element={<CandidateDetails />} />
