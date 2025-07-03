@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Clock, FileText, Download, User, Award, CheckCircle } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, FileText, Download, User, Award, CheckCircle, MessageSquare, TrendingUp, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 
 interface Question {
@@ -28,6 +28,9 @@ interface AssignmentTemplate {
 
 interface SubmissionData {
   assignment_submission: string;
+  assignment_feedback: string;
+  score: number;
+  total_weighted_score: number;
   full_assignment_submission: {
     answers: Record<string, string>;
     submission_time: string;
@@ -127,6 +130,20 @@ const AssignmentReview = () => {
       toast.error('Could not move to next stage.');
       setIsMoving(false);
     }
+  };
+
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return 'text-green-600';
+    if (score >= 60) return 'text-blue-600';
+    if (score >= 40) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  const getScoreBadgeColor = (score: number) => {
+    if (score >= 80) return 'bg-green-100 text-green-800 border-green-200';
+    if (score >= 60) return 'bg-blue-100 text-blue-800 border-blue-200';
+    if (score >= 40) return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    return 'bg-red-100 text-red-800 border-red-200';
   };
 
   if (loading) {
@@ -250,12 +267,82 @@ const AssignmentReview = () => {
           </Card>
         </motion.div>
 
+        {/* Assessment Scores */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <Card className="mb-8 border-0 shadow-xl bg-white/95 backdrop-blur-sm">
+            <CardHeader className="bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-t-lg">
+              <CardTitle className="text-2xl flex items-center gap-3">
+                <BarChart3 className="h-6 w-6" />
+                Assessment Scores
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex items-center justify-between p-6 bg-orange-50 rounded-lg border border-orange-200">
+                  <div className="flex items-center gap-3">
+                    <TrendingUp className="h-8 w-8 text-orange-600" />
+                    <div>
+                      <p className="font-semibold text-gray-900">Assignment Score</p>
+                      <p className="text-sm text-gray-600">Direct assessment performance</p>
+                    </div>
+                  </div>
+                  <Badge className={`${getScoreBadgeColor(submission.score)} px-4 py-2 text-lg font-bold`}>
+                    {submission.score}%
+                  </Badge>
+                </div>
+
+                <div className="flex items-center justify-between p-6 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center gap-3">
+                    <Award className="h-8 w-8 text-blue-600" />
+                    <div>
+                      <p className="font-semibold text-gray-900">Total Weighted Score</p>
+                      <p className="text-sm text-gray-600">Combined evaluation score</p>
+                    </div>
+                  </div>
+                  <Badge className={`${getScoreBadgeColor(submission.total_weighted_score)} px-4 py-2 text-lg font-bold`}>
+                    {submission.total_weighted_score}%
+                  </Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* AI Feedback */}
+        {submission.assignment_feedback && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card className="mb-8 border-0 shadow-xl bg-white/95 backdrop-blur-sm">
+              <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-t-lg">
+                <CardTitle className="text-2xl flex items-center gap-3">
+                  <MessageSquare className="h-6 w-6" />
+                  AI Feedback
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="bg-purple-50 p-6 rounded-lg border border-purple-200">
+                  <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">
+                    {submission.assignment_feedback}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
         {/* Assignment Template */}
         {assignmentTemplate && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.3 }}
           >
             <Card className="mb-8 border-0 shadow-xl bg-white/95 backdrop-blur-sm">
               <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-t-lg">
@@ -324,7 +411,7 @@ const AssignmentReview = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.4 }}
           >
             <Card className="mb-8 border-0 shadow-xl bg-white/95 backdrop-blur-sm">
               <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-t-lg">
@@ -370,7 +457,7 @@ const AssignmentReview = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.5 }}
           >
             <Card className="mb-8 border-0 shadow-xl bg-white/95 backdrop-blur-sm">
               <CardHeader className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-t-lg">
