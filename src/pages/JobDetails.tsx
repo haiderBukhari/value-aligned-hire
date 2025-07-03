@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -204,7 +205,6 @@ const JobDetails = () => {
           </Button>
         </div>
 
-
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           {[
@@ -324,8 +324,12 @@ const JobDetails = () => {
                               alt={`${resume.applicant_name}'s profile`}
                               className="w-full h-full object-cover"
                               onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                                e.currentTarget.nextElementSibling.style.display = 'flex';
+                                const target = e.currentTarget;
+                                const fallback = target.nextElementSibling as HTMLElement;
+                                target.style.display = 'none';
+                                if (fallback) {
+                                  fallback.style.display = 'flex';
+                                }
                               }}
                             />
                             <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-lg" style={{ display: 'none' }}>

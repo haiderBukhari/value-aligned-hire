@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -265,8 +266,12 @@ const ResumeDetails = () => {
                     alt={`${resume.applicant_name}'s profile`}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      e.currentTarget.nextElementSibling.style.display = 'flex';
+                      const target = e.currentTarget;
+                      const fallback = target.nextElementSibling as HTMLElement;
+                      target.style.display = 'none';
+                      if (fallback) {
+                        fallback.style.display = 'flex';
+                      }
                     }}
                   />
                 ) : null}
