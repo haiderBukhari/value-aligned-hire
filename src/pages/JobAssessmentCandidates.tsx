@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -140,7 +141,7 @@ const JobAssessmentCandidates = () => {
           </Card>
         </div>
         
-        {/* Header - Improved UI */}
+        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
             <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
@@ -182,13 +183,13 @@ const JobAssessmentCandidates = () => {
               <table className="w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Candidate</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Title</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Score</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Time Spent</th>
-                    <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/6">Candidate</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/6">Email</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/6">Title</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/6">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/12">Score</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/12">Time Spent</th>
+                    <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/4">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
@@ -207,21 +208,27 @@ const JobAssessmentCandidates = () => {
                         transition={{ delay: index * 0.1 }}
                         className="hover:bg-gray-50 transition-colors"
                       >
-                        <td className="px-6 py-4 font-medium text-gray-900">
+                        <td className="px-6 py-4 font-medium text-gray-900 w-1/6">
                           <div className="flex items-center space-x-3">
-                            <span>{candidate.candidate_name}</span>
+                            <span className="truncate">{candidate.candidate_name}</span>
                           </div>
                         </td>
-                        <td className="px-3 py-4 text-gray-500">{candidate.email}</td>
-                        <td className="px-3 py-4 text-gray-500">{candidate.job_title}</td>
-                        <td className="px-6 py-4">
+                        <td className="px-3 py-4 text-gray-500 w-1/6">
+                          <span className="truncate block max-w-[120px]" title={candidate.email}>
+                            {candidate.email}
+                          </span>
+                        </td>
+                        <td className="px-3 py-4 text-gray-500 w-1/6">
+                          <span className="truncate block">{candidate.job_title}</span>
+                        </td>
+                        <td className="px-6 py-4 w-1/6">
                           <Badge className={`${getStatusColor(
                             candidate.assignment_submission
                               ? 'assignment received'
                               : !candidate.assignment_sent
                                 ? 'assignment pending to be sent'
                                 : 'assignment pending by the candidate')
-                          } font-medium`}>
+                          } font-medium text-xs`}>
                             {candidate.assignment_submission
                               ? 'Assignment Received'
                               : !candidate.assignment_sent
@@ -229,7 +236,7 @@ const JobAssessmentCandidates = () => {
                                 : 'Assignment Pending by the Candidate'}
                           </Badge>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 w-1/12">
                           {candidate.score !== undefined && candidate.score !== null ? (
                             <div className="flex items-center space-x-2">
                               <Award className="h-4 w-4 text-yellow-500" />
@@ -239,7 +246,7 @@ const JobAssessmentCandidates = () => {
                             <span className="text-gray-400 italic">Pending</span>
                           )}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 w-1/12">
                           {candidate.time_spent ? (
                             <div className="flex items-center text-gray-600">
                               <Clock className="mr-1 h-4 w-4" />
@@ -249,7 +256,7 @@ const JobAssessmentCandidates = () => {
                             <span className="text-gray-400 italic">N/A</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-center">
+                        <td className="px-6 py-4 text-center w-1/4">
                           <div className="flex items-center justify-center gap-2">
                             {candidate.assignment_submission ? (
                               <Button size="sm" className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white">
@@ -265,10 +272,7 @@ const JobAssessmentCandidates = () => {
                                 Create Assignment
                               </Button>
                             ) : (
-                              <>
-                                <Button size="sm" variant="outline" disabled className="opacity-50 cursor-not-allowed">
-                                  Pending Assignment
-                                </Button>
+                              <div className="flex items-center gap-2">
                                 <Button 
                                   size="sm" 
                                   variant="outline"
@@ -278,7 +282,7 @@ const JobAssessmentCandidates = () => {
                                   <Edit className="h-4 w-4 mr-1" />
                                   Edit Assignment
                                 </Button>
-                              </>
+                              </div>
                             )}
                           </div>
                         </td>
