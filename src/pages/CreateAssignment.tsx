@@ -329,7 +329,7 @@ const CreateAssignment = () => {
     
     try {
       // Call generate API
-      const generateResponse = await fetch('https://talo-recruitment.vercel.app/assignment/generate', {
+      const generateResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/assignment/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -559,7 +559,7 @@ const CreateAssignment = () => {
         <div className="mb-8">
           <Button 
             variant="ghost" 
-            onClick={() => setSelectedType(null)}
+            onClick={() => {setSelectedType(null); navigate(-1)} }
             className="mb-4 hover:bg-white/50"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
