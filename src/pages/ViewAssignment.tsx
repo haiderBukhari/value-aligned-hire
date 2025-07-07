@@ -243,7 +243,7 @@ const ViewAssignment = () => {
           className="text-center mb-8"
         >
           <h1 className="text-5xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
-            Assignment Portal
+            Evaluation Portal
           </h1>
           <p className="text-gray-600 text-lg">Complete your assignment with excellence</p>
         </motion.div>

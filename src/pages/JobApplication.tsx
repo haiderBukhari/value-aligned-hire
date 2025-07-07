@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -64,7 +63,8 @@ const JobApplication = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit application');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to submit application');
       }
 
       return response.json();
@@ -85,7 +85,7 @@ const JobApplication = () => {
     },
     onError: (error) => {
       console.error('Application submission error:', error);
-      toast.error('Failed to submit application');
+      toast.error(error.message);
     },
   });
 
@@ -287,9 +287,29 @@ const JobApplication = () => {
                           </Label>
                           <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors bg-gray-50">
                             <Camera className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                            <p className="text-sm text-gray-600 mb-2">
-                              {pictureFile ? pictureFile.name : 'Upload your profile picture'}
-                            </p>
+                            <div className="flex flex-col items-center gap-2 mb-2">
+                              <p className="text-sm text-gray-600">
+                                {pictureFile ? pictureFile.name : 'Upload your profile picture'}
+                              </p>
+                              {formData.picture && (
+                                <div className="flex flex-col items-center gap-1">
+                                  <img
+                                    src={formData.picture}
+                                    alt="Profile Preview"
+                                    className="w-16 h-16 rounded-full object-cover border border-gray-200 shadow mb-1"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="link"
+                                    size="sm"
+                                    className="text-blue-600 px-0 h-auto"
+                                    onClick={() => window.open(formData.picture, '_blank')}
+                                  >
+                                    View
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
                             <Input
                               ref={pictureInputRef}
                               type="file"
@@ -321,9 +341,22 @@ const JobApplication = () => {
                           </Label>
                           <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors bg-gray-50">
                             <FileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                            <p className="text-sm text-gray-600 mb-2">
-                              {cvFile ? cvFile.name : 'Upload your CV/Resume'}
-                            </p>
+                            <div className="flex flex-col items-center gap-2 mb-2">
+                              <p className="text-sm text-gray-600">
+                                {cvFile ? cvFile.name : 'Upload your CV/Resume'}
+                              </p>
+                              {formData.cv_link && (
+                                <Button
+                                  type="button"
+                                  variant="link"
+                                  size="sm"
+                                  className="text-blue-600 px-0 h-auto"
+                                  onClick={() => window.open(formData.cv_link, '_blank')}
+                                >
+                                  View
+                                </Button>
+                              )}
+                            </div>
                             <Input
                               ref={cvInputRef}
                               type="file"
@@ -355,9 +388,22 @@ const JobApplication = () => {
                           </Label>
                           <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors bg-gray-50">
                             <FileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                            <p className="text-sm text-gray-600 mb-2">
-                              {coverLetterFile ? coverLetterFile.name : 'Upload your cover letter'}
-                            </p>
+                            <div className="flex flex-col items-center gap-2 mb-2">
+                              <p className="text-sm text-gray-600">
+                                {coverLetterFile ? coverLetterFile.name : 'Upload your cover letter'}
+                              </p>
+                              {formData.coverletter_link && (
+                                <Button
+                                  type="button"
+                                  variant="link"
+                                  size="sm"
+                                  className="text-blue-600 px-0 h-auto"
+                                  onClick={() => window.open(formData.coverletter_link, '_blank')}
+                                >
+                                  View
+                                </Button>
+                              )}
+                            </div>
                             <Input
                               ref={coverLetterInputRef}
                               type="file"
