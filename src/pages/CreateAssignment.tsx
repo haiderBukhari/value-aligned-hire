@@ -30,17 +30,20 @@ interface AssessmentConfig {
   useAI: boolean;
   aiPrompt: string;
   creationMode: 'manual' | 'ai-assisted';
+  difficultyLevel: string;
   
   // Type-specific settings
   typeSpecific: Record<string, any>;
   
   // Manual questions for quiz
   questions: Question[];
+  numberOfQuestions: number;
 }
 
 const CreateAssignment = () => {
   const navigate = useNavigate();
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [config, setConfig] = useState<AssessmentConfig>({
     title: '',
     description: '',
@@ -50,8 +53,10 @@ const CreateAssignment = () => {
     useAI: false,
     aiPrompt: '',
     creationMode: 'manual',
+    difficultyLevel: '',
     typeSpecific: {},
-    questions: []
+    questions: [],
+    numberOfQuestions: 0
   });
 
   const assessmentTypes = [
@@ -178,6 +183,12 @@ const CreateAssignment = () => {
   };
 
   const isFormValid = () => {
+    // For AI-assisted mode, no validation required
+    if (config.creationMode === 'ai-assisted') {
+      return true;
+    }
+    
+    // For manual mode, require basic fields
     const basicValid = config.title && config.description && config.timeLimit && config.passingScore;
     if (selectedType === 'quiz' && config.creationMode === 'manual') {
       return basicValid && config.questions.length > 0 && config.questions.every(q => 
@@ -188,40 +199,107 @@ const CreateAssignment = () => {
     return basicValid;
   };
 
-  const handleGenerate = () => {
-    const selectedAssessment = assessmentTypes.find(type => type.id === selectedType);
-    const generationData = {
-      assessmentType: selectedType,
-      assessmentTitle: selectedAssessment?.title,
-      creationMode: config.creationMode,
-      basicConfig: {
-        title: config.title,
-        description: config.description,
-        timeLimit: config.timeLimit,
-        passingScore: config.passingScore,
-        instructions: config.instructions
-      },
-      aiAssistant: {
-        enabled: config.useAI,
-        prompt: config.aiPrompt
-      },
-      typeSpecificConfig: config.typeSpecific,
-      questions: config.questions,
-      totalQuestions: config.questions.length,
-      timestamp: new Date().toISOString()
-    };
-
-    console.log('=== ASSESSMENT GENERATION DATA ===');
-    console.log(JSON.stringify(generationData, null, 2));
-    console.log('=== END ASSESSMENT DATA ===');
-    
+  const handleGenerate = async () => {
     if (config.creationMode === 'ai-assisted') {
-      console.log('🤖 AI is generating the assessment...');
-      setTimeout(() => {
-        console.log('✅ Assessment generated successfully with AI assistance!');
-      }, 2000);
+      setIsGenerating(true);
+      
+      try {
+        // Call generate API
+        const generateResponse = await fetch('https://talo-recruitment.vercel.app/assignment/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            resume_id: "95f2f83a-8a8f-4fb8-b2bb-66226ea592ef", // This should be dynamic based on user context
+            difficulty_level: config.difficultyLevel || "mixed",
+            instructions: config.aiPrompt || "Generate assessment questions"
+          })
+        });
+
+        if (!generateResponse.ok) {
+          throw new Error('Failed to generate assessment');
+        }
+
+        const generateData = await generateResponse.json();
+        console.log('=== AI GENERATED ASSESSMENT ===');
+        console.log(JSON.stringify(generateData, null, 2));
+        console.log('=== END AI GENERATED ASSESSMENT ===');
+
+        // Now create the assessment
+        const createResponse = await fetch('https://talo-recruitment.vercel.app/assessments/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            resume_id: "95f2f83a-8a8f-4fb8-b2bb-66226ea592ef",
+            details: generateData.assignment
+          })
+        });
+
+        if (!createResponse.ok) {
+          throw new Error('Failed to create assessment');
+        }
+
+        const createData = await createResponse.json();
+        console.log('=== ASSESSMENT CREATED ===');
+        console.log(JSON.stringify(createData, null, 2));
+        console.log('=== END ASSESSMENT CREATED ===');
+
+        console.log('✅ Assessment generated and created successfully with AI assistance!');
+        
+      } catch (error) {
+        console.error('Error generating/creating assessment:', error);
+      } finally {
+        setIsGenerating(false);
+      }
     } else {
-      console.log('✅ Assessment created manually!');
+      // Manual creation
+      const selectedAssessment = assessmentTypes.find(type => type.id === selectedType);
+      const assessmentData = {
+        assessmentType: selectedType,
+        assessmentTitle: selectedAssessment?.title,
+        creationMode: config.creationMode,
+        basicConfig: {
+          title: config.title,
+          description: config.description,
+          timeLimit: config.timeLimit,
+          passingScore: config.passingScore,
+          instructions: config.instructions
+        },
+        typeSpecificConfig: config.typeSpecific,
+        questions: config.questions,
+        totalQuestions: config.questions.length,
+        timestamp: new Date().toISOString()
+      };
+
+      try {
+        const createResponse = await fetch('https://talo-recruitment.vercel.app/assessments/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            resume_id: "95f2f83a-8a8f-4fb8-b2bb-66226ea592ef",
+            details: assessmentData
+          })
+        });
+
+        if (!createResponse.ok) {
+          throw new Error('Failed to create assessment');
+        }
+
+        const createData = await createResponse.json();
+        console.log('=== MANUAL ASSESSMENT CREATED ===');
+        console.log(JSON.stringify(createData, null, 2));
+        console.log('=== END MANUAL ASSESSMENT CREATED ===');
+
+        console.log('✅ Assessment created manually!');
+        
+      } catch (error) {
+        console.error('Error creating assessment:', error);
+      }
     }
   };
 
@@ -232,6 +310,20 @@ const CreateAssignment = () => {
       return;
     }
     setSelectedType(typeId);
+  };
+
+  const generateEmptyQuestions = (count: number) => {
+    const questions: Question[] = [];
+    for (let i = 0; i < count; i++) {
+      questions.push({
+        id: `${Date.now()}-${i}`,
+        question: '',
+        type: 'multiple-choice',
+        options: ['', '', '', ''],
+        correctAnswer: 0
+      });
+    }
+    setConfig(prev => ({ ...prev, questions }));
   };
 
   if (!selectedType) {
@@ -380,13 +472,21 @@ const CreateAssignment = () => {
               {config.creationMode === 'ai-assisted' && (
                 <div className="space-y-6">
                   <div className="space-y-4 pl-6 border-l-2 border-purple-200 bg-white/50 p-4 rounded-lg">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="useAI" 
-                        checked={config.useAI}
-                        onCheckedChange={(checked) => updateConfig('useAI', checked)}
-                      />
-                      <Label htmlFor="useAI" className="font-medium">Enable Advanced AI Features</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Difficulty Level</Label>
+                        <Select value={config.difficultyLevel} onValueChange={(value) => updateConfig('difficultyLevel', value)}>
+                          <SelectTrigger className="bg-white/80">
+                            <SelectValue placeholder="Select difficulty" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="easy">Easy</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="hard">Hard</SelectItem>
+                            <SelectItem value="mixed">Mixed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                     
                     <div className="space-y-2">
@@ -408,15 +508,15 @@ const CreateAssignment = () => {
                   <div className="text-center">
                     <Button 
                       onClick={handleGenerate}
-                      disabled={!isFormValid()}
+                      disabled={isGenerating}
                       size="lg"
                       className="px-8 py-3 text-lg font-semibold bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all duration-200"
                     >
                       <Zap className="h-5 w-5 mr-2" />
-                      Generate with AI
+                      {isGenerating ? 'Generating...' : 'Generate with AI'}
                     </Button>
                     <p className="text-sm text-gray-600 mt-3">
-                      {!isFormValid() ? 'Please fill in all required fields to continue' : 'AI will help generate your assessment'}
+                      {isGenerating ? 'AI is generating your assessment...' : 'AI will help generate your assessment'}
                     </p>
                   </div>
                 </div>
@@ -424,83 +524,85 @@ const CreateAssignment = () => {
             </CardContent>
           </Card>
 
-          {/* Basic Configuration */}
-          <Card className="border-2 border-blue-200 bg-white/80 backdrop-blur-sm shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <Brain className="h-6 w-6 text-blue-600" />
-                Basic Configuration
-              </CardTitle>
-              <CardDescription>
-                Set up the fundamental details for your assessment
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Basic Configuration - only show for manual mode */}
+          {config.creationMode === 'manual' && (
+            <Card className="border-2 border-blue-200 bg-white/80 backdrop-blur-sm shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <Brain className="h-6 w-6 text-blue-600" />
+                  Basic Configuration
+                </CardTitle>
+                <CardDescription>
+                  Set up the fundamental details for your assessment
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="title" className="text-sm font-medium">Assessment Title *</Label>
+                    <Input 
+                      id="title"
+                      placeholder="Enter assessment title"
+                      value={config.title}
+                      onChange={(e) => updateConfig('title', e.target.value)}
+                      className="bg-white/80"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="timeLimit" className="text-sm font-medium">Time Limit (minutes) *</Label>
+                    <Input 
+                      id="timeLimit"
+                      type="number"
+                      placeholder="60"
+                      value={config.timeLimit}
+                      onChange={(e) => updateConfig('timeLimit', e.target.value)}
+                      className="bg-white/80"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="title" className="text-sm font-medium">Assessment Title *</Label>
-                  <Input 
-                    id="title"
-                    placeholder="Enter assessment title"
-                    value={config.title}
-                    onChange={(e) => updateConfig('title', e.target.value)}
-                    className="bg-white/80"
+                  <Label htmlFor="description" className="text-sm font-medium">Description *</Label>
+                  <Textarea 
+                    id="description"
+                    placeholder="Describe what this assessment evaluates..."
+                    value={config.description}
+                    onChange={(e) => updateConfig('description', e.target.value)}
+                    className="min-h-[100px] bg-white/80"
                   />
                 </div>
-                
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="passingScore" className="text-sm font-medium">Passing Score (%) *</Label>
+                    <Input 
+                      id="passingScore"
+                      type="number"
+                      placeholder="70"
+                      value={config.passingScore}
+                      onChange={(e) => updateConfig('passingScore', e.target.value)}
+                      className="bg-white/80"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="timeLimit" className="text-sm font-medium">Time Limit (minutes) *</Label>
-                  <Input 
-                    id="timeLimit"
-                    type="number"
-                    placeholder="60"
-                    value={config.timeLimit}
-                    onChange={(e) => updateConfig('timeLimit', e.target.value)}
-                    className="bg-white/80"
+                  <Label htmlFor="instructions" className="text-sm font-medium">Instructions for Candidates</Label>
+                  <Textarea 
+                    id="instructions"
+                    placeholder="Provide clear instructions for candidates..."
+                    value={config.instructions}
+                    onChange={(e) => updateConfig('instructions', e.target.value)}
+                    className="min-h-[100px] bg-white/80"
                   />
                 </div>
-              </div>
+              </CardContent>
+            </Card>
+          )}
 
-              <div className="space-y-2">
-                <Label htmlFor="description" className="text-sm font-medium">Description *</Label>
-                <Textarea 
-                  id="description"
-                  placeholder="Describe what this assessment evaluates..."
-                  value={config.description}
-                  onChange={(e) => updateConfig('description', e.target.value)}
-                  className="min-h-[100px] bg-white/80"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="passingScore" className="text-sm font-medium">Passing Score (%) *</Label>
-                  <Input 
-                    id="passingScore"
-                    type="number"
-                    placeholder="70"
-                    value={config.passingScore}
-                    onChange={(e) => updateConfig('passingScore', e.target.value)}
-                    className="bg-white/80"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="instructions" className="text-sm font-medium">Instructions for Candidates</Label>
-                <Textarea 
-                  id="instructions"
-                  placeholder="Provide clear instructions for candidates..."
-                  value={config.instructions}
-                  onChange={(e) => updateConfig('instructions', e.target.value)}
-                  className="min-h-[100px] bg-white/80"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quiz-Specific Configuration */}
-          {selectedType === 'quiz' && (
+          {/* Quiz-Specific Configuration - only show for manual mode */}
+          {selectedType === 'quiz' && config.creationMode === 'manual' && (
             <Card className="border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-3">
@@ -526,10 +628,20 @@ const CreateAssignment = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">Total Questions: {config.questions.length}</Label>
-                    <div className="text-sm text-gray-600 bg-white/50 p-2 rounded">
-                      {config.questions.length} question{config.questions.length !== 1 ? 's' : ''} created
-                    </div>
+                    <Label className="text-sm font-medium">Number of Questions</Label>
+                    <Input 
+                      type="number"
+                      placeholder="0"
+                      value={config.numberOfQuestions}
+                      onChange={(e) => {
+                        const count = parseInt(e.target.value) || 0;
+                        updateConfig('numberOfQuestions', count);
+                        if (count > 0 && count !== config.questions.length) {
+                          generateEmptyQuestions(count);
+                        }
+                      }}
+                      className="bg-white/80"
+                    />
                   </div>
                 </div>
 
@@ -554,14 +666,10 @@ const CreateAssignment = () => {
                 </div>
 
                 {/* Manual Question Creation */}
-                {config.creationMode === 'manual' && (
+                {config.numberOfQuestions > 0 && (
                   <div className="space-y-6">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold">Questions ({config.questions.length})</h3>
-                      <Button onClick={addQuestion} className="bg-green-600 hover:bg-green-700">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Question
-                      </Button>
+                      <h3 className="text-lg font-semibold">Questions ({config.questions.length}/{config.numberOfQuestions})</h3>
                     </div>
 
                     {config.questions.map((question, index) => (
@@ -676,7 +784,7 @@ const CreateAssignment = () => {
                     {config.questions.length === 0 && (
                       <div className="text-center py-8 bg-white/50 rounded-lg border-2 border-dashed border-green-300">
                         <Brain className="h-12 w-12 text-green-400 mx-auto mb-3" />
-                        <p className="text-gray-600">No questions added yet. Click "Add Question" to get started.</p>
+                        <p className="text-gray-600">Set the number of questions above to get started.</p>
                       </div>
                     )}
                   </div>
