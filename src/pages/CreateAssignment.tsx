@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Brain, Clock, Users, Code, Video, MessageSquare, FileText, Target, Zap, Wand2, Plus, Trash2, Edit } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 interface Question {
   id: string;
@@ -60,9 +60,14 @@ interface AssessmentConfig {
 
 const CreateAssignment = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const resumeId = searchParams.get('resume_id');
+  const isEditMode = searchParams.get('edit') === 'true';
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [generatedAssignment, setGeneratedAssignment] = useState<GeneratedAssignment | null>(null);
+  const [editableQuestions, setEditableQuestions] = useState<Question[]>([]);
   const [config, setConfig] = useState<AssessmentConfig>({
     title: '',
     description: '',
@@ -141,6 +146,98 @@ const CreateAssignment = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [selectedType]);
+
+  // Load existing assignment if in edit mode
+  useEffect(() => {
+    const loadExistingAssignment = async () => {
+      if (isEditMode && resumeId) {
+        setIsLoading(true);
+        try {
+          const response = await fetch(`https://talo-recruitment.vercel.app/assignments/${resumeId}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            if (data.assignment_template) {
+              const template = data.assignment_template;
+              
+              // Set the assessment type
+              setSelectedType('quiz');
+              
+              // Populate config with existing data
+              setConfig(prev => ({
+                ...prev,
+                title: template.title || '',
+                description: template.description || '',
+                timeLimit: template.time_limit?.toString() || '',
+                passingScore: template.passing_score?.toString() || '',
+                instructions: template.instructions || '',
+                creationMode: template.questions ? 'ai-assisted' : 'manual',
+                difficultyLevel: template.difficulty_level || '',
+                questions: template.questions ? [] : prev.questions,
+                numberOfQuestions: template.questions?.length || 0
+              }));
+
+              // If there's a generated assignment structure, set it
+              if (template.questions) {
+                setGeneratedAssignment(template);
+                
+                // Convert generated questions to editable format
+                const editableQs = template.questions.map((q: GeneratedQuestion, index: number) => ({
+                  id: `existing-${index}`,
+                  question: q.question,
+                  type: 'multiple-choice' as const,
+                  options: q.options,
+                  correctAnswer: q.options.findIndex((opt: string) => opt === q.correct_answer)
+                }));
+                setEditableQuestions(editableQs);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error loading existing assignment:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadExistingAssignment();
+  }, [isEditMode, resumeId]);
+
+  // Functions to handle editable questions for AI-generated content
+  const updateEditableQuestion = (id: string, field: string, value: any) => {
+    setEditableQuestions(prev => 
+      prev.map(q => q.id === id ? { ...q, [field]: value } : q)
+    );
+  };
+
+  const updateEditableQuestionOption = (questionId: string, optionIndex: number, value: string) => {
+    setEditableQuestions(prev => 
+      prev.map(q => 
+        q.id === questionId 
+          ? { ...q, options: q.options?.map((opt, idx) => idx === optionIndex ? value : opt) }
+          : q
+      )
+    );
+  };
+
+  const deleteEditableQuestion = (id: string) => {
+    setEditableQuestions(prev => prev.filter(q => q.id !== id));
+  };
+
+  const addEditableQuestion = () => {
+    const newQuestion: Question = {
+      id: Date.now().toString(),
+      question: '',
+      type: 'multiple-choice',
+      options: ['', '', '', ''],
+      correctAnswer: 0
+    };
+    setEditableQuestions(prev => [...prev, newQuestion]);
+  };
 
   const updateConfig = (field: string, value: any) => {
     setConfig(prev => ({
@@ -229,7 +326,7 @@ const CreateAssignment = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          resume_id: "95f2f83a-8a8f-4fb8-b2bb-66226ea592ef",
+          resume_id: resumeId || "95f2f83a-8a8f-4fb8-b2bb-66226ea592ef",
           difficulty_level: config.difficultyLevel || "mixed",
           instructions: config.aiPrompt || "Generate assessment questions"
         })
@@ -247,6 +344,16 @@ const CreateAssignment = () => {
       // Store the generated assignment
       setGeneratedAssignment(generateData.assignment);
       
+      // Convert generated questions to editable format
+      const editableQs = generateData.assignment.questions.map((q: GeneratedQuestion, index: number) => ({
+        id: `generated-${Date.now()}-${index}`,
+        question: q.question,
+        type: 'multiple-choice' as const,
+        options: q.options,
+        correctAnswer: q.options.findIndex((opt: string) => opt === q.correct_answer)
+      }));
+      setEditableQuestions(editableQs);
+      
       console.log('✅ Assessment generated successfully with AI assistance!');
       
     } catch (error) {
@@ -261,12 +368,20 @@ const CreateAssignment = () => {
       let assessmentData;
 
       if (config.creationMode === 'ai-assisted' && generatedAssignment) {
-        // Use generated assignment data
+        // Use edited questions from AI generation
+        const updatedQuestions = editableQuestions.map(q => ({
+          question: q.question,
+          options: q.options,
+          correct_answer: q.options ? q.options[q.correctAnswer as number] : '',
+          difficulty: 'mixed'
+        }));
+
         assessmentData = {
           assessmentType: selectedType,
           assessmentTitle: generatedAssignment.title,
           creationMode: config.creationMode,
-          ...generatedAssignment
+          ...generatedAssignment,
+          questions: updatedQuestions
         };
       } else {
         // Manual creation
@@ -289,30 +404,40 @@ const CreateAssignment = () => {
         };
       }
 
-      const createResponse = await fetch('https://talo-recruitment.vercel.app/assessments/create', {
-        method: 'POST',
+      const url = isEditMode 
+        ? `https://talo-recruitment.vercel.app/assignments/${resumeId}`
+        : 'https://talo-recruitment.vercel.app/assessments/create';
+      
+      const method = isEditMode ? 'PUT' : 'POST';
+
+      const createResponse = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({
-          resume_id: "95f2f83a-8a8f-4fb8-b2bb-66226ea592ef",
+        body: JSON.stringify(isEditMode ? assessmentData : {
+          resume_id: resumeId || "95f2f83a-8a8f-4fb8-b2bb-66226ea592ef",
           details: assessmentData
         })
       });
 
       if (!createResponse.ok) {
-        throw new Error('Failed to create assessment');
+        throw new Error(`Failed to ${isEditMode ? 'update' : 'create'} assessment`);
       }
 
       const createData = await createResponse.json();
-      console.log('=== ASSESSMENT CREATED ===');
+      console.log(`=== ASSESSMENT ${isEditMode ? 'UPDATED' : 'CREATED'} ===`);
       console.log(JSON.stringify(createData, null, 2));
-      console.log('=== END ASSESSMENT CREATED ===');
+      console.log(`=== END ASSESSMENT ${isEditMode ? 'UPDATED' : 'CREATED'} ===`);
 
-      console.log('✅ Assessment created successfully!');
+      console.log(`✅ Assessment ${isEditMode ? 'updated' : 'created'} successfully!`);
+      
+      // Navigate to assessments page
+      navigate('/dashboard/assessments');
       
     } catch (error) {
-      console.error('Error creating assessment:', error);
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} assessment:`, error);
     }
   };
 
@@ -352,8 +477,8 @@ const CreateAssignment = () => {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Dashboard
             </Button>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Create New Assessment</h1>
-            <p className="text-lg text-gray-600">Choose the type of assessment you want to create</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{isEditMode ? 'Edit Assessment' : 'Create New Assessment'}</h1>
+            <p className="text-lg text-gray-600">{isEditMode ? 'Modify your existing assessment' : 'Choose the type of assessment you want to create'}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -424,7 +549,7 @@ const CreateAssignment = () => {
               <Icon className="h-8 w-8 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{selectedAssessment?.title}</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{isEditMode ? 'Edit ' + selectedAssessment?.title : selectedAssessment?.title}</h1>
               <p className="text-lg text-gray-600">{selectedAssessment?.description}</p>
             </div>
           </div>
@@ -537,16 +662,16 @@ const CreateAssignment = () => {
             </CardContent>
           </Card>
 
-          {/* Generated Assessment Preview */}
+          {/* Generated Assessment Preview - Now Editable */}
           {config.creationMode === 'ai-assisted' && generatedAssignment && (
             <Card className="border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-3">
                   <Brain className="h-6 w-6 text-green-600" />
-                  Generated Assessment Preview
+                  Generated Assessment - Edit as Needed
                 </CardTitle>
                 <CardDescription>
-                  Review the AI-generated assessment details
+                  Review and edit the AI-generated assessment details
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -579,47 +704,58 @@ const CreateAssignment = () => {
 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold">Questions ({generatedAssignment.questions.length})</h3>
+                    <h3 className="text-lg font-semibold">Questions ({editableQuestions.length})</h3>
+                    <Button onClick={addEditableQuestion} size="sm" variant="outline">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Question
+                    </Button>
                   </div>
 
-                  {generatedAssignment.questions.map((question, index) => (
-                    <Card key={index} className="border border-green-200 bg-white/90">
+                  {editableQuestions.map((question, index) => (
+                    <Card key={question.id} className="border border-green-200 bg-white/90">
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                           <h4 className="font-medium">Question {index + 1}</h4>
-                          <Badge variant="outline" className="capitalize">
-                            {question.difficulty}
-                          </Badge>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={() => deleteEditableQuestion(question.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div className="space-y-2">
                           <Label className="text-sm font-medium">Question</Label>
-                          <div className="p-3 bg-white rounded-md border">{question.question}</div>
+                          <Textarea 
+                            placeholder="Enter your question here..."
+                            value={question.question}
+                            onChange={(e) => updateEditableQuestion(question.id, 'question', e.target.value)}
+                            className="bg-white"
+                          />
                         </div>
 
                         <div className="space-y-3">
                           <Label className="text-sm font-medium">Options</Label>
-                          {question.options.map((option, optionIndex) => (
+                          {question.options?.map((option, optionIndex) => (
                             <div key={optionIndex} className="flex items-center space-x-3">
-                              <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                                option === question.correct_answer 
-                                  ? 'bg-green-500 border-green-500' 
-                                  : 'border-gray-300'
-                              }`}>
-                                {option === question.correct_answer && (
-                                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                                )}
-                              </div>
-                              <div className={`flex-1 p-2 rounded-md border ${
-                                option === question.correct_answer 
-                                  ? 'bg-green-50 border-green-200' 
-                                  : 'bg-white border-gray-200'
-                              }`}>
-                                {option}
-                              </div>
+                              <input 
+                                type="radio" 
+                                name={`correct-${question.id}`}
+                                checked={question.correctAnswer === optionIndex}
+                                onChange={() => updateEditableQuestion(question.id, 'correctAnswer', optionIndex)}
+                                className="text-green-600"
+                              />
+                              <Input 
+                                placeholder={`Option ${optionIndex + 1}`}
+                                value={option}
+                                onChange={(e) => updateEditableQuestionOption(question.id, optionIndex, e.target.value)}
+                                className="bg-white"
+                              />
                             </div>
                           ))}
+                          <p className="text-xs text-gray-500">Select the radio button next to the correct answer</p>
                         </div>
                       </CardContent>
                     </Card>
@@ -902,15 +1038,15 @@ const CreateAssignment = () => {
           <Card className="border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50 shadow-lg">
             <CardContent className="pt-6">
               <div className="text-center">
-                <Button 
-                  onClick={handleCreateAssessment}
-                  disabled={!isFormValid()}
-                  size="lg"
-                  className="px-8 py-3 text-lg font-semibold bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all duration-200"
-                >
-                  <Zap className="h-5 w-5 mr-2" />
-                  Create Assessment
-                </Button>
+                 <Button 
+                   onClick={handleCreateAssessment}
+                   disabled={!isFormValid()}
+                   size="lg"
+                   className="px-8 py-3 text-lg font-semibold bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all duration-200"
+                 >
+                   <Zap className="h-5 w-5 mr-2" />
+                   {isEditMode ? 'Update Assignment' : 'Create Assessment'}
+                 </Button>
                 <p className="text-sm text-gray-600 mt-3">
                   {!isFormValid() 
                     ? config.creationMode === 'ai-assisted'
