@@ -4,13 +4,15 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Clock, FileText, Download, User, Award, CheckCircle, MessageSquare, TrendingUp, BarChart3 } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, FileText, Download, User, Award, CheckCircle, MessageSquare, TrendingUp, BarChart3, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 interface Question {
   question: string;
   type: string;
   options?: string[];
+  correct_answer: string;
+  difficulty: string;
 }
 
 interface AssignmentTemplate {
@@ -417,36 +419,128 @@ const AssignmentReview = () => {
               <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-t-lg">
                 <CardTitle className="text-2xl flex items-center gap-3">
                   <User className="h-6 w-6" />
-                  Questions & Answers
+                  Questions & Answers Analysis
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 space-y-4">
-                {assignmentTemplate.questions.map((question, index) => (
-                  <div key={index} className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                    <div className="mb-3">
-                      <h5 className="font-semibold text-indigo-900 mb-1">
-                        Question {index + 1}:
-                      </h5>
-                      <p className="text-gray-700">{question.question}</p>
-                      {question.type === 'multiple_choice' && question.options && (
-                        <div className="mt-2">
-                          <p className="text-sm text-gray-600">Options:</p>
-                          <ul className="list-disc list-inside text-sm text-gray-600 ml-2">
-                            {question.options.map((option, optIndex) => (
-                              <li key={optIndex}>{option}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                    <div className="bg-white p-3 rounded border">
-                      <p className="font-medium text-green-800 mb-1">Answer:</p>
-                      <p className="text-gray-700">
-                        {submissionData?.answers?.[index.toString()] || 'No answer provided'}
-                      </p>
-                    </div>
+              <CardContent className="p-6 space-y-6">
+                {/* Statistics Summary */}
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="text-2xl font-bold text-blue-600">{assignmentTemplate.questions.length}</div>
+                    <div className="text-sm text-gray-600">Total Questions</div>
                   </div>
-                ))}
+                  <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div className="text-2xl font-bold text-green-600">
+                      {assignmentTemplate.questions.filter((_, index) => 
+                        submissionData?.answers?.[index.toString()] === assignmentTemplate.questions[index].correct_answer
+                      ).length}
+                    </div>
+                    <div className="text-sm text-gray-600">Correct Answers</div>
+                  </div>
+                  <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
+                    <div className="text-2xl font-bold text-red-600">
+                      {assignmentTemplate.questions.filter((_, index) => 
+                        submissionData?.answers?.[index.toString()] && 
+                        submissionData?.answers?.[index.toString()] !== assignmentTemplate.questions[index].correct_answer
+                      ).length}
+                    </div>
+                    <div className="text-sm text-gray-600">Incorrect Answers</div>
+                  </div>
+                </div>
+
+                {/* Questions */}
+                {assignmentTemplate.questions.map((question, index) => {
+                  const userAnswer = submissionData?.answers?.[index.toString()];
+                  const isCorrect = userAnswer === question.correct_answer;
+                  const isAnswered = userAnswer && userAnswer !== 'UNATTEMPTED';
+                  
+                  return (
+                    <div key={index} className="p-6 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl border-2 border-gray-200">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-8 h-8 bg-indigo-500 text-white rounded-full flex items-center justify-center font-bold text-sm">
+                              {index + 1}
+                            </div>
+                            <h5 className="font-semibold text-indigo-900 text-lg">
+                              {question.question}
+                            </h5>
+                          </div>
+                          
+                          {/* Difficulty and Status */}
+                          <div className="flex items-center gap-3 mb-4">
+                            <Badge className="bg-purple-100 text-purple-800 border-purple-200">
+                              {question.difficulty}
+                            </Badge>
+                            {isAnswered ? (
+                              <Badge className={`${isCorrect 
+                                ? 'bg-green-100 text-green-800 border-green-200' 
+                                : 'bg-red-100 text-red-800 border-red-200'
+                              }`}>
+                                {isCorrect ? 'Correct' : 'Incorrect'}
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-gray-100 text-gray-800 border-gray-200">
+                                Unanswered
+                              </Badge>
+                            )}
+                          </div>
+
+                          {/* Options with user answer highlighting */}
+                          {question.options && (
+                            <div className="space-y-2 mb-4">
+                              <p className="text-sm font-medium text-gray-600">Available Options:</p>
+                              {question.options.map((option: string, optIndex: number) => (
+                                <div key={optIndex} className={`p-3 rounded-lg border-2 ${
+                                  option === question.correct_answer 
+                                    ? 'border-green-500 bg-green-50' 
+                                    : option === userAnswer && userAnswer !== question.correct_answer
+                                    ? 'border-red-500 bg-red-50'
+                                    : 'border-gray-200 bg-white'
+                                }`}>
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-gray-700">{option}</span>
+                                    <div className="flex items-center gap-2">
+                                      {option === question.correct_answer && (
+                                        <Badge className="bg-green-500 text-white text-xs">Correct Answer</Badge>
+                                      )}
+                                      {option === userAnswer && (
+                                        <Badge className="bg-blue-500 text-white text-xs">Selected</Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* User's Answer */}
+                      <div className="mt-4 p-4 bg-white rounded-lg border-2 border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-800 mb-1">Candidate's Answer:</p>
+                            <p className={`text-lg font-medium ${
+                              !isAnswered ? 'text-gray-500' : isCorrect ? 'text-green-700' : 'text-red-700'
+                            }`}>
+                              {userAnswer || 'No answer provided'}
+                            </p>
+                          </div>
+                          {isAnswered && (
+                            <div className={`p-2 rounded-full ${isCorrect ? 'bg-green-100' : 'bg-red-100'}`}>
+                              {isCorrect ? (
+                                <CheckCircle className="h-6 w-6 text-green-600" />
+                              ) : (
+                                <AlertCircle className="h-6 w-6 text-red-600" />
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </CardContent>
             </Card>
           </motion.div>

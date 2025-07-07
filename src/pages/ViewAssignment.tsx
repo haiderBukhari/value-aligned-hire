@@ -29,6 +29,8 @@ const ViewAssignment = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [questionStartTime, setQuestionStartTime] = useState(Date.now());
 
   useEffect(() => {
     const fetchAssignment = async () => {
@@ -173,9 +175,69 @@ const ViewAssignment = () => {
     return new Date(deadline) < new Date();
   };
 
-  const isDeadlinePassed = () => {
-    if (!assignment?.assignment_template?.[0]?.deadline) return false;
-    return isOverdue(assignment.assignment_template[0].deadline);
+  const assignmentDetails = assignment?.assignment_template?.[0];
+  const deadlinePassed = assignmentDetails?.deadline ? isOverdue(assignmentDetails.deadline) : false;
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Initialize timer when assignment loads
+  useEffect(() => {
+    if (assignmentDetails?.time_limit && assignmentDetails?.questions?.length > 0) {
+      const timePerQuestion = Math.floor((assignmentDetails.time_limit * 60) / assignmentDetails.questions.length);
+      setTimeLeft(timePerQuestion);
+      setQuestionStartTime(Date.now());
+    }
+  }, [assignment, assignmentDetails]);
+
+  // Timer countdown
+  useEffect(() => {
+    if (timeLeft > 0 && !assignment?.submitted && !deadlinePassed && assignmentDetails?.questions) {
+      const timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            // Time's up - auto advance to next question
+            if (currentQuestion < assignmentDetails.questions.length - 1) {
+              // Mark current question as unattempted if no answer given
+              if (!answers[currentQuestion]) {
+                setAnswers(prev => ({
+                  ...prev,
+                  [currentQuestion]: 'UNATTEMPTED'
+                }));
+              }
+              
+              // Move to next question
+              const nextQuestion = currentQuestion + 1;
+              setCurrentQuestion(nextQuestion);
+              
+              // Reset timer for next question
+              const timePerQuestion = Math.floor((assignmentDetails.time_limit * 60) / assignmentDetails.questions.length);
+              return timePerQuestion;
+            } else {
+              // Last question - auto submit if all questions attempted or marked unattempted
+              handleSubmission();
+              return 0;
+            }
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [timeLeft, currentQuestion, assignment, deadlinePassed, assignmentDetails, answers]);
+
+  // Reset timer when manually changing questions
+  const handleQuestionChange = (newQuestion: number) => {
+    if (assignmentDetails?.time_limit && assignmentDetails.questions.length > 0) {
+      const timePerQuestion = Math.floor((assignmentDetails.time_limit * 60) / assignmentDetails.questions.length);
+      setTimeLeft(timePerQuestion);
+    }
+    setCurrentQuestion(newQuestion);
+    setQuestionStartTime(Date.now());
   };
 
   if (loading) {
@@ -230,9 +292,6 @@ const ViewAssignment = () => {
       </div>
     );
   }
-
-  const assignmentDetails = assignment.assignment_template[0];
-  const deadlinePassed = isDeadlinePassed();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4">
@@ -461,12 +520,24 @@ const ViewAssignment = () => {
           >
             <Card className="mb-8 border-0 shadow-xl bg-white/80 backdrop-blur-sm">
               <CardHeader className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-t-lg">
-                <CardTitle className="text-2xl flex items-center justify-between">
-                  <span>Assessment Quiz</span>
-                  <Badge className="bg-white/20 text-white px-4 py-2 text-lg">
-                    Question {currentQuestion + 1} of {assignmentDetails.questions.length}
-                  </Badge>
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-2xl flex items-center gap-3">
+                    <Clock className="h-6 w-6" />
+                    Assessment Quiz
+                  </CardTitle>
+                  <div className="flex items-center gap-4">
+                    {timeLeft > 0 && !assignment.submitted && !deadlinePassed && (
+                      <Badge className={`px-4 py-2 text-lg font-bold ${
+                        timeLeft <= 30 ? 'bg-red-500' : timeLeft <= 60 ? 'bg-yellow-500' : 'bg-green-500'
+                      } text-white`}>
+                        {formatTime(timeLeft)}
+                      </Badge>
+                    )}
+                    <Badge className="bg-white/20 text-white px-4 py-2 text-lg">
+                      Question {currentQuestion + 1} of {assignmentDetails.questions.length}
+                    </Badge>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="p-8">
                 {assignment.submitted ? (
@@ -548,7 +619,7 @@ const ViewAssignment = () => {
                     {/* Navigation */}
                     <div className="flex justify-between items-center pt-6">
                       <Button
-                        onClick={() => setCurrentQuestion(Math.max(0, currentQuestion - 1))}
+                        onClick={() => handleQuestionChange(Math.max(0, currentQuestion - 1))}
                         disabled={currentQuestion === 0}
                         variant="outline"
                         className="px-6 py-3 text-lg"
@@ -563,7 +634,7 @@ const ViewAssignment = () => {
 
                       {currentQuestion < assignmentDetails.questions.length - 1 ? (
                         <Button
-                          onClick={() => setCurrentQuestion(Math.min(assignmentDetails.questions.length - 1, currentQuestion + 1))}
+                          onClick={() => handleQuestionChange(Math.min(assignmentDetails.questions.length - 1, currentQuestion + 1))}
                           className="px-6 py-3 text-lg bg-gradient-to-r from-emerald-500 to-teal-500"
                         >
                           Next
