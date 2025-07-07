@@ -7,8 +7,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Brain, Clock, Users, Code, Video, MessageSquare, FileText, Target, Zap, Wand2 } from 'lucide-react';
+import { ArrowLeft, Brain, Clock, Users, Code, Video, MessageSquare, FileText, Target, Zap, Wand2, Plus, Trash2, Edit } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
+interface Question {
+  id: string;
+  question: string;
+  type: 'multiple-choice' | 'true-false' | 'short-answer';
+  options?: string[];
+  correctAnswer: string | number;
+}
 
 interface AssessmentConfig {
   // Basic settings
@@ -25,6 +33,9 @@ interface AssessmentConfig {
   
   // Type-specific settings
   typeSpecific: Record<string, any>;
+  
+  // Manual questions for quiz
+  questions: Question[];
 }
 
 const CreateAssignment = () => {
@@ -39,7 +50,8 @@ const CreateAssignment = () => {
     useAI: false,
     aiPrompt: '',
     creationMode: 'manual',
-    typeSpecific: {}
+    typeSpecific: {},
+    questions: []
   });
 
   const assessmentTypes = [
@@ -59,7 +71,7 @@ const CreateAssignment = () => {
       icon: Video,
       features: ['Video recording', 'AI analysis', 'Behavioral insights'],
       color: 'bg-purple-500',
-      status: 'Available'
+      status: 'Upcoming'
     },
     {
       id: 'interview',
@@ -68,7 +80,7 @@ const CreateAssignment = () => {
       icon: MessageSquare,
       features: ['Real-time conversation', 'Dynamic questions', 'Performance metrics'],
       color: 'bg-green-500',
-      status: 'Available'
+      status: 'Upcoming'
     },
     {
       id: 'takehome',
@@ -77,7 +89,7 @@ const CreateAssignment = () => {
       icon: FileText,
       features: ['File uploads', 'Project review', 'Code analysis'],
       color: 'bg-orange-500',
-      status: 'Available'
+      status: 'Upcoming'
     },
     {
       id: 'situational',
@@ -86,7 +98,7 @@ const CreateAssignment = () => {
       icon: Target,
       features: ['Real scenarios', 'Decision analysis', 'Leadership assessment'],
       color: 'bg-red-500',
-      status: 'Available'
+      status: 'Upcoming'
     },
     {
       id: 'coding',
@@ -95,7 +107,7 @@ const CreateAssignment = () => {
       icon: Code,
       features: ['Live coding', 'Multiple languages', 'Performance tracking'],
       color: 'bg-indigo-500',
-      status: 'Available'
+      status: 'Upcoming'
     }
   ];
 
@@ -123,8 +135,57 @@ const CreateAssignment = () => {
     }));
   };
 
+  // Question management functions
+  const addQuestion = () => {
+    const newQuestion: Question = {
+      id: Date.now().toString(),
+      question: '',
+      type: 'multiple-choice',
+      options: ['', '', '', ''],
+      correctAnswer: 0
+    };
+    setConfig(prev => ({
+      ...prev,
+      questions: [...prev.questions, newQuestion]
+    }));
+  };
+
+  const updateQuestion = (id: string, field: string, value: any) => {
+    setConfig(prev => ({
+      ...prev,
+      questions: prev.questions.map(q => 
+        q.id === id ? { ...q, [field]: value } : q
+      )
+    }));
+  };
+
+  const updateQuestionOption = (questionId: string, optionIndex: number, value: string) => {
+    setConfig(prev => ({
+      ...prev,
+      questions: prev.questions.map(q => 
+        q.id === questionId 
+          ? { ...q, options: q.options?.map((opt, idx) => idx === optionIndex ? value : opt) }
+          : q
+      )
+    }));
+  };
+
+  const deleteQuestion = (id: string) => {
+    setConfig(prev => ({
+      ...prev,
+      questions: prev.questions.filter(q => q.id !== id)
+    }));
+  };
+
   const isFormValid = () => {
-    return config.title && config.description && config.timeLimit && config.passingScore;
+    const basicValid = config.title && config.description && config.timeLimit && config.passingScore;
+    if (selectedType === 'quiz' && config.creationMode === 'manual') {
+      return basicValid && config.questions.length > 0 && config.questions.every(q => 
+        q.question.trim() && 
+        (q.type !== 'multiple-choice' || (q.options && q.options.every(opt => opt.trim())))
+      );
+    }
+    return basicValid;
   };
 
   const handleGenerate = () => {
@@ -145,6 +206,8 @@ const CreateAssignment = () => {
         prompt: config.aiPrompt
       },
       typeSpecificConfig: config.typeSpecific,
+      questions: config.questions,
+      totalQuestions: config.questions.length,
       timestamp: new Date().toISOString()
     };
 
@@ -160,6 +223,15 @@ const CreateAssignment = () => {
     } else {
       console.log('✅ Assessment created manually!');
     }
+  };
+
+  const handleAssessmentTypeClick = (typeId: string) => {
+    const selectedAssessment = assessmentTypes.find(type => type.id === typeId);
+    if (selectedAssessment?.status === 'Upcoming') {
+      console.log(`${selectedAssessment.title} is coming soon!`);
+      return;
+    }
+    setSelectedType(typeId);
   };
 
   if (!selectedType) {
@@ -182,15 +254,20 @@ const CreateAssignment = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {assessmentTypes.map((type) => {
               const Icon = type.icon;
+              const isUpcoming = type.status === 'Upcoming';
               return (
                 <Card 
                   key={type.id} 
-                  className="cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105 border-2 hover:border-blue-300 bg-white/80 backdrop-blur-sm"
-                  onClick={() => setSelectedType(type.id)}
+                  className={`transition-all duration-300 border-2 bg-white/80 backdrop-blur-sm ${
+                    isUpcoming 
+                      ? 'opacity-75 cursor-not-allowed border-gray-200' 
+                      : 'cursor-pointer hover:shadow-xl hover:scale-105 hover:border-blue-300'
+                  }`}
+                  onClick={() => handleAssessmentTypeClick(type.id)}
                 >
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
-                      <div className={`w-12 h-12 rounded-lg ${type.color} flex items-center justify-center mb-4`}>
+                      <div className={`w-12 h-12 rounded-lg ${type.color} flex items-center justify-center mb-4 ${isUpcoming ? 'opacity-75' : ''}`}>
                         <Icon className="h-6 w-6 text-white" />
                       </div>
                       <Badge variant={type.status === 'Available' ? 'default' : 'secondary'}>
@@ -254,7 +331,7 @@ const CreateAssignment = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-3">
                 <Zap className="h-6 w-6 text-purple-600" />
-                Creation Mode & AI Assistant
+                Creation Mode & AI Assistant (Optional)
               </CardTitle>
               <CardDescription>
                 Choose how you want to create your assessment - manually or with AI assistance
@@ -301,27 +378,45 @@ const CreateAssignment = () => {
               </div>
 
               {config.creationMode === 'ai-assisted' && (
-                <div className="space-y-4 pl-6 border-l-2 border-purple-200 bg-white/50 p-4 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="useAI" 
-                      checked={config.useAI}
-                      onCheckedChange={(checked) => updateConfig('useAI', checked)}
-                    />
-                    <Label htmlFor="useAI" className="font-medium">Enable Advanced AI Features</Label>
+                <div className="space-y-6">
+                  <div className="space-y-4 pl-6 border-l-2 border-purple-200 bg-white/50 p-4 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="useAI" 
+                        checked={config.useAI}
+                        onCheckedChange={(checked) => updateConfig('useAI', checked)}
+                      />
+                      <Label htmlFor="useAI" className="font-medium">Enable Advanced AI Features</Label>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="aiPrompt" className="text-sm font-medium">AI Instructions & Context</Label>
+                      <Textarea 
+                        id="aiPrompt"
+                        placeholder="Provide specific instructions for the AI to help generate assessment content, target audience, difficulty level, specific topics to focus on, etc..."
+                        value={config.aiPrompt}
+                        onChange={(e) => updateConfig('aiPrompt', e.target.value)}
+                        className="min-h-[100px] bg-white/80"
+                      />
+                      <p className="text-xs text-gray-500">
+                        Example: "Create a mid-level software engineer assessment focusing on React, Node.js, and system design. Target 3-5 years experience."
+                      </p>
+                    </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="aiPrompt" className="text-sm font-medium">AI Instructions & Context</Label>
-                    <Textarea 
-                      id="aiPrompt"
-                      placeholder="Provide specific instructions for the AI to help generate assessment content, target audience, difficulty level, specific topics to focus on, etc..."
-                      value={config.aiPrompt}
-                      onChange={(e) => updateConfig('aiPrompt', e.target.value)}
-                      className="min-h-[100px] bg-white/80"
-                    />
-                    <p className="text-xs text-gray-500">
-                      Example: "Create a mid-level software engineer assessment focusing on React, Node.js, and system design. Target 3-5 years experience."
+
+                  {/* Create Assessment Button for AI-Assisted Mode */}
+                  <div className="text-center">
+                    <Button 
+                      onClick={handleGenerate}
+                      disabled={!isFormValid()}
+                      size="lg"
+                      className="px-8 py-3 text-lg font-semibold bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all duration-200"
+                    >
+                      <Zap className="h-5 w-5 mr-2" />
+                      Generate with AI
+                    </Button>
+                    <p className="text-sm text-gray-600 mt-3">
+                      {!isFormValid() ? 'Please fill in all required fields to continue' : 'AI will help generate your assessment'}
                     </p>
                   </div>
                 </div>
@@ -404,7 +499,7 @@ const CreateAssignment = () => {
             </CardContent>
           </Card>
 
-          {/* Type-Specific Configuration */}
+          {/* Quiz-Specific Configuration */}
           {selectedType === 'quiz' && (
             <Card className="border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 shadow-lg">
               <CardHeader>
@@ -415,17 +510,6 @@ const CreateAssignment = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Number of Questions</Label>
-                    <Input 
-                      type="number"
-                      placeholder="10"
-                      value={config.typeSpecific.questionCount || ''}
-                      onChange={(e) => updateTypeSpecific('questionCount', e.target.value)}
-                      className="bg-white/80"
-                    />
-                  </div>
-                  
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Difficulty Level</Label>
                     <Select value={config.typeSpecific.difficulty || ''} onValueChange={(value) => updateTypeSpecific('difficulty', value)}>
@@ -439,6 +523,13 @@ const CreateAssignment = () => {
                         <SelectItem value="mixed">Mixed</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Total Questions: {config.questions.length}</Label>
+                    <div className="text-sm text-gray-600 bg-white/50 p-2 rounded">
+                      {config.questions.length} question{config.questions.length !== 1 ? 's' : ''} created
+                    </div>
                   </div>
                 </div>
 
@@ -461,350 +552,165 @@ const CreateAssignment = () => {
                     <Label htmlFor="showProgress" className="font-medium">Show Progress Bar</Label>
                   </div>
                 </div>
+
+                {/* Manual Question Creation */}
+                {config.creationMode === 'manual' && (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Questions ({config.questions.length})</h3>
+                      <Button onClick={addQuestion} className="bg-green-600 hover:bg-green-700">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Question
+                      </Button>
+                    </div>
+
+                    {config.questions.map((question, index) => (
+                      <Card key={question.id} className="border border-green-200 bg-white/90">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium">Question {index + 1}</h4>
+                            <Button 
+                              variant="destructive" 
+                              size="sm"
+                              onClick={() => deleteQuestion(question.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">Question</Label>
+                            <Textarea 
+                              placeholder="Enter your question here..."
+                              value={question.question}
+                              onChange={(e) => updateQuestion(question.id, 'question', e.target.value)}
+                              className="bg-white"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">Question Type</Label>
+                            <Select 
+                              value={question.type} 
+                              onValueChange={(value) => updateQuestion(question.id, 'type', value)}
+                            >
+                              <SelectTrigger className="bg-white">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="multiple-choice">Multiple Choice</SelectItem>
+                                <SelectItem value="true-false">True/False</SelectItem>
+                                <SelectItem value="short-answer">Short Answer</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {question.type === 'multiple-choice' && (
+                            <div className="space-y-3">
+                              <Label className="text-sm font-medium">Options</Label>
+                              {question.options?.map((option, optionIndex) => (
+                                <div key={optionIndex} className="flex items-center space-x-3">
+                                  <input 
+                                    type="radio" 
+                                    name={`correct-${question.id}`}
+                                    checked={question.correctAnswer === optionIndex}
+                                    onChange={() => updateQuestion(question.id, 'correctAnswer', optionIndex)}
+                                    className="text-green-600"
+                                  />
+                                  <Input 
+                                    placeholder={`Option ${optionIndex + 1}`}
+                                    value={option}
+                                    onChange={(e) => updateQuestionOption(question.id, optionIndex, e.target.value)}
+                                    className="bg-white"
+                                  />
+                                </div>
+                              ))}
+                              <p className="text-xs text-gray-500">Select the radio button next to the correct answer</p>
+                            </div>
+                          )}
+
+                          {question.type === 'true-false' && (
+                            <div className="space-y-3">
+                              <Label className="text-sm font-medium">Correct Answer</Label>
+                              <div className="flex space-x-4">
+                                <label className="flex items-center space-x-2">
+                                  <input 
+                                    type="radio" 
+                                    name={`tf-${question.id}`}
+                                    checked={question.correctAnswer === 'true'}
+                                    onChange={() => updateQuestion(question.id, 'correctAnswer', 'true')}
+                                    className="text-green-600"
+                                  />
+                                  <span>True</span>
+                                </label>
+                                <label className="flex items-center space-x-2">
+                                  <input 
+                                    type="radio" 
+                                    name={`tf-${question.id}`}
+                                    checked={question.correctAnswer === 'false'}
+                                    onChange={() => updateQuestion(question.id, 'correctAnswer', 'false')}
+                                    className="text-green-600"
+                                  />
+                                  <span>False</span>
+                                </label>
+                              </div>
+                            </div>
+                          )}
+
+                          {question.type === 'short-answer' && (
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium">Sample Answer (for reference)</Label>
+                              <Textarea 
+                                placeholder="Enter a sample correct answer..."
+                                value={question.correctAnswer as string || ''}
+                                onChange={(e) => updateQuestion(question.id, 'correctAnswer', e.target.value)}
+                                className="bg-white"
+                              />
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+
+                    {config.questions.length === 0 && (
+                      <div className="text-center py-8 bg-white/50 rounded-lg border-2 border-dashed border-green-300">
+                        <Brain className="h-12 w-12 text-green-400 mx-auto mb-3" />
+                        <p className="text-gray-600">No questions added yet. Click "Add Question" to get started.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
 
-          {selectedType === 'video' && (
-            <Card className="border-2 border-purple-200 bg-gradient-to-r from-purple-50 to-violet-50 shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3">
-                  <Video className="h-6 w-6 text-purple-600" />
-                  Video Assessment Configuration
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Interview Questions</Label>
-                  <Textarea 
-                    placeholder="Enter questions for candidates to answer (one per line)"
-                    value={config.typeSpecific.questions || ''}
-                    onChange={(e) => updateTypeSpecific('questions', e.target.value)}
-                    className="min-h-[120px] bg-white/80"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Video Quality</Label>
-                    <Select value={config.typeSpecific.videoQuality || ''} onValueChange={(value) => updateTypeSpecific('videoQuality', value)}>
-                      <SelectTrigger className="bg-white/80">
-                        <SelectValue placeholder="Select quality" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="720p">720p HD</SelectItem>
-                        <SelectItem value="1080p">1080p Full HD</SelectItem>
-                        <SelectItem value="auto">Auto</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+          {/* Generate Assessment Button for Manual Creation */}
+          {config.creationMode === 'manual' && (
+            <Card className="border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50 shadow-lg">
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <Button 
+                    onClick={handleGenerate}
+                    disabled={!isFormValid()}
+                    size="lg"
+                    className="px-8 py-3 text-lg font-semibold bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all duration-200"
+                  >
+                    <Zap className="h-5 w-5 mr-2" />
+                    Create Assessment
+                  </Button>
+                  <p className="text-sm text-gray-600 mt-3">
+                    {!isFormValid() 
+                      ? selectedType === 'quiz' && config.creationMode === 'manual' 
+                        ? 'Please fill in all required fields and add at least one complete question' 
+                        : 'Please fill in all required fields to continue'
+                      : 'Ready to create your assessment manually'
+                    }
+                  </p>
                 </div>
               </CardContent>
             </Card>
           )}
-
-          {selectedType === 'interview' && (
-            <Card className="border-2 border-green-200 bg-gradient-to-r from-green-50 to-teal-50 shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3">
-                  <MessageSquare className="h-6 w-6 text-green-600" />
-                  Interview Simulation Configuration
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Interview Topics</Label>
-                  <Textarea 
-                    placeholder="Enter topics or areas to focus on during the simulation"
-                    value={config.typeSpecific.topics || ''}
-                    onChange={(e) => updateTypeSpecific('topics', e.target.value)}
-                    className="min-h-[100px] bg-white/80"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Interview Style</Label>
-                    <Select value={config.typeSpecific.interviewStyle || ''} onValueChange={(value) => updateTypeSpecific('interviewStyle', value)}>
-                      <SelectTrigger className="bg-white/80">
-                        <SelectValue placeholder="Select style" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="behavioral">Behavioral</SelectItem>
-                        <SelectItem value="technical">Technical</SelectItem>
-                        <SelectItem value="situational">Situational</SelectItem>
-                        <SelectItem value="mixed">Mixed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Difficulty Progression</Label>
-                    <Select value={config.typeSpecific.progression || ''} onValueChange={(value) => updateTypeSpecific('progression', value)}>
-                      <SelectTrigger className="bg-white/80">
-                        <SelectValue placeholder="Select progression" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="easy-to-hard">Easy to Hard</SelectItem>
-                        <SelectItem value="adaptive">Adaptive</SelectItem>
-                        <SelectItem value="consistent">Consistent</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {selectedType === 'takehome' && (
-            <Card className="border-2 border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3">
-                  <FileText className="h-6 w-6 text-orange-600" />
-                  Take-Home Test Configuration
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Project Description</Label>
-                  <Textarea 
-                    placeholder="Describe the project or task candidates need to complete"
-                    value={config.typeSpecific.projectDescription || ''}
-                    onChange={(e) => updateTypeSpecific('projectDescription', e.target.value)}
-                    className="min-h-[120px] bg-white/80"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Submission Requirements</Label>
-                  <Textarea 
-                    placeholder="Specify what candidates should submit (files, formats, etc.)"
-                    value={config.typeSpecific.requirements || ''}
-                    onChange={(e) => updateTypeSpecific('requirements', e.target.value)}
-                    className="min-h-[100px] bg-white/80"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Maximum File Size (MB)</Label>
-                    <Input 
-                      type="number"
-                      placeholder="50"
-                      value={config.typeSpecific.maxFileSize || ''}
-                      onChange={(e) => updateTypeSpecific('maxFileSize', e.target.value)}
-                      className="bg-white/80"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Allowed File Types</Label>
-                    <Input 
-                      placeholder="pdf, doc, zip, etc."
-                      value={config.typeSpecific.allowedTypes || ''}
-                      onChange={(e) => updateTypeSpecific('allowedTypes', e.target.value)}
-                      className="bg-white/80"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="plagiarismCheck" 
-                      checked={config.typeSpecific.plagiarismCheck || false}
-                      onCheckedChange={(checked) => updateTypeSpecific('plagiarismCheck', checked)}
-                    />
-                    <Label htmlFor="plagiarismCheck" className="font-medium">Enable Plagiarism Check</Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="codeReview" 
-                      checked={config.typeSpecific.codeReview || false}
-                      onCheckedChange={(checked) => updateTypeSpecific('codeReview', checked)}
-                    />
-                    <Label htmlFor="codeReview" className="font-medium">Automated Code Review</Label>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {selectedType === 'situational' && (
-            <Card className="border-2 border-red-200 bg-gradient-to-r from-red-50 to-pink-50 shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3">
-                  <Target className="h-6 w-6 text-red-600" />
-                  Situational Judgment Configuration
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Scenarios</Label>
-                  <Textarea 
-                    placeholder="Describe workplace scenarios candidates will need to navigate"
-                    value={config.typeSpecific.scenarios || ''}
-                    onChange={(e) => updateTypeSpecific('scenarios', e.target.value)}
-                    className="min-h-[120px] bg-white/80"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Number of Scenarios</Label>
-                    <Input 
-                      type="number"
-                      placeholder="5"
-                      value={config.typeSpecific.scenarioCount || ''}
-                      onChange={(e) => updateTypeSpecific('scenarioCount', e.target.value)}
-                      className="bg-white/80"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Response Format</Label>
-                    <Select value={config.typeSpecific.responseFormat || ''} onValueChange={(value) => updateTypeSpecific('responseFormat', value)}>
-                      <SelectTrigger className="bg-white/80">
-                        <SelectValue placeholder="Select format" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="multiple-choice">Multiple Choice</SelectItem>
-                        <SelectItem value="ranking">Ranking</SelectItem>
-                        <SelectItem value="text-response">Text Response</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="timedScenarios" 
-                      checked={config.typeSpecific.timedScenarios || false}
-                      onCheckedChange={(checked) => updateTypeSpecific('timedScenarios', checked)}
-                    />
-                    <Label htmlFor="timedScenarios" className="font-medium">Timed Scenarios</Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="feedbackEnabled" 
-                      checked={config.typeSpecific.feedbackEnabled || false}
-                      onCheckedChange={(checked) => updateTypeSpecific('feedbackEnabled', checked)}
-                    />
-                    <Label htmlFor="feedbackEnabled" className="font-medium">Provide Immediate Feedback</Label>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {selectedType === 'coding' && (
-            <Card className="border-2 border-indigo-200 bg-gradient-to-r from-indigo-50 to-blue-50 shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3">
-                  <Code className="h-6 w-6 text-indigo-600" />
-                  Coding Challenge Configuration
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Problem Statement</Label>
-                  <Textarea 
-                    placeholder="Describe the coding problem candidates need to solve"
-                    value={config.typeSpecific.problemStatement || ''}
-                    onChange={(e) => updateTypeSpecific('problemStatement', e.target.value)}
-                    className="min-h-[120px] bg-white/80"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Programming Languages</Label>
-                    <Select value={config.typeSpecific.languages || ''} onValueChange={(value) => updateTypeSpecific('languages', value)}>
-                      <SelectTrigger className="bg-white/80">
-                        <SelectValue placeholder="Select languages" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="javascript">JavaScript</SelectItem>
-                        <SelectItem value="python">Python</SelectItem>
-                        <SelectItem value="java">Java</SelectItem>
-                        <SelectItem value="cpp">C++</SelectItem>
-                        <SelectItem value="multiple">Multiple Languages</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Difficulty Level</Label>
-                    <Select value={config.typeSpecific.codingDifficulty || ''} onValueChange={(value) => updateTypeSpecific('codingDifficulty', value)}>
-                      <SelectTrigger className="bg-white/80">
-                        <SelectValue placeholder="Select difficulty" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="beginner">Beginner</SelectItem>
-                        <SelectItem value="intermediate">Intermediate</SelectItem>
-                        <SelectItem value="advanced">Advanced</SelectItem>
-                        <SelectItem value="expert">Expert</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Test Cases</Label>
-                  <Textarea 
-                    placeholder="Define test cases for the coding problem"
-                    value={config.typeSpecific.testCases || ''}
-                    onChange={(e) => updateTypeSpecific('testCases', e.target.value)}
-                    className="min-h-[100px] bg-white/80"
-                  />
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="autoGrading" 
-                      checked={config.typeSpecific.autoGrading || false}
-                      onCheckedChange={(checked) => updateTypeSpecific('autoGrading', checked)}
-                    />
-                    <Label htmlFor="autoGrading" className="font-medium">Automatic Grading</Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="codePlayback" 
-                      checked={config.typeSpecific.codePlayback || false}
-                      onCheckedChange={(checked) => updateTypeSpecific('codePlayback', checked)}
-                    />
-                    <Label htmlFor="codePlayback" className="font-medium">Code Playback Recording</Label>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Generate Assessment Button */}
-          <Card className="border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50 shadow-lg">
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <Button 
-                  onClick={handleGenerate}
-                  disabled={!isFormValid()}
-                  size="lg"
-                  className="px-8 py-3 text-lg font-semibold bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all duration-200"
-                >
-                  <Zap className="h-5 w-5 mr-2" />
-                  {config.creationMode === 'ai-assisted' ? 'Generate with AI' : 'Create Assessment'}
-                </Button>
-                <p className="text-sm text-gray-600 mt-3">
-                  {!isFormValid() ? 'Please fill in all required fields to continue' : 
-                   config.creationMode === 'ai-assisted' ? 'AI will help generate your assessment' : 'Ready to create your assessment manually'}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>
