@@ -464,7 +464,20 @@ const CreateAssignment = () => {
     setConfig(prev => ({ ...prev, questions }));
   };
 
-  if (!selectedType) {
+  // Show loading screen while loading existing assignment in edit mode
+  if (isEditMode && isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading assignment data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // For edit mode, skip type selection if we have loaded data
+  if (!selectedType && !isEditMode) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
         <div className="max-w-7xl mx-auto">
@@ -477,8 +490,8 @@ const CreateAssignment = () => {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Dashboard
             </Button>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{isEditMode ? 'Edit Assessment' : 'Create New Assessment'}</h1>
-            <p className="text-lg text-gray-600">{isEditMode ? 'Modify your existing assessment' : 'Choose the type of assessment you want to create'}</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Assessment</h1>
+            <p className="text-lg text-gray-600">Choose the type of assessment you want to create</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -556,18 +569,19 @@ const CreateAssignment = () => {
         </div>
 
         <div className="space-y-8">
-          {/* AI Assistant Configuration */}
-          <Card className="border-2 border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <Zap className="h-6 w-6 text-purple-600" />
-                Creation Mode & AI Assistant
-              </CardTitle>
-              <CardDescription>
-                Choose how you want to create your assessment - manually or with AI assistance
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+          {/* AI Assistant Configuration - Hide in edit mode */}
+          {!isEditMode && (
+            <Card className="border-2 border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50 shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <Zap className="h-6 w-6 text-purple-600" />
+                  Creation Mode & AI Assistant
+                </CardTitle>
+                <CardDescription>
+                  Choose how you want to create your assessment - manually or with AI assistance
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
               <div className="space-y-4">
                 <Label className="text-sm font-medium">Creation Mode</Label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -661,6 +675,7 @@ const CreateAssignment = () => {
               )}
             </CardContent>
           </Card>
+          )}
 
           {/* Generated Assessment Preview - Now Editable */}
           {config.creationMode === 'ai-assisted' && generatedAssignment && (
