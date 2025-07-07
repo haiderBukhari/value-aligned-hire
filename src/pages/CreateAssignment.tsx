@@ -18,6 +18,24 @@ interface Question {
   correctAnswer: string | number;
 }
 
+interface GeneratedQuestion {
+  question: string;
+  options: string[];
+  correct_answer: string;
+  difficulty: string;
+}
+
+interface GeneratedAssignment {
+  title: string;
+  description: string;
+  difficulty_level: string;
+  instructions: string;
+  passed_instructions: string;
+  passing_score: number;
+  time_limit: number;
+  questions: GeneratedQuestion[];
+}
+
 interface AssessmentConfig {
   // Basic settings
   title: string;
@@ -44,6 +62,7 @@ const CreateAssignment = () => {
   const navigate = useNavigate();
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedAssignment, setGeneratedAssignment] = useState<GeneratedAssignment | null>(null);
   const [config, setConfig] = useState<AssessmentConfig>({
     title: '',
     description: '',
@@ -183,12 +202,12 @@ const CreateAssignment = () => {
   };
 
   const isFormValid = () => {
-    // For AI-assisted mode, no validation required
+    // For AI-assisted mode, check if we have generated assignment
     if (config.creationMode === 'ai-assisted') {
-      return true;
+      return generatedAssignment !== null;
     }
     
-    // For manual mode, require basic fields
+    // For manual mode, require basic fields and questions
     const basicValid = config.title && config.description && config.timeLimit && config.passingScore;
     if (selectedType === 'quiz' && config.creationMode === 'manual') {
       return basicValid && config.questions.length > 0 && config.questions.every(q => 
@@ -200,106 +219,100 @@ const CreateAssignment = () => {
   };
 
   const handleGenerate = async () => {
-    if (config.creationMode === 'ai-assisted') {
-      setIsGenerating(true);
-      
-      try {
-        // Call generate API
-        const generateResponse = await fetch('https://talo-recruitment.vercel.app/assignment/generate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            resume_id: "95f2f83a-8a8f-4fb8-b2bb-66226ea592ef", // This should be dynamic based on user context
-            difficulty_level: config.difficultyLevel || "mixed",
-            instructions: config.aiPrompt || "Generate assessment questions"
-          })
-        });
-
-        if (!generateResponse.ok) {
-          throw new Error('Failed to generate assessment');
-        }
-
-        const generateData = await generateResponse.json();
-        console.log('=== AI GENERATED ASSESSMENT ===');
-        console.log(JSON.stringify(generateData, null, 2));
-        console.log('=== END AI GENERATED ASSESSMENT ===');
-
-        // Now create the assessment
-        const createResponse = await fetch('https://talo-recruitment.vercel.app/assessments/create', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            resume_id: "95f2f83a-8a8f-4fb8-b2bb-66226ea592ef",
-            details: generateData.assignment
-          })
-        });
-
-        if (!createResponse.ok) {
-          throw new Error('Failed to create assessment');
-        }
-
-        const createData = await createResponse.json();
-        console.log('=== ASSESSMENT CREATED ===');
-        console.log(JSON.stringify(createData, null, 2));
-        console.log('=== END ASSESSMENT CREATED ===');
-
-        console.log('✅ Assessment generated and created successfully with AI assistance!');
-        
-      } catch (error) {
-        console.error('Error generating/creating assessment:', error);
-      } finally {
-        setIsGenerating(false);
-      }
-    } else {
-      // Manual creation
-      const selectedAssessment = assessmentTypes.find(type => type.id === selectedType);
-      const assessmentData = {
-        assessmentType: selectedType,
-        assessmentTitle: selectedAssessment?.title,
-        creationMode: config.creationMode,
-        basicConfig: {
-          title: config.title,
-          description: config.description,
-          timeLimit: config.timeLimit,
-          passingScore: config.passingScore,
-          instructions: config.instructions
+    setIsGenerating(true);
+    
+    try {
+      // Call generate API
+      const generateResponse = await fetch('https://talo-recruitment.vercel.app/assignment/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        typeSpecificConfig: config.typeSpecific,
-        questions: config.questions,
-        totalQuestions: config.questions.length,
-        timestamp: new Date().toISOString()
-      };
+        body: JSON.stringify({
+          resume_id: "95f2f83a-8a8f-4fb8-b2bb-66226ea592ef",
+          difficulty_level: config.difficultyLevel || "mixed",
+          instructions: config.aiPrompt || "Generate assessment questions"
+        })
+      });
 
-      try {
-        const createResponse = await fetch('https://talo-recruitment.vercel.app/assessments/create', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            resume_id: "95f2f83a-8a8f-4fb8-b2bb-66226ea592ef",
-            details: assessmentData
-          })
-        });
-
-        if (!createResponse.ok) {
-          throw new Error('Failed to create assessment');
-        }
-
-        const createData = await createResponse.json();
-        console.log('=== MANUAL ASSESSMENT CREATED ===');
-        console.log(JSON.stringify(createData, null, 2));
-        console.log('=== END MANUAL ASSESSMENT CREATED ===');
-
-        console.log('✅ Assessment created manually!');
-        
-      } catch (error) {
-        console.error('Error creating assessment:', error);
+      if (!generateResponse.ok) {
+        throw new Error('Failed to generate assessment');
       }
+
+      const generateData = await generateResponse.json();
+      console.log('=== AI GENERATED ASSESSMENT ===');
+      console.log(JSON.stringify(generateData, null, 2));
+      console.log('=== END AI GENERATED ASSESSMENT ===');
+
+      // Store the generated assignment
+      setGeneratedAssignment(generateData.assignment);
+      
+      console.log('✅ Assessment generated successfully with AI assistance!');
+      
+    } catch (error) {
+      console.error('Error generating assessment:', error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleCreateAssessment = async () => {
+    try {
+      let assessmentData;
+
+      if (config.creationMode === 'ai-assisted' && generatedAssignment) {
+        // Use generated assignment data
+        assessmentData = {
+          assessmentType: selectedType,
+          assessmentTitle: generatedAssignment.title,
+          creationMode: config.creationMode,
+          ...generatedAssignment
+        };
+      } else {
+        // Manual creation
+        const selectedAssessment = assessmentTypes.find(type => type.id === selectedType);
+        assessmentData = {
+          assessmentType: selectedType,
+          assessmentTitle: selectedAssessment?.title,
+          creationMode: config.creationMode,
+          basicConfig: {
+            title: config.title,
+            description: config.description,
+            timeLimit: config.timeLimit,
+            passingScore: config.passingScore,
+            instructions: config.instructions
+          },
+          typeSpecificConfig: config.typeSpecific,
+          questions: config.questions,
+          totalQuestions: config.questions.length,
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const createResponse = await fetch('https://talo-recruitment.vercel.app/assessments/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          resume_id: "95f2f83a-8a8f-4fb8-b2bb-66226ea592ef",
+          details: assessmentData
+        })
+      });
+
+      if (!createResponse.ok) {
+        throw new Error('Failed to create assessment');
+      }
+
+      const createData = await createResponse.json();
+      console.log('=== ASSESSMENT CREATED ===');
+      console.log(JSON.stringify(createData, null, 2));
+      console.log('=== END ASSESSMENT CREATED ===');
+
+      console.log('✅ Assessment created successfully!');
+      
+    } catch (error) {
+      console.error('Error creating assessment:', error);
     }
   };
 
@@ -423,7 +436,7 @@ const CreateAssignment = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-3">
                 <Zap className="h-6 w-6 text-purple-600" />
-                Creation Mode & AI Assistant (Optional)
+                Creation Mode & AI Assistant
               </CardTitle>
               <CardDescription>
                 Choose how you want to create your assessment - manually or with AI assistance
@@ -504,15 +517,15 @@ const CreateAssignment = () => {
                     </div>
                   </div>
 
-                  {/* Create Assessment Button for AI-Assisted Mode */}
+                  {/* Generate Assessment Button for AI-Assisted Mode */}
                   <div className="text-center">
                     <Button 
                       onClick={handleGenerate}
                       disabled={isGenerating}
                       size="lg"
-                      className="px-8 py-3 text-lg font-semibold bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all duration-200"
+                      className="px-8 py-3 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all duration-200"
                     >
-                      <Zap className="h-5 w-5 mr-2" />
+                      <Wand2 className="h-5 w-5 mr-2" />
                       {isGenerating ? 'Generating...' : 'Generate with AI'}
                     </Button>
                     <p className="text-sm text-gray-600 mt-3">
@@ -523,6 +536,98 @@ const CreateAssignment = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Generated Assessment Preview */}
+          {config.creationMode === 'ai-assisted' && generatedAssignment && (
+            <Card className="border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <Brain className="h-6 w-6 text-green-600" />
+                  Generated Assessment Preview
+                </CardTitle>
+                <CardDescription>
+                  Review the AI-generated assessment details
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Title</Label>
+                    <div className="p-3 bg-white/80 rounded-md border">{generatedAssignment.title}</div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Time Limit</Label>
+                    <div className="p-3 bg-white/80 rounded-md border">{generatedAssignment.time_limit} minutes</div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Description</Label>
+                  <div className="p-3 bg-white/80 rounded-md border">{generatedAssignment.description}</div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Passing Score</Label>
+                    <div className="p-3 bg-white/80 rounded-md border">{generatedAssignment.passing_score}%</div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Difficulty Level</Label>
+                    <div className="p-3 bg-white/80 rounded-md border capitalize">{generatedAssignment.difficulty_level}</div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">Questions ({generatedAssignment.questions.length})</h3>
+                  </div>
+
+                  {generatedAssignment.questions.map((question, index) => (
+                    <Card key={index} className="border border-green-200 bg-white/90">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium">Question {index + 1}</h4>
+                          <Badge variant="outline" className="capitalize">
+                            {question.difficulty}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Question</Label>
+                          <div className="p-3 bg-white rounded-md border">{question.question}</div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium">Options</Label>
+                          {question.options.map((option, optionIndex) => (
+                            <div key={optionIndex} className="flex items-center space-x-3">
+                              <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                                option === question.correct_answer 
+                                  ? 'bg-green-500 border-green-500' 
+                                  : 'border-gray-300'
+                              }`}>
+                                {option === question.correct_answer && (
+                                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                                )}
+                              </div>
+                              <div className={`flex-1 p-2 rounded-md border ${
+                                option === question.correct_answer 
+                                  ? 'bg-green-50 border-green-200' 
+                                  : 'bg-white border-gray-200'
+                              }`}>
+                                {option}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Basic Configuration - only show for manual mode */}
           {config.creationMode === 'manual' && (
@@ -793,32 +898,32 @@ const CreateAssignment = () => {
             </Card>
           )}
 
-          {/* Generate Assessment Button for Manual Creation */}
-          {config.creationMode === 'manual' && (
-            <Card className="border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50 shadow-lg">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <Button 
-                    onClick={handleGenerate}
-                    disabled={!isFormValid()}
-                    size="lg"
-                    className="px-8 py-3 text-lg font-semibold bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all duration-200"
-                  >
-                    <Zap className="h-5 w-5 mr-2" />
-                    Create Assessment
-                  </Button>
-                  <p className="text-sm text-gray-600 mt-3">
-                    {!isFormValid() 
-                      ? selectedType === 'quiz' && config.creationMode === 'manual' 
+          {/* Create Assessment Button - shown for both modes at the bottom */}
+          <Card className="border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50 shadow-lg">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <Button 
+                  onClick={handleCreateAssessment}
+                  disabled={!isFormValid()}
+                  size="lg"
+                  className="px-8 py-3 text-lg font-semibold bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  <Zap className="h-5 w-5 mr-2" />
+                  Create Assessment
+                </Button>
+                <p className="text-sm text-gray-600 mt-3">
+                  {!isFormValid() 
+                    ? config.creationMode === 'ai-assisted'
+                      ? 'Please generate an assessment first to continue'
+                      : selectedType === 'quiz' && config.creationMode === 'manual' 
                         ? 'Please fill in all required fields and add at least one complete question' 
                         : 'Please fill in all required fields to continue'
-                      : 'Ready to create your assessment manually'
-                    }
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                    : 'Ready to create your assessment'
+                  }
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
