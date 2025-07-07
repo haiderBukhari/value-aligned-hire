@@ -160,21 +160,30 @@ const CreateAssignment = () => {
           });
           if (response.ok) {
             const data = await response.json();
-            if (data.assignment_template) {
-              const template = data.assignment_template;
-              
+            
+            // Handle both API response formats
+            let template;
+            if (data.candidates && data.candidates.length > 0) {
+              // New API format with candidates array
+              template = data.candidates[0].assignment_template[0];
+            } else if (data.assignment_template && data.assignment_template.length > 0) {
+              // Old API format
+              template = data.assignment_template[0];
+            }
+            
+            if (template) {
               // Set the assessment type
               setSelectedType('quiz');
               
               // Populate config with existing data
               setConfig(prev => ({
                 ...prev,
-                title: template.title || '',
+                title: template.title || template.assessmentTitle || '',
                 description: template.description || '',
                 timeLimit: template.time_limit?.toString() || '',
                 passingScore: template.passing_score?.toString() || '',
                 instructions: template.instructions || '',
-                creationMode: template.questions ? 'ai-assisted' : 'manual',
+                creationMode: template.creationMode || 'ai-assisted',
                 difficultyLevel: template.difficulty_level || '',
                 questions: template.questions ? [] : prev.questions,
                 numberOfQuestions: template.questions?.length || 0
