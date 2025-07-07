@@ -1,14 +1,71 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Save, Image, FileText, Plus, X, Upload } from "lucide-react";
+import { ArrowLeft, Save, ArrowRight, CheckCircle, Sparkles, Clock, Users, Code, Video, MessageSquare, FileText, BarChart3, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import { Badge } from "@/components/ui/badge";
+
+const ASSESSMENT_TYPES = [
+  {
+    id: 'quiz',
+    title: 'Quiz Assessment',
+    description: 'Auto-generated questions based on job requirements',
+    icon: CheckCircle,
+    status: 'active',
+    color: 'from-green-500 to-emerald-500',
+    features: ['Multiple choice questions', 'Auto-scoring', 'Instant results']
+  },
+  {
+    id: 'video',
+    title: 'Video Assessment',
+    description: 'Record responses to interview prompts',
+    icon: Video,
+    status: 'coming-soon',
+    color: 'from-blue-500 to-cyan-500',
+    features: ['Video recording', 'AI analysis', 'Behavioral insights']
+  },
+  {
+    id: 'interview',
+    title: 'Interview Simulation',
+    description: 'AI-powered mock interview sessions',
+    icon: MessageSquare,
+    status: 'coming-soon',
+    color: 'from-purple-500 to-violet-500',
+    features: ['Real-time conversation', 'Dynamic questions', 'Performance metrics']
+  },
+  {
+    id: 'takeHome',
+    title: 'Take-Home Test',
+    description: 'Project-based assignments and submissions',
+    icon: FileText,
+    status: 'coming-soon',
+    color: 'from-orange-500 to-red-500',
+    features: ['File uploads', 'Project review', 'Code analysis']
+  },
+  {
+    id: 'situational',
+    title: 'Situational Judgment',
+    description: 'Scenario-based decision making tests',
+    icon: BarChart3,
+    status: 'coming-soon',
+    color: 'from-pink-500 to-rose-500',
+    features: ['Real scenarios', 'Decision analysis', 'Leadership assessment']
+  },
+  {
+    id: 'coding',
+    title: 'Coding Challenge',
+    description: 'Technical programming assessments',
+    icon: Code,
+    status: 'coming-soon',
+    color: 'from-indigo-500 to-blue-500',
+    features: ['Live coding', 'Multiple languages', 'Performance tracking']
+  }
+];
 
 const CreateAssignment = () => {
   const { jobId } = useParams();
@@ -18,29 +75,52 @@ const CreateAssignment = () => {
   const resumeId = searchParams.get('resume_id');
   const isEdit = searchParams.get('edit') === 'true';
   
-  const [assignment, setAssignment] = useState({
-    title: "",
-    description: "",
-    content: "",
-    duration: "",
-    deadline: "",
-    instructions: "",
-    resources: [] as string[],
-    images: [] as string[],
-    documents: [] as { name: string; url: string }[],
-    questions: [] as { question: string; type: 'text' | 'file' | 'multiple_choice'; options?: string[] }[]
-  });
-  
-  const [isUploading, setIsUploading] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [selectedAssessmentType, setSelectedAssessmentType] = useState('');
+  const [jobSpec, setJobSpec] = useState('');
+  const [generatedQuestions, setGeneratedQuestions] = useState<any[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [jobDetails, setJobDetails] = useState<any>(null);
 
-  // Fetch existing assignment if editing
+  const [assessmentConfig, setAssessmentConfig] = useState({
+    title: "",
+    description: "",
+    duration: "30",
+    difficulty: "medium",
+    numberOfQuestions: "10",
+    deadline: "",
+    instructions: "Please answer all questions to the best of your ability. You have limited time to complete this assessment."
+  });
+
   useEffect(() => {
+    fetchJobDetails();
     if (isEdit && resumeId) {
       fetchExistingAssignment();
     }
-  }, [isEdit, resumeId]);
+  }, [jobId, isEdit, resumeId]);
+
+  const fetchJobDetails = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/jobs/${jobId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setJobDetails(data.job);
+        setJobSpec(data.job?.description || '');
+        setAssessmentConfig(prev => ({
+          ...prev,
+          title: `${data.job?.title || 'Job'} Assessment`,
+          description: `Assessment for ${data.job?.title || 'this position'} role`
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching job details:', error);
+    }
+  };
 
   const fetchExistingAssignment = async () => {
     setIsLoading(true);
@@ -50,18 +130,18 @@ const CreateAssignment = () => {
         const data = await response.json();
         if (data.assignment_template && data.assignment_template.length > 0) {
           const template = data.assignment_template[0];
-          setAssignment({
+          setAssessmentConfig({
             title: template.title || "",
             description: template.description || "",
-            content: template.content || "",
-            duration: template.duration || "",
+            duration: template.duration || "30",
+            difficulty: "medium",
+            numberOfQuestions: template.questions?.length?.toString() || "10",
             deadline: template.deadline || "",
-            instructions: template.instructions || "",
-            resources: template.resources || [],
-            images: template.images || [],
-            documents: template.documents || [],
-            questions: template.questions || []
+            instructions: template.instructions || ""
           });
+          setGeneratedQuestions(template.questions || []);
+          setSelectedAssessmentType('quiz');
+          setCurrentStep(3);
         }
       }
     } catch (error) {
@@ -75,163 +155,74 @@ const CreateAssignment = () => {
     }
   };
 
-  const uploadToCloudinary = async (file: File): Promise<string> => {
-    const data = new FormData();
-    data.append("file", file);
-    data.append("upload_preset", "products");
-    const response = await fetch("https://api.cloudinary.com/v1_1/djunaxxv0/raw/upload", {
-      method: "POST",
-      body: data,
-    });
-    if (!response.ok) {
-      throw new Error("Failed to upload file to Cloudinary");
+  const generateQuizQuestions = async () => {
+    if (!jobSpec.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide job specifications first",
+        variant: "destructive",
+      });
+      return;
     }
-    const result = await response.json();
-    return result.secure_url;
-  };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-
-    setIsUploading(true);
+    setIsGenerating(true);
     try {
-      const uploadPromises = Array.from(files).map(file => uploadToCloudinary(file));
-      const uploadedUrls = await Promise.all(uploadPromises);
+      // Simulate AI generation - replace with actual API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      setAssignment(prev => ({
-        ...prev,
-        images: [...prev.images, ...uploadedUrls]
-      }));
+      const mockQuestions = [
+        {
+          question: "What is the primary purpose of React hooks?",
+          type: "multiple_choice",
+          options: [
+            "To replace class components entirely",
+            "To allow state and lifecycle methods in functional components",
+            "To improve performance only",
+            "To handle routing in React applications"
+          ],
+          correctAnswer: 1,
+          difficulty: "medium",
+          category: "React"
+        },
+        {
+          question: "Explain the difference between SQL and NoSQL databases.",
+          type: "text",
+          difficulty: "medium",
+          category: "Database"
+        },
+        {
+          question: "Which of the following are Node.js frameworks?",
+          type: "multiple_choice",
+          options: ["Express.js", "Django", "Spring Boot", "Fastify"],
+          correctAnswer: [0, 3],
+          difficulty: "easy",
+          category: "Node.js"
+        }
+      ];
+
+      setGeneratedQuestions(mockQuestions);
+      setCurrentStep(3);
       
       toast({
         title: "Success",
-        description: `${uploadedUrls.length} image(s) uploaded successfully!`,
+        description: `Generated ${mockQuestions.length} questions based on job requirements!`,
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to upload images",
+        description: "Failed to generate questions",
         variant: "destructive",
       });
     } finally {
-      setIsUploading(false);
+      setIsGenerating(false);
     }
   };
 
-  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-
-    setIsUploading(true);
-    try {
-      const uploadPromises = Array.from(files).map(async (file) => {
-        const url = await uploadToCloudinary(file);
-        return { name: file.name, url };
-      });
-      const uploadedDocs = await Promise.all(uploadPromises);
-      
-      setAssignment(prev => ({
-        ...prev,
-        documents: [...prev.documents, ...uploadedDocs]
-      }));
-      
-      toast({
-        title: "Success",
-        description: `${uploadedDocs.length} document(s) uploaded successfully!`,
-      });
-    } catch (error) {
+  const handleSaveAssessment = async () => {
+    if (!assessmentConfig.title.trim() || generatedQuestions.length === 0) {
       toast({
         title: "Error",
-        description: "Failed to upload documents",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const addQuestion = () => {
-    setAssignment(prev => ({
-      ...prev,
-      questions: [...prev.questions, { question: "", type: "text" }]
-    }));
-  };
-
-  const updateQuestion = (index: number, field: string, value: any) => {
-    setAssignment(prev => ({
-      ...prev,
-      questions: prev.questions.map((q, i) => 
-        i === index ? { ...q, [field]: value } : q
-      )
-    }));
-  };
-
-  const removeQuestion = (index: number) => {
-    setAssignment(prev => ({
-      ...prev,
-      questions: prev.questions.filter((_, i) => i !== index)
-    }));
-  };
-
-  const addOption = (questionIndex: number) => {
-    setAssignment(prev => ({
-      ...prev,
-      questions: prev.questions.map((q, i) => 
-        i === questionIndex 
-          ? { ...q, options: [...(q.options || []), ""] }
-          : q
-      )
-    }));
-  };
-
-  const updateOption = (questionIndex: number, optionIndex: number, value: string) => {
-    setAssignment(prev => ({
-      ...prev,
-      questions: prev.questions.map((q, i) => 
-        i === questionIndex 
-          ? { 
-              ...q, 
-              options: q.options?.map((opt, oi) => oi === optionIndex ? value : opt) 
-            }
-          : q
-      )
-    }));
-  };
-
-  const removeOption = (questionIndex: number, optionIndex: number) => {
-    setAssignment(prev => ({
-      ...prev,
-      questions: prev.questions.map((q, i) => 
-        i === questionIndex 
-          ? { 
-              ...q, 
-              options: q.options?.filter((_, oi) => oi !== optionIndex) 
-            }
-          : q
-      )
-    }));
-  };
-
-  const removeImage = (index: number) => {
-    setAssignment(prev => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index)
-    }));
-  };
-
-  const removeDocument = (index: number) => {
-    setAssignment(prev => ({
-      ...prev,
-      documents: prev.documents.filter((_, i) => i !== index)
-    }));
-  };
-
-  const handleSave = async () => {
-    if (!assignment.title.trim() || !assignment.content.trim()) {
-      toast({
-        title: "Error",
-        description: "Please fill in at least the title and content",
+        description: "Please complete all required fields and generate questions",
         variant: "destructive",
       });
       return;
@@ -251,16 +242,17 @@ const CreateAssignment = () => {
       const token = localStorage.getItem("token");
       
       const assignmentDetails = {
-        title: assignment.title,
-        description: assignment.description,
-        content: assignment.content,
-        duration: assignment.duration,
-        deadline: assignment.deadline,
-        instructions: assignment.instructions,
-        images: assignment.images,
-        documents: assignment.documents,
-        questions: assignment.questions,
-        resources: assignment.resources
+        title: assessmentConfig.title,
+        description: assessmentConfig.description,
+        content: `<h2>Assessment Instructions</h2><p>${assessmentConfig.instructions}</p>`,
+        duration: `${assessmentConfig.duration} minutes`,
+        deadline: assessmentConfig.deadline,
+        instructions: assessmentConfig.instructions,
+        questions: generatedQuestions,
+        assessment_type: selectedAssessmentType,
+        difficulty: assessmentConfig.difficulty,
+        auto_generated: true,
+        job_spec_based: true
       };
 
       const url = isEdit 
@@ -281,20 +273,20 @@ const CreateAssignment = () => {
         body,
       });
 
-      if (!response.ok) throw new Error(`Failed to ${isEdit ? 'update' : 'create'} assignment`);
+      if (!response.ok) throw new Error(`Failed to ${isEdit ? 'update' : 'create'} assessment`);
 
       const result = await response.json();
       
       toast({
         title: "Success",
-        description: result.message || `Assignment ${isEdit ? 'updated' : 'created and sent to candidate'}!`,
+        description: result.message || `Assessment ${isEdit ? 'updated' : 'created and sent to candidate'}!`,
       });
       
       navigate(-1);
     } catch (error) {
       toast({
         title: "Error",
-        description: `Failed to ${isEdit ? 'update' : 'create'} assignment`,
+        description: `Failed to ${isEdit ? 'update' : 'create'} assessment`,
         variant: "destructive",
       });
     } finally {
@@ -302,14 +294,26 @@ const CreateAssignment = () => {
     }
   };
 
-  const quillModules = {
-    toolbar: [
-      ['bold', 'italic', 'underline'],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      ['link'],
-      ['clean']
-    ],
-  };
+  const renderStepIndicator = () => (
+    <div className="flex items-center justify-center mb-8">
+      {[1, 2, 3].map((step) => (
+        <div key={step} className="flex items-center">
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
+            currentStep >= step 
+              ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' 
+              : 'bg-gray-200 text-gray-600'
+          }`}>
+            {currentStep > step ? <CheckCircle className="h-5 w-5" /> : step}
+          </div>
+          {step < 3 && (
+            <div className={`w-20 h-1 mx-2 ${
+              currentStep > step ? 'bg-gradient-to-r from-indigo-500 to-purple-500' : 'bg-gray-200'
+            }`} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
 
   if (isLoading) {
     return (
@@ -321,8 +325,8 @@ const CreateAssignment = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4">
-      <div className="max-w-5xl mx-auto pt-8">
-        {/* Animated Header */}
+      <div className="max-w-6xl mx-auto pt-8">
+        {/* Header */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -333,365 +337,300 @@ const CreateAssignment = () => {
           </Button>
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              {isEdit ? 'Edit Assignment' : 'Create Assignment'}
+              {isEdit ? 'Edit Assessment' : 'Create Assessment'}
             </h1>
             <p className="text-gray-600 mt-1">
-              {isEdit ? 'Update the assignment details' : 'Design the perfect assessment for your candidate'}
+              {jobDetails?.title && `For ${jobDetails.title} position`}
             </p>
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Basic Info Card */}
+        {renderStepIndicator()}
+
+        <AnimatePresence mode="wait">
+          {/* Step 1: Choose Assessment Type */}
+          {currentStep === 1 && (
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
+              key="step1"
+              initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-6"
             >
               <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
-                <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-t-lg">
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Assignment Details
+                <CardHeader className="text-center">
+                  <CardTitle className="text-2xl flex items-center justify-center gap-2">
+                    <Sparkles className="h-6 w-6 text-purple-500" />
+                    Choose Assessment Type
                   </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 space-y-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Candidate Resume ID
-                    </label>
-                    <Input
-                      value={resumeId || ""}
-                      readOnly
-                      className="w-full bg-gradient-to-r from-gray-50 to-gray-100 border-0"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Assignment Title *
-                      </label>
-                      <Input
-                        value={assignment.title}
-                        onChange={(e) => setAssignment(prev => ({ ...prev, title: e.target.value }))}
-                        placeholder="Enter assignment title"
-                        className="w-full border-2 border-indigo-100 focus:border-indigo-400"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Duration
-                      </label>
-                      <Input
-                        value={assignment.duration}
-                        onChange={(e) => setAssignment(prev => ({ ...prev, duration: e.target.value }))}
-                        placeholder="e.g., 2 hours, 3 days"
-                        className="w-full border-2 border-indigo-100 focus:border-indigo-400"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Deadline
-                    </label>
-                    <Input
-                      type="datetime-local"
-                      value={assignment.deadline}
-                      onChange={(e) => setAssignment(prev => ({ ...prev, deadline: e.target.value }))}
-                      className="w-full border-2 border-indigo-100 focus:border-indigo-400"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Description
-                    </label>
-                    <Textarea
-                      value={assignment.description}
-                      onChange={(e) => setAssignment(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Brief description of the assignment"
-                      className="w-full h-20 border-2 border-indigo-100 focus:border-indigo-400"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Content Editor Card */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
-                <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-t-lg">
-                  <CardTitle className="text-xl">Assignment Content</CardTitle>
+                  <p className="text-gray-600">Select the type of assessment you want to create</p>
                 </CardHeader>
                 <CardContent className="p-6">
-                  <div className="border-2 border-purple-100 rounded-lg overflow-hidden">
-                    <ReactQuill
-                      theme="snow"
-                      value={assignment.content}
-                      onChange={(value) => setAssignment(prev => ({ ...prev, content: value }))}
-                      modules={quillModules}
-                      placeholder="Write your assignment content here..."
-                      className="bg-white"
-                      style={{ minHeight: '200px' }}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Questions Card */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
-                <CardHeader className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-t-lg">
-                  <CardTitle className="text-xl flex items-center justify-between">
-                    Questions & Answers
-                    <Button
-                      onClick={addQuestion}
-                      size="sm"
-                      className="bg-white/20 hover:bg-white/30 text-white border-white/30"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Question
-                    </Button>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 space-y-4">
-                  {assignment.questions.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                      <p>No questions added yet. Click "Add Question" to get started.</p>
-                    </div>
-                  ) : (
-                    assignment.questions.map((question, index) => (
-                      <div key={index} className="p-4 border-2 border-emerald-100 rounded-lg bg-emerald-50/50">
-                        <div className="flex justify-between items-start mb-3">
-                          <h4 className="font-semibold text-emerald-800">Question {index + 1}</h4>
-                          <Button
-                            onClick={() => removeQuestion(index)}
-                            size="sm"
-                            variant="ghost"
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {ASSESSMENT_TYPES.map((type) => {
+                      const IconComponent = type.icon;
+                      return (
+                        <motion.div
+                          key={type.id}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <Card 
+                            className={`cursor-pointer transition-all duration-300 border-2 ${
+                              selectedAssessmentType === type.id 
+                                ? 'border-purple-500 shadow-lg' 
+                                : 'border-gray-200 hover:border-purple-300'
+                            } ${type.status === 'coming-soon' ? 'opacity-70' : ''}`}
+                            onClick={() => type.status === 'active' && setSelectedAssessmentType(type.id)}
                           >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        
-                        <div className="space-y-3">
-                          <Input
-                            value={question.question}
-                            onChange={(e) => updateQuestion(index, 'question', e.target.value)}
-                            placeholder="Enter your question"
-                            className="border-emerald-200 focus:border-emerald-400"
-                          />
-                          
-                          <select
-                            value={question.type}
-                            onChange={(e) => updateQuestion(index, 'type', e.target.value)}
-                            className="w-full p-2 border-2 border-emerald-200 rounded-md focus:border-emerald-400"
-                          >
-                            <option value="text">Text Answer</option>
-                            <option value="file">File Upload</option>
-                            <option value="multiple_choice">Multiple Choice</option>
-                          </select>
-
-                          {question.type === 'multiple_choice' && (
-                            <div className="space-y-2">
-                              <div className="flex justify-between items-center">
-                                <label className="text-sm font-medium text-emerald-700">Options</label>
-                                <Button
-                                  onClick={() => addOption(index)}
-                                  size="sm"
-                                  variant="outline"
-                                  className="border-emerald-300 text-emerald-600 hover:bg-emerald-50"
-                                >
-                                  <Plus className="h-3 w-3 mr-1" />
-                                  Add Option
-                                </Button>
-                              </div>
-                              {question.options?.map((option, optionIndex) => (
-                                <div key={optionIndex} className="flex gap-2">
-                                  <Input
-                                    value={option}
-                                    onChange={(e) => updateOption(index, optionIndex, e.target.value)}
-                                    placeholder={`Option ${optionIndex + 1}`}
-                                    className="border-emerald-200 focus:border-emerald-400"
-                                  />
-                                  <Button
-                                    onClick={() => removeOption(index, optionIndex)}
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-red-500 hover:text-red-700"
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
+                            <CardContent className="p-6">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className={`p-3 rounded-lg bg-gradient-to-r ${type.color}`}>
+                                  <IconComponent className="h-6 w-6 text-white" />
                                 </div>
-                              ))}
-                            </div>
-                          )}
+                                <Badge 
+                                  variant={type.status === 'active' ? 'default' : 'secondary'}
+                                  className={type.status === 'active' ? 'bg-green-100 text-green-800' : ''}
+                                >
+                                  {type.status === 'active' ? 'Available' : 'Coming Soon'}
+                                </Badge>
+                              </div>
+                              <h3 className="font-semibold text-lg mb-2">{type.title}</h3>
+                              <p className="text-gray-600 text-sm mb-4">{type.description}</p>
+                              <div className="space-y-1">
+                                {type.features.map((feature, index) => (
+                                  <div key={index} className="flex items-center text-sm text-gray-500">
+                                    <CheckCircle className="h-3 w-3 mr-2 text-green-500" />
+                                    {feature}
+                                  </div>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                  
+                  <div className="flex justify-center mt-8">
+                    <Button 
+                      onClick={() => selectedAssessmentType && setCurrentStep(2)}
+                      disabled={!selectedAssessmentType}
+                      className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 px-8 py-3"
+                    >
+                      Continue
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Step 2: Configure Assessment */}
+          {currentStep === 2 && (
+            <motion.div
+              key="step2"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-6"
+            >
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle>Assessment Configuration</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Assessment Title</label>
+                      <Input
+                        value={assessmentConfig.title}
+                        onChange={(e) => setAssessmentConfig(prev => ({ ...prev, title: e.target.value }))}
+                        placeholder="Enter assessment title"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                      <Textarea
+                        value={assessmentConfig.description}
+                        onChange={(e) => setAssessmentConfig(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Brief description of the assessment"
+                        className="h-20"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Duration (minutes)</label>
+                        <Input
+                          type="number"
+                          value={assessmentConfig.duration}
+                          onChange={(e) => setAssessmentConfig(prev => ({ ...prev, duration: e.target.value }))}
+                          placeholder="30"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Questions</label>
+                        <Input
+                          type="number"
+                          value={assessmentConfig.numberOfQuestions}
+                          onChange={(e) => setAssessmentConfig(prev => ({ ...prev, numberOfQuestions: e.target.value }))}
+                          placeholder="10"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Deadline</label>
+                      <Input
+                        type="datetime-local"
+                        value={assessmentConfig.deadline}
+                        onChange={(e) => setAssessmentConfig(prev => ({ ...prev, deadline: e.target.value }))}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle>Job Specification</CardTitle>
+                    <p className="text-sm text-gray-600">AI will generate questions based on this job description</p>
+                  </CardHeader>
+                  <CardContent>
+                    <Textarea
+                      value={jobSpec}
+                      onChange={(e) => setJobSpec(e.target.value)}
+                      placeholder="Paste the job description or requirements here..."
+                      className="h-64 resize-none"
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="flex justify-center gap-4">
+                <Button 
+                  variant="outline"
+                  onClick={() => setCurrentStep(1)}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back
+                </Button>
+                <Button 
+                  onClick={generateQuizQuestions}
+                  disabled={isGenerating || !jobSpec.trim()}
+                  className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-8 py-3"
+                >
+                  {isGenerating ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Generating Questions...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="h-4 w-4 mr-2" />
+                      Generate Quiz Questions
+                    </>
+                  )}
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 3: Review Generated Questions */}
+          {currentStep === 3 && (
+            <motion.div
+              key="step3"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-6"
+            >
+              <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CheckCircle className="h-6 w-6 text-green-500" />
+                    Generated Questions ({generatedQuestions.length})
+                  </CardTitle>
+                  <p className="text-gray-600">Review and customize the auto-generated questions</p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {generatedQuestions.map((question, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="p-4 border-2 border-gray-100 rounded-lg bg-gray-50/50"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">Q{index + 1}</Badge>
+                          <Badge className="bg-blue-100 text-blue-800">{question.category}</Badge>
+                          <Badge variant="secondary">{question.difficulty}</Badge>
                         </div>
                       </div>
-                    ))
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Media Upload Card */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
-                <CardHeader className="bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-t-lg">
-                  <CardTitle className="text-lg">Media & Documents</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 space-y-4">
-                  {/* Image Upload */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Images</label>
-                    <label htmlFor="image-upload" className="cursor-pointer block">
-                      <div className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 rounded-lg border-2 border-blue-200 hover:from-blue-100 hover:to-indigo-100 transition-all">
-                        <Image className="h-4 w-4" />
-                        {isUploading ? "Uploading..." : "Upload Images"}
-                      </div>
-                    </label>
-                    <input
-                      id="image-upload"
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      disabled={isUploading}
-                    />
-                    
-                    {assignment.images.length > 0 && (
-                      <div className="grid grid-cols-2 gap-2 mt-3">
-                        {assignment.images.map((url, index) => (
-                          <div key={index} className="relative group">
-                            <img
-                              src={url}
-                              alt={`Upload ${index + 1}`}
-                              className="w-full h-20 object-cover rounded-lg border-2 border-gray-200"
-                            />
-                            <button
-                              onClick={() => removeImage(index)}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                      
+                      <h4 className="font-semibold text-gray-800 mb-3">{question.question}</h4>
+                      
+                      {question.type === 'multiple_choice' && question.options && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {question.options.map((option: string, optionIndex: number) => (
+                            <div 
+                              key={optionIndex} 
+                              className={`p-2 rounded border text-sm ${
+                                question.correctAnswer === optionIndex || 
+                                (Array.isArray(question.correctAnswer) && question.correctAnswer.includes(optionIndex))
+                                  ? 'bg-green-100 border-green-300 text-green-800' 
+                                  : 'bg-white border-gray-200'
+                              }`}
                             >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Document Upload */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Documents</label>
-                    <label htmlFor="document-upload" className="cursor-pointer block">
-                      <div className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-green-50 to-emerald-50 text-green-600 rounded-lg border-2 border-green-200 hover:from-green-100 hover:to-emerald-100 transition-all">
-                        <FileText className="h-4 w-4" />
-                        {isUploading ? "Uploading..." : "Upload Documents"}
-                      </div>
-                    </label>
-                    <input
-                      id="document-upload"
-                      type="file"
-                      multiple
-                      accept=".pdf,.doc,.docx,.txt,.xlsx,.pptx"
-                      onChange={handleDocumentUpload}
-                      className="hidden"
-                      disabled={isUploading}
-                    />
-                    
-                    {assignment.documents.length > 0 && (
-                      <div className="space-y-2 mt-3">
-                        {assignment.documents.map((doc, index) => (
-                          <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border">
-                            <div className="flex items-center gap-2">
-                              <FileText className="h-4 w-4 text-gray-500" />
-                              <span className="text-sm text-gray-700 truncate">{doc.name}</span>
+                              {String.fromCharCode(65 + optionIndex)}. {option}
                             </div>
-                            <button
-                              onClick={() => removeDocument(index)}
-                              className="text-red-500 hover:text-red-700 p-1"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {question.type === 'text' && (
+                        <div className="p-3 bg-white border rounded text-sm text-gray-600 italic">
+                          Open-ended text response question
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
                 </CardContent>
               </Card>
-            </motion.div>
 
-            {/* Instructions Card */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
-                <CardHeader className="bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-t-lg">
-                  <CardTitle className="text-lg">Additional Instructions</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <Textarea
-                    value={assignment.instructions}
-                    onChange={(e) => setAssignment(prev => ({ ...prev, instructions: e.target.value }))}
-                    placeholder="Any additional instructions for candidates..."
-                    className="w-full h-24 border-2 border-amber-100 focus:border-amber-400"
-                  />
-                </CardContent>
-              </Card>
+              <div className="flex justify-center gap-4">
+                <Button 
+                  variant="outline"
+                  onClick={() => setCurrentStep(2)}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Configuration
+                </Button>
+                <Button 
+                  onClick={handleSaveAssessment}
+                  disabled={isSaving}
+                  className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 px-8 py-3"
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Creating Assessment...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Create & Send Assessment
+                    </>
+                  )}
+                </Button>
+              </div>
             </motion.div>
-
-            {/* Action Buttons */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="flex flex-col gap-3"
-            >
-              <Button 
-                onClick={handleSave}
-                disabled={isSaving || isUploading || !resumeId}
-                className="w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
-              >
-                <Save className="h-5 w-5 mr-2" />
-                {isSaving ? "Creating..." : "Create & Send Assignment"}
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                onClick={() => navigate(-1)}
-                disabled={isSaving}
-                className="w-full border-2 border-gray-300 hover:bg-gray-50"
-              >
-                Cancel
-              </Button>
-            </motion.div>
-          </div>
-        </div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
