@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -6,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Save, ArrowRight, CheckCircle, Sparkles, Clock, Users, Code, Video, MessageSquare, FileText, BarChart3, Zap, Plus, Trash2, Settings } from "lucide-react";
+import { ArrowLeft, Save, ArrowRight, CheckCircle, Sparkles, Clock, Users, Code, Video, MessageSquare, FileText, BarChart3, Zap, Plus, Trash2, Settings, Upload, Play, Mic, FileCode } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -27,7 +26,7 @@ const ASSESSMENT_TYPES = [
     title: 'Video Assessment',
     description: 'Record responses to interview prompts',
     icon: Video,
-    status: 'coming-soon',
+    status: 'active',
     color: 'from-blue-500 to-cyan-500',
     features: ['Video recording', 'AI analysis', 'Behavioral insights']
   },
@@ -36,7 +35,7 @@ const ASSESSMENT_TYPES = [
     title: 'Interview Simulation',
     description: 'AI-powered mock interview sessions',
     icon: MessageSquare,
-    status: 'coming-soon',
+    status: 'active',
     color: 'from-purple-500 to-violet-500',
     features: ['Real-time conversation', 'Dynamic questions', 'Performance metrics']
   },
@@ -45,7 +44,7 @@ const ASSESSMENT_TYPES = [
     title: 'Take-Home Test',
     description: 'Project-based assignments and submissions',
     icon: FileText,
-    status: 'coming-soon',
+    status: 'active',
     color: 'from-orange-500 to-red-500',
     features: ['File uploads', 'Project review', 'Code analysis']
   },
@@ -54,7 +53,7 @@ const ASSESSMENT_TYPES = [
     title: 'Situational Judgment',
     description: 'Scenario-based decision making tests',
     icon: BarChart3,
-    status: 'coming-soon',
+    status: 'active',
     color: 'from-pink-500 to-rose-500',
     features: ['Real scenarios', 'Decision analysis', 'Leadership assessment']
   },
@@ -63,7 +62,7 @@ const ASSESSMENT_TYPES = [
     title: 'Coding Challenge',
     description: 'Technical programming assessments',
     icon: Code,
-    status: 'coming-soon',
+    status: 'active',
     color: 'from-indigo-500 to-blue-500',
     features: ['Live coding', 'Multiple languages', 'Performance tracking']
   }
@@ -93,6 +92,14 @@ const CreateAssignment = () => {
     instructions: "Please complete this assessment to the best of your ability."
   });
 
+  // AI Configuration
+  const [aiConfig, setAiConfig] = useState({
+    useJobSpec: true,
+    additionalContext: "",
+    focusAreas: "",
+    difficulty: "medium"
+  });
+
   // Assessment-specific configurations
   const [quizConfig, setQuizConfig] = useState({
     numberOfQuestions: "10",
@@ -111,8 +118,9 @@ const CreateAssignment = () => {
     preparationTime: "2",
     recordingAttempts: "2",
     promptCategories: ["Behavioral", "Situational"],
-    customPrompts: [""],
-    enablePracticeRound: true
+    customPrompts: ["Tell me about a challenging project you worked on"],
+    enablePracticeRound: true,
+    allowReRecording: true
   });
 
   const [interviewConfig, setInterviewConfig] = useState({
@@ -122,17 +130,19 @@ const CreateAssignment = () => {
     focusAreas: ["Communication", "Technical", "Leadership"],
     enableFollowUps: true,
     realTimeAnalysis: true,
-    customScenarios: [""]
+    customScenarios: ["Describe how you handle conflict in a team"],
+    voiceEnabled: true
   });
 
   const [takeHomeConfig, setTakeHomeConfig] = useState({
     submissionDeadline: "72",
     maxFileSize: "10",
-    allowedFileTypes: [".pdf", ".doc", ".zip"],
+    allowedFileTypes: [".pdf", ".doc", ".zip", ".js", ".py"],
     projectType: "coding",
-    requirements: [""],
+    requirements: ["Create a functional web application", "Include documentation"],
     evaluationCriteria: ["Code Quality", "Problem Solving", "Documentation"],
-    provideSampleCode: false
+    provideSampleCode: false,
+    githubIntegration: true
   });
 
   const [situationalConfig, setSituationalConfig] = useState({
@@ -140,9 +150,10 @@ const CreateAssignment = () => {
     scenarioComplexity: "medium",
     focusAreas: ["Leadership", "Decision Making", "Ethics"],
     responseFormat: "multiple_choice",
-    customScenarios: [""],
+    customScenarios: ["How would you handle a team member missing deadlines?"],
     includeRealCases: true,
-    timePerScenario: "10"
+    timePerScenario: "10",
+    videoResponse: false
   });
 
   const [codingConfig, setCodingConfig] = useState({
@@ -153,7 +164,8 @@ const CreateAssignment = () => {
     problemTypes: ["Algorithm", "Data Structure"],
     allowDebugger: true,
     showTestCases: true,
-    customProblems: [""]
+    customProblems: ["Implement a function to reverse a linked list"],
+    liveCodeReview: false
   });
 
   const [generatedContent, setGeneratedContent] = useState<any>(null);
@@ -216,6 +228,16 @@ const CreateAssignment = () => {
     }
   };
 
+  const validateCurrentStep = () => {
+    if (currentStep === 1) {
+      return selectedAssessmentType !== '';
+    }
+    if (currentStep === 2) {
+      return basicConfig.title.trim() !== '' && basicConfig.description.trim() !== '';
+    }
+    return true;
+  };
+
   const getCurrentConfig = () => {
     switch (selectedAssessmentType) {
       case 'quiz': return quizConfig;
@@ -233,6 +255,7 @@ const CreateAssignment = () => {
     const aiPayload = {
       assessmentType: selectedAssessmentType,
       basicConfig,
+      aiConfig,
       specificConfig: currentConfig,
       jobDetails,
       jobSpecification: jobDetails?.description || ''
@@ -282,6 +305,42 @@ const CreateAssignment = () => {
               category: "Team Collaboration",
               preparationTime: 120,
               maxDuration: 300
+            }
+          ];
+          break;
+        case 'interview':
+          mockContent = [
+            {
+              question: "How do you prioritize tasks when facing multiple deadlines?",
+              category: "Time Management",
+              followUpEnabled: true,
+              difficulty: "medium"
+            }
+          ];
+          break;
+        case 'takeHome':
+          mockContent = {
+            project: "Build a task management application",
+            requirements: ["User authentication", "CRUD operations", "Responsive design"],
+            submissionFormat: "GitHub repository link"
+          };
+          break;
+        case 'situational':
+          mockContent = [
+            {
+              scenario: "A team member consistently misses deadlines affecting project delivery.",
+              options: ["Address privately first", "Escalate immediately", "Reassign tasks", "Set stricter deadlines"],
+              correctAnswer: 0
+            }
+          ];
+          break;
+        case 'coding':
+          mockContent = [
+            {
+              problem: "Implement a function to find the longest palindromic substring",
+              difficulty: "medium",
+              timeLimit: 30,
+              testCases: ["raceacar -> raceacar", "hello -> ll"]
             }
           ];
           break;
@@ -401,6 +460,61 @@ const CreateAssignment = () => {
 
     return (
       <div className="space-y-6">
+        {/* AI Assistant Configuration */}
+        <Card className="border-0 shadow-xl bg-gradient-to-r from-purple-50 to-indigo-50 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-500" />
+              AI Assistant Configuration
+            </CardTitle>
+            <p className="text-sm text-gray-600">Configure AI to generate personalized content</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Difficulty Level</Label>
+                <select 
+                  className="w-full p-2 border rounded-md"
+                  value={aiConfig.difficulty}
+                  onChange={(e) => setAiConfig(prev => ({ ...prev, difficulty: e.target.value }))}
+                >
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+              <div>
+                <Label>Focus Areas</Label>
+                <Input
+                  value={aiConfig.focusAreas}
+                  onChange={(e) => setAiConfig(prev => ({ ...prev, focusAreas: e.target.value }))}
+                  placeholder="e.g., React, Node.js, Leadership"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label>Additional Context for AI</Label>
+              <Textarea
+                value={aiConfig.additionalContext}
+                onChange={(e) => setAiConfig(prev => ({ ...prev, additionalContext: e.target.value }))}
+                placeholder="Provide additional context to help AI generate better content..."
+                className="h-20"
+              />
+            </div>
+
+            <div>
+              <Label>Job Description (Auto-filled)</Label>
+              <Textarea
+                value={jobDetails?.description || ''}
+                readOnly
+                placeholder="Job description will be used automatically for AI generation..."
+                className="h-20 resize-none bg-gray-50"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Basic Configuration */}
         <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
           <CardHeader>
@@ -412,11 +526,12 @@ const CreateAssignment = () => {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Assessment Title</Label>
+                <Label>Assessment Title *</Label>
                 <Input
                   value={basicConfig.title}
                   onChange={(e) => setBasicConfig(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="Enter assessment title"
+                  required
                 />
               </div>
               <div>
@@ -431,12 +546,13 @@ const CreateAssignment = () => {
             </div>
             
             <div>
-              <Label>Description</Label>
+              <Label>Description *</Label>
               <Textarea
                 value={basicConfig.description}
                 onChange={(e) => setBasicConfig(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Brief description of the assessment"
                 className="h-20"
+                required
               />
             </div>
 
@@ -558,7 +674,7 @@ const CreateAssignment = () => {
 
             {selectedAssessmentType === 'video' && (
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
                     <Label>Max Video Duration (minutes)</Label>
                     <Input
@@ -583,10 +699,21 @@ const CreateAssignment = () => {
                       onChange={(e) => setVideoConfig(prev => ({ ...prev, preparationTime: e.target.value }))}
                     />
                   </div>
+                  <div>
+                    <Label>Recording Attempts</Label>
+                    <Input
+                      type="number"
+                      value={videoConfig.recordingAttempts}
+                      onChange={(e) => setVideoConfig(prev => ({ ...prev, recordingAttempts: e.target.value }))}
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <Label>Custom Prompts</Label>
+                  <Label className="flex items-center gap-2">
+                    <Video className="h-4 w-4" />
+                    Video Prompts
+                  </Label>
                   {videoConfig.customPrompts.map((prompt, index) => (
                     <div key={index} className="flex gap-2 mt-2">
                       <Input
@@ -596,7 +723,7 @@ const CreateAssignment = () => {
                           newPrompts[index] = e.target.value;
                           setVideoConfig(prev => ({ ...prev, customPrompts: newPrompts }));
                         }}
-                        placeholder="Enter video prompt"
+                        placeholder="Enter video prompt question"
                       />
                       <Button 
                         variant="outline" 
@@ -614,8 +741,27 @@ const CreateAssignment = () => {
                     onClick={() => setVideoConfig(prev => ({ ...prev, customPrompts: [...prev.customPrompts, ""] }))}
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Prompt
+                    Add Video Prompt
                   </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={videoConfig.enablePracticeRound}
+                      onChange={(e) => setVideoConfig(prev => ({ ...prev, enablePracticeRound: e.target.checked }))}
+                    />
+                    <span>Enable Practice Round</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={videoConfig.allowReRecording}
+                      onChange={(e) => setVideoConfig(prev => ({ ...prev, allowReRecording: e.target.checked }))}
+                    />
+                    <span>Allow Re-recording</span>
+                  </label>
                 </div>
               </div>
             )}
@@ -655,17 +801,66 @@ const CreateAssignment = () => {
                 </div>
 
                 <div>
-                  <Label>Focus Areas</Label>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {interviewConfig.focusAreas.map((area, index) => (
-                      <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                        {area}
-                        <button onClick={() => setInterviewConfig(prev => ({ ...prev, focusAreas: prev.focusAreas.filter((_, i) => i !== index) }))}>
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
+                  <Label className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    Interview Scenarios
+                  </Label>
+                  {interviewConfig.customScenarios.map((scenario, index) => (
+                    <div key={index} className="flex gap-2 mt-2">
+                      <Input
+                        value={scenario}
+                        onChange={(e) => {
+                          const newScenarios = [...interviewConfig.customScenarios];
+                          newScenarios[index] = e.target.value;
+                          setInterviewConfig(prev => ({ ...prev, customScenarios: newScenarios }));
+                        }}
+                        placeholder="Enter interview scenario or question"
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => setInterviewConfig(prev => ({ ...prev, customScenarios: prev.customScenarios.filter((_, i) => i !== index) }))}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                    onClick={() => setInterviewConfig(prev => ({ ...prev, customScenarios: [...prev.customScenarios, ""] }))}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Scenario
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={interviewConfig.enableFollowUps}
+                      onChange={(e) => setInterviewConfig(prev => ({ ...prev, enableFollowUps: e.target.checked }))}
+                    />
+                    <span>Enable Follow-up Questions</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={interviewConfig.realTimeAnalysis}
+                      onChange={(e) => setInterviewConfig(prev => ({ ...prev, realTimeAnalysis: e.target.checked }))}
+                    />
+                    <span>Real-time Analysis</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={interviewConfig.voiceEnabled}
+                      onChange={(e) => setInterviewConfig(prev => ({ ...prev, voiceEnabled: e.target.checked }))}
+                    />
+                    <span>Voice Enabled</span>
+                  </label>
                 </div>
               </div>
             )}
@@ -700,12 +895,41 @@ const CreateAssignment = () => {
                       <option value="design">Design Project</option>
                       <option value="analysis">Analysis Project</option>
                       <option value="presentation">Presentation</option>
+                      <option value="research">Research Paper</option>
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <Label>Project Requirements</Label>
+                  <Label>Allowed File Types</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {takeHomeConfig.allowedFileTypes.map((type, index) => (
+                      <Badge key={index} variant="outline" className="flex items-center gap-1">
+                        <FileCode className="h-3 w-3" />
+                        {type}
+                        <button onClick={() => setTakeHomeConfig(prev => ({ ...prev, allowedFileTypes: prev.allowedFileTypes.filter((_, i) => i !== index) }))}>
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        const newType = prompt("Enter file extension (e.g., .txt):");
+                        if (newType) setTakeHomeConfig(prev => ({ ...prev, allowedFileTypes: [...prev.allowedFileTypes, newType] }));
+                      }}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Project Requirements
+                  </Label>
                   {takeHomeConfig.requirements.map((req, index) => (
                     <div key={index} className="flex gap-2 mt-2">
                       <Input
@@ -735,6 +959,25 @@ const CreateAssignment = () => {
                     <Plus className="h-4 w-4 mr-2" />
                     Add Requirement
                   </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={takeHomeConfig.provideSampleCode}
+                      onChange={(e) => setTakeHomeConfig(prev => ({ ...prev, provideSampleCode: e.target.checked }))}
+                    />
+                    <span>Provide Sample Code</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={takeHomeConfig.githubIntegration}
+                      onChange={(e) => setTakeHomeConfig(prev => ({ ...prev, githubIntegration: e.target.checked }))}
+                    />
+                    <span>GitHub Integration</span>
+                  </label>
                 </div>
               </div>
             )}
@@ -773,17 +1016,71 @@ const CreateAssignment = () => {
                 </div>
 
                 <div>
-                  <Label>Focus Areas</Label>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {situationalConfig.focusAreas.map((area, index) => (
-                      <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                        {area}
-                        <button onClick={() => setSituationalConfig(prev => ({ ...prev, focusAreas: prev.focusAreas.filter((_, i) => i !== index) }))}>
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
+                  <Label className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    Custom Scenarios
+                  </Label>
+                  {situationalConfig.customScenarios.map((scenario, index) => (
+                    <div key={index} className="flex gap-2 mt-2">
+                      <Textarea
+                        value={scenario}
+                        onChange={(e) => {
+                          const newScenarios = [...situationalConfig.customScenarios];
+                          newScenarios[index] = e.target.value;
+                          setSituationalConfig(prev => ({ ...prev, customScenarios: newScenarios }));
+                        }}
+                        placeholder="Describe a workplace scenario for judgment testing"
+                        className="h-20"
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => setSituationalConfig(prev => ({ ...prev, customScenarios: prev.customScenarios.filter((_, i) => i !== index) }))}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                    onClick={() => setSituationalConfig(prev => ({ ...prev, customScenarios: [...prev.customScenarios, ""] }))}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Scenario
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label>Response Format</Label>
+                    <select 
+                      className="w-full p-2 border rounded-md"
+                      value={situationalConfig.responseFormat}
+                      onChange={(e) => setSituationalConfig(prev => ({ ...prev, responseFormat: e.target.value }))}
+                    >
+                      <option value="multiple_choice">Multiple Choice</option>
+                      <option value="text">Text Response</option>
+                      <option value="ranking">Ranking</option>
+                    </select>
                   </div>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={situationalConfig.includeRealCases}
+                      onChange={(e) => setSituationalConfig(prev => ({ ...prev, includeRealCases: e.target.checked }))}
+                    />
+                    <span>Include Real Cases</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={situationalConfig.videoResponse}
+                      onChange={(e) => setSituationalConfig(prev => ({ ...prev, videoResponse: e.target.checked }))}
+                    />
+                    <span>Video Response Option</span>
+                  </label>
                 </div>
               </div>
             )}
@@ -826,13 +1123,61 @@ const CreateAssignment = () => {
                   <div className="flex flex-wrap gap-2 mt-2">
                     {codingConfig.programmingLanguages.map((lang, index) => (
                       <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                        <Code className="h-3 w-3" />
                         {lang}
                         <button onClick={() => setCodingConfig(prev => ({ ...prev, programmingLanguages: prev.programmingLanguages.filter((_, i) => i !== index) }))}>
                           <Trash2 className="h-3 w-3" />
                         </button>
                       </Badge>
                     ))}
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        const newLang = prompt("Enter programming language:");
+                        if (newLang) setCodingConfig(prev => ({ ...prev, programmingLanguages: [...prev.programmingLanguages, newLang] }));
+                      }}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
                   </div>
+                </div>
+
+                <div>
+                  <Label className="flex items-center gap-2">
+                    <Code className="h-4 w-4" />
+                    Custom Coding Problems
+                  </Label>
+                  {codingConfig.customProblems.map((problem, index) => (
+                    <div key={index} className="flex gap-2 mt-2">
+                      <Textarea
+                        value={problem}
+                        onChange={(e) => {
+                          const newProblems = [...codingConfig.customProblems];
+                          newProblems[index] = e.target.value;
+                          setCodingConfig(prev => ({ ...prev, customProblems: newProblems }));
+                        }}
+                        placeholder="Describe the coding problem statement"
+                        className="h-20"
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => setCodingConfig(prev => ({ ...prev, customProblems: prev.customProblems.filter((_, i) => i !== index) }))}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                    onClick={() => setCodingConfig(prev => ({ ...prev, customProblems: [...prev.customProblems, ""] }))}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Problem
+                  </Button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -852,31 +1197,17 @@ const CreateAssignment = () => {
                     />
                     <span>Show Test Cases</span>
                   </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={codingConfig.liveCodeReview}
+                      onChange={(e) => setCodingConfig(prev => ({ ...prev, liveCodeReview: e.target.checked }))}
+                    />
+                    <span>Live Code Review</span>
+                  </label>
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Job Specification for AI */}
-        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-purple-500" />
-              AI Assistant Configuration (Optional)
-            </CardTitle>
-            <p className="text-sm text-gray-600">Provide additional context to help AI generate better content</p>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              value={jobDetails?.description || ''}
-              readOnly
-              placeholder="Job description will be used automatically for AI generation..."
-              className="h-32 resize-none"
-            />
-            <p className="text-xs text-gray-500 mt-2">
-              The AI will use the job description and your configuration settings to generate relevant assessment content.
-            </p>
           </CardContent>
         </Card>
 
@@ -890,7 +1221,7 @@ const CreateAssignment = () => {
           </Button>
           <Button 
             onClick={generateAssessment}
-            disabled={isGenerating || !basicConfig.title.trim()}
+            disabled={isGenerating || !validateCurrentStep()}
             className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-8 py-3"
           >
             {isGenerating ? (
@@ -975,7 +1306,7 @@ const CreateAssignment = () => {
                               selectedAssessmentType === type.id 
                                 ? 'border-purple-500 shadow-lg' 
                                 : 'border-gray-200 hover:border-purple-300'
-                            } ${type.status === 'coming-soon' ? 'opacity-70' : ''}`}
+                            }`}
                             onClick={() => setSelectedAssessmentType(type.id)}
                           >
                             <CardContent className="p-6">
@@ -984,10 +1315,10 @@ const CreateAssignment = () => {
                                   <IconComponent className="h-6 w-6 text-white" />
                                 </div>
                                 <Badge 
-                                  variant={type.status === 'active' ? 'default' : 'secondary'}
-                                  className={type.status === 'active' ? 'bg-green-100 text-green-800' : ''}
+                                  variant="default"
+                                  className="bg-green-100 text-green-800"
                                 >
-                                  {type.status === 'active' ? 'Available' : 'Coming Soon'}
+                                  Available
                                 </Badge>
                               </div>
                               <h3 className="font-semibold text-lg mb-2">{type.title}</h3>
@@ -1009,8 +1340,8 @@ const CreateAssignment = () => {
                   
                   <div className="flex justify-center mt-8">
                     <Button 
-                      onClick={() => selectedAssessmentType && setCurrentStep(2)}
-                      disabled={!selectedAssessmentType}
+                      onClick={() => validateCurrentStep() && setCurrentStep(2)}
+                      disabled={!validateCurrentStep()}
                       className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 px-8 py-3"
                     >
                       Continue
