@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, FileText, Upload, CheckCircle, AlertCircle, ExternalLink, Download, Eye } from "lucide-react";
+import { Calendar, Clock, FileText, Upload, CheckCircle, AlertCircle, ExternalLink, Download, Eye, ArrowLeft, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface AssignmentData {
@@ -28,6 +28,7 @@ const ViewAssignment = () => {
   const [uploadedFiles, setUploadedFiles] = useState<{ name: string; url: string }[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
 
   useEffect(() => {
     const fetchAssignment = async () => {
@@ -451,7 +452,7 @@ const ViewAssignment = () => {
           </Card>
         </motion.div>
 
-        {/* Questions Section */}
+        {/* Quiz Section */}
         {assignmentDetails.questions && assignmentDetails.questions.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -460,181 +461,131 @@ const ViewAssignment = () => {
           >
             <Card className="mb-8 border-0 shadow-xl bg-white/80 backdrop-blur-sm">
               <CardHeader className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-t-lg">
-                <CardTitle className="text-2xl">Questions</CardTitle>
+                <CardTitle className="text-2xl flex items-center justify-between">
+                  <span>Assessment Quiz</span>
+                  <Badge className="bg-white/20 text-white px-4 py-2 text-lg">
+                    Question {currentQuestion + 1} of {assignmentDetails.questions.length}
+                  </Badge>
+                </CardTitle>
               </CardHeader>
-              <CardContent className="p-8 space-y-8">
-                {assignmentDetails.questions.map((question: any, index: number) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="p-6 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border-2 border-emerald-200"
-                  >
-                    <h4 className="text-xl font-bold text-emerald-800 mb-4">
-                      Q{index + 1}: {question.question}
-                    </h4>
-                    
-                    {question.type === 'text' && (
-                      <Textarea
-                        value={answers[index] || ''}
-                        onChange={(e) => handleAnswerChange(index, e.target.value)}
-                        placeholder="Type your answer here..."
-                        className="w-full h-32 border-2 border-emerald-300 focus:border-emerald-500"
-                        disabled={assignment.submitted || deadlinePassed}
-                      />
-                    )}
-                    
-                    {question.type === 'file' && (
-                      <div>
-                        <label htmlFor={`file-${index}`} className="cursor-pointer block">
-                          <div className="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 rounded-lg border-2 border-emerald-300 hover:from-emerald-200 hover:to-teal-200 transition-all">
-                            <Upload className="h-5 w-5" />
-                            {isUploading ? "Uploading..." : "Upload File"}
+              <CardContent className="p-8">
+                {assignment.submitted ? (
+                  <div className="text-center py-12">
+                    <CheckCircle className="h-20 w-20 text-green-600 mx-auto mb-6" />
+                    <h3 className="text-3xl font-bold text-green-900 mb-4">Quiz Already Submitted</h3>
+                    <p className="text-gray-600 text-lg">Thank you for completing the assessment!</p>
+                  </div>
+                ) : deadlinePassed ? (
+                  <div className="text-center py-12">
+                    <AlertCircle className="h-20 w-20 text-red-600 mx-auto mb-6" />
+                    <h3 className="text-3xl font-bold text-red-900 mb-4">Submission Deadline Has Passed</h3>
+                    <p className="text-gray-600 text-lg">Please contact the administrator for assistance.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-8">
+                    {/* Progress Bar */}
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div 
+                        className="bg-gradient-to-r from-emerald-500 to-teal-500 h-3 rounded-full transition-all duration-300"
+                        style={{ width: `${((currentQuestion + 1) / assignmentDetails.questions.length) * 100}%` }}
+                      ></div>
+                    </div>
+
+                    {/* Current Question */}
+                    <motion.div
+                      key={currentQuestion}
+                      initial={{ opacity: 0, x: 50 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -50 }}
+                      transition={{ duration: 0.3 }}
+                      className="min-h-[400px]"
+                    >
+                      <div className="p-6 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border-2 border-emerald-200">
+                        <div className="flex items-center gap-3 mb-6">
+                          <div className="w-12 h-12 bg-emerald-500 text-white rounded-full flex items-center justify-center font-bold text-lg">
+                            {currentQuestion + 1}
                           </div>
-                        </label>
-                        <input
-                          id={`file-${index}`}
-                          type="file"
-                          onChange={(e) => handleFileUpload(e, index)}
-                          className="hidden"
-                          disabled={isUploading || assignment.submitted || deadlinePassed}
-                        />
+                          <h3 className="text-2xl font-bold text-emerald-800">
+                            {assignmentDetails.questions[currentQuestion].question}
+                          </h3>
+                        </div>
                         
-                        {answers[index] && answers[index].length > 0 && (
-                          <div className="mt-3 space-y-2">
-                            {answers[index].map((file: any, fileIndex: number) => (
-                              <div key={fileIndex} className="flex items-center gap-2 p-2 bg-white rounded-lg border">
-                                <FileText className="h-4 w-4 text-emerald-600" />
-                                <span className="text-sm text-gray-700">{file.name}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        {/* Difficulty Badge */}
+                        <div className="mb-6">
+                          <Badge className="bg-blue-100 text-blue-800 border-blue-200 px-3 py-1">
+                            Difficulty: {assignmentDetails.questions[currentQuestion].difficulty}
+                          </Badge>
+                        </div>
+
+                        {/* Options */}
+                        <div className="space-y-4">
+                          {assignmentDetails.questions[currentQuestion].options?.map((option: string, optionIndex: number) => (
+                            <motion.label 
+                              key={optionIndex} 
+                              className={`flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                                answers[currentQuestion] === option 
+                                  ? 'border-emerald-500 bg-emerald-100' 
+                                  : 'border-gray-200 bg-white hover:border-emerald-300 hover:bg-emerald-50'
+                              }`}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <input
+                                type="radio"
+                                name={`question-${currentQuestion}`}
+                                value={option}
+                                checked={answers[currentQuestion] === option}
+                                onChange={(e) => handleAnswerChange(currentQuestion, e.target.value)}
+                                className="w-5 h-5 text-emerald-600 focus:ring-emerald-500"
+                              />
+                              <span className="text-gray-700 text-lg font-medium">{option}</span>
+                            </motion.label>
+                          ))}
+                        </div>
                       </div>
-                    )}
-                    
-                    {question.type === 'multiple_choice' && question.options && (
-                      <div className="space-y-3">
-                        {question.options.map((option: string, optionIndex: number) => (
-                          <label key={optionIndex} className="flex items-center gap-3 p-3 bg-white rounded-lg border-2 border-emerald-200 hover:border-emerald-300 cursor-pointer transition-all">
-                            <input
-                              type="radio"
-                              name={`question-${index}`}
-                              value={option}
-                              checked={answers[index] === option}
-                              onChange={(e) => handleAnswerChange(index, e.target.value)}
-                              className="text-emerald-600 focus:ring-emerald-500"
-                              disabled={assignment.submitted || deadlinePassed}
-                            />
-                            <span className="text-gray-700">{option}</span>
-                          </label>
-                        ))}
+                    </motion.div>
+
+                    {/* Navigation */}
+                    <div className="flex justify-between items-center pt-6">
+                      <Button
+                        onClick={() => setCurrentQuestion(Math.max(0, currentQuestion - 1))}
+                        disabled={currentQuestion === 0}
+                        variant="outline"
+                        className="px-6 py-3 text-lg"
+                      >
+                        <ArrowLeft className="h-5 w-5 mr-2" />
+                        Previous
+                      </Button>
+
+                      <div className="text-gray-600 font-medium">
+                        {Object.keys(answers).length} of {assignmentDetails.questions.length} answered
                       </div>
-                    )}
-                  </motion.div>
-                ))}
+
+                      {currentQuestion < assignmentDetails.questions.length - 1 ? (
+                        <Button
+                          onClick={() => setCurrentQuestion(Math.min(assignmentDetails.questions.length - 1, currentQuestion + 1))}
+                          className="px-6 py-3 text-lg bg-gradient-to-r from-emerald-500 to-teal-500"
+                        >
+                          Next
+                          <ArrowRight className="h-5 w-5 ml-2" />
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={handleSubmission}
+                          disabled={isSubmitting || Object.keys(answers).length < assignmentDetails.questions.length}
+                          className="px-8 py-3 text-lg bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 hover:from-green-600 hover:via-emerald-600 hover:to-teal-600 text-white shadow-xl hover:shadow-2xl transition-all transform hover:scale-105"
+                        >
+                          <CheckCircle className="h-6 w-6 mr-3" />
+                          {isSubmitting ? "Submitting..." : "Submit Quiz"}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
         )}
-
-        {/* File Upload Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <Card className="mb-8 border-0 shadow-xl bg-white/80 backdrop-blur-sm">
-            <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-t-lg">
-              <CardTitle className="text-2xl flex items-center gap-3">
-                <Upload className="h-6 w-6" />
-                Submit Your Work
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-8">
-              {assignment.submitted ? (
-                <div className="text-center py-12">
-                  <CheckCircle className="h-20 w-20 text-green-600 mx-auto mb-6" />
-                  <h3 className="text-3xl font-bold text-green-900 mb-4">Assignment Already Submitted</h3>
-                  <p className="text-gray-600 text-lg mb-6">Thank you for completing the assignment!</p>
-                  {assignment.assignment_submission_link && (
-                    <Button
-                      variant="outline"
-                      onClick={() => window.open(assignment.assignment_submission_link!, '_blank')}
-                      className="gap-3 px-6 py-3 text-lg border-2 border-green-300 text-green-700 hover:bg-green-50"
-                    >
-                      <ExternalLink className="h-5 w-5" />
-                      View Your Submission
-                    </Button>
-                  )}
-                </div>
-              ) : deadlinePassed ? (
-                <div className="text-center py-12">
-                  <AlertCircle className="h-20 w-20 text-red-600 mx-auto mb-6" />
-                  <h3 className="text-3xl font-bold text-red-900 mb-4">Submission Deadline Has Passed</h3>
-                  <p className="text-gray-600 text-lg">Please contact the administrator for assistance.</p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-lg font-semibold text-gray-700 mb-4">
-                      Upload Assignment Files
-                    </label>
-                    <label htmlFor="assignment-upload" className="cursor-pointer block">
-                      <div className="flex items-center justify-center gap-4 px-8 py-12 bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-600 rounded-xl border-3 border-dashed border-indigo-300 hover:from-indigo-100 hover:to-purple-100 transition-all">
-                        <Upload className="h-8 w-8" />
-                        <div className="text-center">
-                          <p className="text-xl font-semibold">{isUploading ? "Uploading..." : "Click to Upload Files"}</p>
-                          <p className="text-gray-600 mt-2">Support for documents, images, and more</p>
-                        </div>
-                      </div>
-                    </label>
-                    <input
-                      id="assignment-upload"
-                      type="file"
-                      multiple
-                      onChange={(e) => handleFileUpload(e)}
-                      className="hidden"
-                      disabled={isUploading}
-                    />
-                    
-                    {uploadedFiles.length > 0 && (
-                      <div className="mt-6 space-y-3">
-                        <h4 className="font-semibold text-gray-700">Uploaded Files:</h4>
-                        {uploadedFiles.map((file, index) => (
-                          <div key={index} className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
-                            <FileText className="h-5 w-5 text-gray-500" />
-                            <span className="text-gray-700 font-medium">{file.name}</span>
-                            <Button
-                              onClick={() => window.open(file.url, '_blank')}
-                              size="sm"
-                              variant="outline"
-                              className="ml-auto"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex justify-center pt-8">
-                    <Button
-                      onClick={handleSubmission}
-                      disabled={isSubmitting || isUploading}
-                      className="px-12 py-4 text-xl font-semibold bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 hover:from-green-600 hover:via-emerald-600 hover:to-teal-600 text-white shadow-xl hover:shadow-2xl transition-all transform hover:scale-105"
-                    >
-                      <CheckCircle className="h-6 w-6 mr-3" />
-                      {isSubmitting ? "Submitting..." : "Submit Assignment"}
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
       </div>
     </div>
   );
