@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Brain, Clock, Users, Code, Video, MessageSquare, FileText, Target, Zap } from 'lucide-react';
+import { ArrowLeft, Brain, Clock, Users, Code, Video, MessageSquare, FileText, Target, Zap, Wand2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface AssessmentConfig {
@@ -22,6 +21,7 @@ interface AssessmentConfig {
   // AI Assistant
   useAI: boolean;
   aiPrompt: string;
+  creationMode: 'manual' | 'ai-assisted';
   
   // Type-specific settings
   typeSpecific: Record<string, any>;
@@ -38,6 +38,7 @@ const CreateAssignment = () => {
     instructions: '',
     useAI: false,
     aiPrompt: '',
+    creationMode: 'manual',
     typeSpecific: {}
   });
 
@@ -131,6 +132,7 @@ const CreateAssignment = () => {
     const generationData = {
       assessmentType: selectedType,
       assessmentTitle: selectedAssessment?.title,
+      creationMode: config.creationMode,
       basicConfig: {
         title: config.title,
         description: config.description,
@@ -142,16 +144,22 @@ const CreateAssignment = () => {
         enabled: config.useAI,
         prompt: config.aiPrompt
       },
-      typeSpecificConfig: config.typeSpecific
+      typeSpecificConfig: config.typeSpecific,
+      timestamp: new Date().toISOString()
     };
 
-    console.log('AI Generation Data:', JSON.stringify(generationData, null, 2));
+    console.log('=== ASSESSMENT GENERATION DATA ===');
+    console.log(JSON.stringify(generationData, null, 2));
+    console.log('=== END ASSESSMENT DATA ===');
     
-    // Simulate AI generation
-    console.log('🤖 AI is generating the assessment...');
-    setTimeout(() => {
-      console.log('✅ Assessment generated successfully!');
-    }, 2000);
+    if (config.creationMode === 'ai-assisted') {
+      console.log('🤖 AI is generating the assessment...');
+      setTimeout(() => {
+        console.log('✅ Assessment generated successfully with AI assistance!');
+      }, 2000);
+    } else {
+      console.log('✅ Assessment created manually!');
+    }
   };
 
   if (!selectedType) {
@@ -246,32 +254,76 @@ const CreateAssignment = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-3">
                 <Zap className="h-6 w-6 text-purple-600" />
-                AI Assistant Configuration (Optional)
+                Creation Mode & AI Assistant
               </CardTitle>
               <CardDescription>
-                Let AI help generate content and provide insights for your assessment
+                Choose how you want to create your assessment - manually or with AI assistance
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="useAI" 
-                  checked={config.useAI}
-                  onCheckedChange={(checked) => updateConfig('useAI', checked)}
-                />
-                <Label htmlFor="useAI" className="font-medium">Enable AI Assistant</Label>
+              <div className="space-y-4">
+                <Label className="text-sm font-medium">Creation Mode</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card 
+                    className={`cursor-pointer transition-all duration-200 ${config.creationMode === 'manual' ? 'ring-2 ring-purple-500 bg-purple-50' : 'hover:bg-gray-50'}`}
+                    onClick={() => updateConfig('creationMode', 'manual')}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${config.creationMode === 'manual' ? 'bg-purple-500' : 'bg-gray-300'}`}>
+                          <Users className="h-4 w-4 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium">Manual Creation</h3>
+                          <p className="text-sm text-gray-600">Create assessment manually with full control</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card 
+                    className={`cursor-pointer transition-all duration-200 ${config.creationMode === 'ai-assisted' ? 'ring-2 ring-purple-500 bg-purple-50' : 'hover:bg-gray-50'}`}
+                    onClick={() => updateConfig('creationMode', 'ai-assisted')}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${config.creationMode === 'ai-assisted' ? 'bg-purple-500' : 'bg-gray-300'}`}>
+                          <Wand2 className="h-4 w-4 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium">AI-Assisted</h3>
+                          <p className="text-sm text-gray-600">Let AI help generate content and structure</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
-              
-              {config.useAI && (
-                <div className="space-y-2 pl-6 border-l-2 border-purple-200">
-                  <Label htmlFor="aiPrompt" className="text-sm font-medium">AI Instructions</Label>
-                  <Textarea 
-                    id="aiPrompt"
-                    placeholder="Provide specific instructions for the AI to help generate assessment content..."
-                    value={config.aiPrompt}
-                    onChange={(e) => updateConfig('aiPrompt', e.target.value)}
-                    className="min-h-[80px] bg-white/80"
-                  />
+
+              {config.creationMode === 'ai-assisted' && (
+                <div className="space-y-4 pl-6 border-l-2 border-purple-200 bg-white/50 p-4 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="useAI" 
+                      checked={config.useAI}
+                      onCheckedChange={(checked) => updateConfig('useAI', checked)}
+                    />
+                    <Label htmlFor="useAI" className="font-medium">Enable Advanced AI Features</Label>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="aiPrompt" className="text-sm font-medium">AI Instructions & Context</Label>
+                    <Textarea 
+                      id="aiPrompt"
+                      placeholder="Provide specific instructions for the AI to help generate assessment content, target audience, difficulty level, specific topics to focus on, etc..."
+                      value={config.aiPrompt}
+                      onChange={(e) => updateConfig('aiPrompt', e.target.value)}
+                      className="min-h-[100px] bg-white/80"
+                    />
+                    <p className="text-xs text-gray-500">
+                      Example: "Create a mid-level software engineer assessment focusing on React, Node.js, and system design. Target 3-5 years experience."
+                    </p>
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -744,10 +796,11 @@ const CreateAssignment = () => {
                   className="px-8 py-3 text-lg font-semibold bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   <Zap className="h-5 w-5 mr-2" />
-                  Generate Assessment
+                  {config.creationMode === 'ai-assisted' ? 'Generate with AI' : 'Create Assessment'}
                 </Button>
                 <p className="text-sm text-gray-600 mt-3">
-                  {!isFormValid() ? 'Please fill in all required fields to continue' : 'Ready to generate your assessment'}
+                  {!isFormValid() ? 'Please fill in all required fields to continue' : 
+                   config.creationMode === 'ai-assisted' ? 'AI will help generate your assessment' : 'Ready to create your assessment manually'}
                 </p>
               </div>
             </CardContent>
