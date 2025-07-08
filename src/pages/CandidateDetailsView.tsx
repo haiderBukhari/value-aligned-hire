@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { 
   ArrowLeft, Mail, MapPin, Calendar, Phone, ExternalLink, FileText, 
   Star, Award, Clock, User, Briefcase, MessageSquare, CheckCircle,
-  Download, Eye, Target, TrendingUp, DollarSign, Gift, CalendarDays
+  Download, Eye, Target, TrendingUp, DollarSign, Gift, CalendarDays, XCircle
 } from "lucide-react";
 
 const CandidateDetailsView = () => {
@@ -383,6 +383,38 @@ const CandidateDetailsView = () => {
                   </div>
                 </div>
 
+                {/* Assignment Score Section */}
+                {candidate.score !== null && candidate.score !== undefined && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Assessment Score</h3>
+                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium">Direct assessment performance</span>
+                        <span className={`text-xl font-bold ${getScoreColor(candidate.score)}`}>
+                          {candidate.score}%
+                        </span>
+                      </div>
+                      <Progress value={candidate.score} className="h-3 mb-3" />
+                      
+                      {candidate.total_weighted_score && (
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium">Combined evaluation score</span>
+                          <span className={`text-lg font-bold ${getScoreColor(candidate.total_weighted_score)}`}>
+                            {candidate.total_weighted_score}%
+                          </span>
+                        </div>
+                      )}
+                      
+                      {candidate.assignment_feedback && (
+                        <div className="mt-4 p-3 bg-white rounded border">
+                          <h4 className="font-semibold mb-2">AI Feedback</h4>
+                          <p className="text-gray-700 text-sm">{candidate.assignment_feedback}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {workflow && (
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">Stage Progress</h3>
@@ -616,35 +648,201 @@ const CandidateDetailsView = () => {
               <CardContent className="space-y-6">
                 {candidate.assignment_template?.[0] && (
                   <div>
-                    <h3 className="font-semibold mb-2">{candidate.assignment_template[0].title}</h3>
+                    <h3 className="font-semibold mb-2">{candidate.assignment_template[0].title || candidate.assignment_template[0].assessmentTitle}</h3>
                     <p className="text-gray-700 mb-4">{candidate.assignment_template[0].description}</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <p><strong>Duration:</strong> {candidate.assignment_template[0].duration}</p>
-                      <p><strong>Deadline:</strong> {new Date(candidate.assignment_template[0].deadline).toLocaleDateString()}</p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-6">
+                      {candidate.assignment_template[0].duration && (
+                        <p><strong>Duration:</strong> {candidate.assignment_template[0].duration}</p>
+                      )}
+                      {candidate.assignment_template[0].time_limit && (
+                        <p><strong>Time Limit:</strong> {candidate.assignment_template[0].time_limit} minutes</p>
+                      )}
+                      {candidate.assignment_template[0].deadline && (
+                        <p><strong>Deadline:</strong> {new Date(candidate.assignment_template[0].deadline).toLocaleDateString()}</p>
+                      )}
+                      {candidate.assignment_template[0].passing_score && (
+                        <p><strong>Passing Score:</strong> {candidate.assignment_template[0].passing_score}%</p>
+                      )}
                     </div>
+
+                    {/* Quiz Questions Display */}
+                    {candidate.assignment_template[0].questions && candidate.assignment_template[0].questions.length > 0 && (
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-lg">Quiz Questions & Answers</h4>
+                        
+                        {/* Summary Stats */}
+                        {candidate.full_assignment_submission?.[0] && (
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 text-center">
+                              <div className="text-2xl font-bold text-blue-600">{candidate.assignment_template[0].questions.length}</div>
+                              <div className="text-sm text-blue-800">Total Questions</div>
+                            </div>
+                            <div className="p-4 bg-green-50 rounded-lg border border-green-200 text-center">
+                              <div className="text-2xl font-bold text-green-600">
+                                {candidate.assignment_template[0].questions.reduce((correct, question, index) => {
+                                  const userAnswer = candidate.full_assignment_submission[0].answers[index.toString()];
+                                  return correct + (userAnswer === question.correct_answer ? 1 : 0);
+                                }, 0)}
+                              </div>
+                              <div className="text-sm text-green-800">Correct Answers</div>
+                            </div>
+                            <div className="p-4 bg-red-50 rounded-lg border border-red-200 text-center">
+                              <div className="text-2xl font-bold text-red-600">
+                                {candidate.assignment_template[0].questions.reduce((wrong, question, index) => {
+                                  const userAnswer = candidate.full_assignment_submission[0].answers[index.toString()];
+                                  return wrong + (userAnswer !== question.correct_answer ? 1 : 0);
+                                }, 0)}
+                              </div>
+                              <div className="text-sm text-red-800">Wrong Answers</div>
+                            </div>
+                          </div>
+                        )}
+
+                        {candidate.assignment_template[0].questions.map((question: any, index: number) => {
+                          const userAnswer = candidate.full_assignment_submission?.[0]?.answers?.[index.toString()];
+                          const isCorrect = userAnswer === question.correct_answer;
+                          
+                          return (
+                            <div key={index} className={`p-4 rounded-lg border ${isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                              <div className="flex items-start gap-3 mb-3">
+                                <div className={`p-1 rounded-full ${isCorrect ? 'bg-green-500' : 'bg-red-500'}`}>
+                                  {isCorrect ? (
+                                    <CheckCircle className="h-4 w-4 text-white" />
+                                  ) : (
+                                    <XCircle className="h-4 w-4 text-white" />
+                                  )}
+                                </div>
+                                <div className="flex-1">
+                                  <h5 className="font-medium mb-2">Question {index + 1}:</h5>
+                                  <p className="text-gray-800 mb-3">{question.question}</p>
+                                  
+                                  {question.options && (
+                                    <div className="space-y-2">
+                                      {question.options.map((option: string, optionIndex: number) => {
+                                        const isUserChoice = userAnswer === option;
+                                        const isCorrectOption = question.correct_answer === option;
+                                        
+                                        return (
+                                          <div
+                                            key={optionIndex}
+                                            className={`p-2 rounded border text-sm ${
+                                              isCorrectOption
+                                                ? 'bg-green-100 border-green-300 text-green-800 font-medium'
+                                                : isUserChoice && !isCorrectOption
+                                                ? 'bg-red-100 border-red-300 text-red-800'
+                                                : 'bg-gray-50 border-gray-200 text-gray-700'
+                                            }`}
+                                          >
+                                            <div className="flex items-center gap-2">
+                                              {isCorrectOption && (
+                                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                              )}
+                                              {isUserChoice && !isCorrectOption && (
+                                                <XCircle className="h-4 w-4 text-red-600" />
+                                              )}
+                                              <span>{option}</span>
+                                              {isUserChoice && (
+                                                <Badge className="ml-auto text-xs bg-blue-100 text-blue-800 border-blue-200">
+                                                  Selected
+                                                </Badge>
+                                              )}
+                                              {isCorrectOption && (
+                                                <Badge className="ml-auto text-xs bg-green-100 text-green-800 border-green-200">
+                                                  Correct
+                                                </Badge>
+                                              )}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                  
+                                  {!question.options && userAnswer && (
+                                    <div className="mt-2">
+                                      <p className="text-sm font-medium">Answer:</p>
+                                      <p className="text-gray-700">{userAnswer}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Manual Assignment Content */}
+                    {candidate.assignment_template[0].content && (
+                      <div className="space-y-4">
+                        <h4 className="font-semibold">Assignment Content</h4>
+                        <div className="p-4 bg-gray-50 rounded-lg border">
+                          <div dangerouslySetInnerHTML={{ __html: candidate.assignment_template[0].content }} />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Manual Assignment Questions */}
+                    {candidate.assignment_template[0].questions && candidate.assignment_template[0].questions.some((q: any) => q.type) && (
+                      <div className="space-y-4">
+                        <h4 className="font-semibold">Assignment Questions</h4>
+                        {candidate.assignment_template[0].questions.map((question: any, index: number) => (
+                          <div key={index} className="p-4 bg-gray-50 rounded-lg border">
+                            <p className="font-medium mb-2">Question {index + 1}: {question.question}</p>
+                            {question.type === 'multiple_choice' && question.options && (
+                              <div className="mb-2">
+                                <p className="text-sm text-gray-600">Options:</p>
+                                <ul className="list-disc list-inside text-sm text-gray-700">
+                                  {question.options.map((option: string, optionIndex: number) => (
+                                    <li key={optionIndex}>{option}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {candidate.full_assignment_submission?.[0]?.answers?.[index.toString()] && (
+                              <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200">
+                                <p className="text-sm font-medium text-blue-800">Candidate's Answer:</p>
+                                <p className="text-blue-700">{candidate.full_assignment_submission[0].answers[index.toString()]}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {candidate.assignment_feedback && (
-                  <div>
+                  <div className="space-y-2">
                     <h3 className="font-semibold mb-2">Assignment Feedback</h3>
-                    <p className="text-gray-700">{candidate.assignment_feedback}</p>
+                    <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <p className="text-gray-700">{candidate.assignment_feedback}</p>
+                    </div>
                   </div>
                 )}
 
                 {candidate.full_assignment_submission?.[0] && (
-                  <div>
-                    <h3 className="font-semibold mb-2">Candidate Submission</h3>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      {Object.entries(candidate.full_assignment_submission[0].answers).map(([key, answer]) => (
-                        <div key={key} className="mb-2">
-                          <p><strong>Answer {parseInt(key) + 1}:</strong> {answer as string}</p>
-                        </div>
-                      ))}
-                      <p className="text-sm text-gray-600 mt-2">
-                        Submitted: {new Date(candidate.full_assignment_submission[0].submission_time).toLocaleDateString()}
-                      </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold">Submission Information</h3>
+                      <Badge className="bg-green-100 text-green-800 border-green-200">
+                        Submitted: {new Date(candidate.full_assignment_submission[0].submission_time).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </Badge>
                     </div>
+                  </div>
+                )}
+
+                {!candidate.assignment_template && !candidate.assignment_feedback && !candidate.full_assignment_submission && (
+                  <div className="text-center py-8 text-gray-500">
+                    <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                    <p>No assignment details available</p>
                   </div>
                 )}
               </CardContent>
