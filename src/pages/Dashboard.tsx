@@ -279,6 +279,12 @@ const Dashboard = () => {
         label: "Hiring Pipeline",
         path: "/dashboard/pipeline",
         count: dashboardStats.totalApplications
+      },
+      {
+        icon: Calendar,
+        label: "Interview Scheduling",
+        path: "/dashboard/scheduling",
+        count: dashboardStats.interviewsScheduled
       }
     ];
 

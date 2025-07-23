@@ -31,6 +31,7 @@ import ViewAssignment from "./pages/ViewAssignment";
 import AssignmentReview from "./pages/AssignmentReview";
 import CandidateDetails from "./pages/CandidateDetails";
 import CandidateDetailsView from "./pages/CandidateDetailsView";
+import InterviewScheduling from "./pages/InterviewScheduling";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,7 @@ const App = () => (
             <Route path="pipeline" element={<HiringPipeline />} />
             <Route path="company" element={<CompanyConfiguration />} />
             <Route path="interviews" element={<InterviewManagement />} />
+            <Route path="scheduling" element={<InterviewScheduling />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
