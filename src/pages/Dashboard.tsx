@@ -9,7 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import {
   Users, Briefcase, TrendingUp, Calendar, Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2,
-  Home, LogOut, Building2, UserCheck, ClipboardList, FileText, Target, Bell, Award, Handshake, Loader2
+  Home, LogOut, Building2, UserCheck, ClipboardList, FileText, Target, Bell, Award, Handshake, Loader2, Settings
 } from "lucide-react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useCompanyInfo } from "@/hooks/useCompanyInfo";
@@ -282,9 +282,15 @@ const Dashboard = () => {
       },
       {
         icon: Calendar,
-        label: "Interview Scheduling",
-        path: "/dashboard/scheduling",
+        label: "Interview Calendar",
+        path: "/dashboard/interview-calendar",
         count: dashboardStats.interviewsScheduled
+      },
+      {
+        icon: Settings,
+        label: "Availability Settings",
+        path: "/dashboard/availability-settings",
+        count: null
       }
     ];
 
