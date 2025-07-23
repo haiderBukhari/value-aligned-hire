@@ -13,20 +13,19 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Plus, 
-  Copy, 
   Trash2,
   Save,
   RotateCcw,
   CheckCircle
 } from "lucide-react";
 
-// Default availability template
+// Default availability template - all days disabled initially
 const defaultAvailability = {
-  monday: { enabled: true, slots: [{ from: "09:00", to: "17:00" }] },
-  tuesday: { enabled: true, slots: [{ from: "09:00", to: "17:00" }] },
-  wednesday: { enabled: true, slots: [{ from: "09:00", to: "17:00" }] },
-  thursday: { enabled: true, slots: [{ from: "09:00", to: "17:00" }] },
-  friday: { enabled: true, slots: [{ from: "09:00", to: "17:00" }] },
+  monday: { enabled: false, slots: [] },
+  tuesday: { enabled: false, slots: [] },
+  wednesday: { enabled: false, slots: [] },
+  thursday: { enabled: false, slots: [] },
+  friday: { enabled: false, slots: [] },
   saturday: { enabled: false, slots: [] },
   sunday: { enabled: false, slots: [] }
 };
@@ -36,6 +35,21 @@ const AvailabilitySettings = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [availabilityMonth, setAvailabilityMonth] = useState(new Date());
   const [hasChanges, setHasChanges] = useState(false);
+
+  // Dummy booking data for selected date
+  const getBookingsForDate = (date: Date) => {
+    const dummyBookings = [
+      { time: "09:30", candidate: "John Doe", type: "Initial Interview" },
+      { time: "14:00", candidate: "Jane Smith", type: "Final Interview" },
+      { time: "16:30", candidate: "Alex Johnson", type: "Technical Assessment" }
+    ];
+    
+    // Return bookings only for specific dates (for demo)
+    if (date.getDate() === new Date().getDate()) {
+      return dummyBookings;
+    }
+    return [];
+  };
 
   const weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
   const weekDayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -78,23 +92,6 @@ const AvailabilitySettings = () => {
     setHasChanges(true);
   };
 
-  // Copy availability to all weekdays
-  const copyToWeekdays = (sourceDay: string) => {
-    const sourceAvailability = availability[sourceDay as keyof typeof availability];
-    const weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
-    
-    setAvailability(prev => {
-      const updated = { ...prev };
-      weekdays.forEach(day => {
-        updated[day as keyof typeof updated] = {
-          enabled: sourceAvailability.enabled,
-          slots: [...sourceAvailability.slots]
-        };
-      });
-      return updated;
-    });
-    setHasChanges(true);
-  };
 
   // Toggle day availability
   const toggleDayAvailability = (day: string) => {
@@ -237,16 +234,6 @@ const AvailabilitySettings = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => copyToWeekdays(day)}
-                        className="text-xs"
-                        disabled={!availability[day as keyof typeof availability].enabled}
-                      >
-                        <Copy className="h-3 w-3 mr-1" />
-                        Copy to weekdays
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
                         onClick={() => addTimeSlot(day)}
                         disabled={!availability[day as keyof typeof availability].enabled}
                       >
@@ -362,7 +349,7 @@ const AvailabilitySettings = () => {
                 </div>
               </div>
               <CardDescription>
-                {format(availabilityMonth, 'MMMM yyyy')}
+                {format(availabilityMonth, 'MMMM yyyy')} - Click dates to view bookings
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -390,6 +377,36 @@ const AvailabilitySettings = () => {
                   day_today: "bg-accent text-accent-foreground font-medium"
                 }}
               />
+              
+              {/* Selected Date Details */}
+              {selectedDate && (
+                <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                  <h4 className="font-medium text-sm text-gray-900 mb-3">
+                    {format(selectedDate, 'EEEE, MMMM d, yyyy')}
+                  </h4>
+                  {getBookingsForDate(selectedDate).length > 0 ? (
+                    <div className="space-y-2">
+                      {getBookingsForDate(selectedDate).map((booking, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-white rounded border border-blue-100">
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-3 w-3 text-blue-500" />
+                            <span className="text-xs font-medium">{booking.time}</span>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs font-medium text-gray-900">{booking.candidate}</p>
+                            <p className="text-xs text-gray-600">{booking.type}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-3">
+                      <CalendarIcon className="h-6 w-6 text-gray-300 mx-auto mb-1" />
+                      <p className="text-xs text-gray-500">No bookings for this date</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 

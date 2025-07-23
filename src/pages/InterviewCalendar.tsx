@@ -98,6 +98,16 @@ const InterviewCalendar = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Get stats for selected date
+  const getDateStats = (date: Date) => {
+    const dayInterviews = getInterviewsForDate(date);
+    const completed = dayInterviews.filter(i => i.status === 'completed').length;
+    const scheduled = dayInterviews.filter(i => i.status === 'scheduled').length;
+    const upcoming = dayInterviews.filter(i => i.status === 'upcoming').length;
+    
+    return { total: dayInterviews.length, completed, scheduled, upcoming };
+  };
+
   // Get interviews for selected date
   const getInterviewsForDate = (date: Date) => {
     return dummyInterviews.filter(interview => 
@@ -223,30 +233,64 @@ const InterviewCalendar = () => {
               <CardTitle className="text-lg">Quick Navigation</CardTitle>
             </CardHeader>
             <CardContent>
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-                month={currentDate}
-                onMonthChange={setCurrentDate}
-                className="rounded-md border-0"
-                classNames={{
-                  months: "flex w-full flex-col",
-                  month: "space-y-4 w-full",
-                  caption: "flex justify-center pt-1 relative items-center",
-                  caption_label: "text-sm font-medium",
-                  nav: "space-x-1 flex items-center",
-                  nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
-                  table: "w-full border-collapse space-y-1",
-                  head_row: "flex",
-                  head_cell: "text-muted-foreground rounded-md w-8 font-normal text-[0.8rem]",
-                  row: "flex w-full mt-2",
-                  cell: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 w-8",
-                  day: "h-8 w-8 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-md",
-                  day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                  day_today: "bg-accent text-accent-foreground font-medium"
-                }}
-              />
+              <div className="max-h-80 overflow-hidden">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && setSelectedDate(date)}
+                  month={currentDate}
+                  onMonthChange={setCurrentDate}
+                  className="rounded-md border-0 w-full"
+                  classNames={{
+                    months: "flex w-full flex-col",
+                    month: "space-y-2 w-full",
+                    caption: "flex justify-center pt-1 relative items-center",
+                    caption_label: "text-sm font-medium",
+                    nav: "space-x-1 flex items-center",
+                    nav_button: "h-6 w-6 bg-transparent p-0 opacity-50 hover:opacity-100",
+                    table: "w-full border-collapse",
+                    head_row: "flex",
+                    head_cell: "text-muted-foreground rounded-md w-7 font-normal text-[0.7rem]",
+                    row: "flex w-full mt-1",
+                    cell: "relative p-0 text-center text-xs focus-within:relative focus-within:z-20 w-7",
+                    day: "h-7 w-7 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-md text-xs",
+                    day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                    day_today: "bg-accent text-accent-foreground font-medium"
+                  }}
+                />
+              </div>
+              
+              {/* Selected Date Stats */}
+              {selectedDate && (
+                <div className="mt-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                  <h4 className="font-medium text-sm text-gray-900 mb-2">
+                    {format(selectedDate, 'MMM d, yyyy')}
+                  </h4>
+                  {(() => {
+                    const stats = getDateStats(selectedDate);
+                    return (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-600">Total Interviews</span>
+                          <span className="font-medium text-gray-900">{stats.total}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-600">Completed</span>
+                          <span className="font-medium text-green-600">{stats.completed}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-600">Scheduled</span>
+                          <span className="font-medium text-blue-600">{stats.scheduled}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-600">Upcoming</span>
+                          <span className="font-medium text-purple-600">{stats.upcoming}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
             </CardContent>
           </Card>
           
@@ -337,24 +381,24 @@ const InterviewCalendar = () => {
             
             <CardContent className="p-0">
               {calendarView === "day" ? (
-                <div className="h-96 overflow-y-auto">
+                <div className="max-h-[600px] overflow-y-auto">
                   {generateTimeSlots().map((timeSlot, index) => {
                     const interview = getInterviewsForDate(selectedDate).find(
                       int => int.time === timeSlot
                     );
                     
                     return (
-                      <div key={timeSlot} className={`flex border-b border-gray-100 min-h-[60px] ${index % 2 === 0 ? 'bg-gray-50/30' : 'bg-white'}`}>
-                        <div className="w-20 p-4 border-r border-gray-100 bg-gray-50">
+                      <div key={timeSlot} className={`flex border-b border-gray-100 min-h-[50px] ${index % 2 === 0 ? 'bg-gray-50/30' : 'bg-white'}`}>
+                        <div className="w-16 p-3 border-r border-gray-100 bg-gray-50 flex items-center">
                           <span className="text-xs font-mono text-gray-600">{timeSlot}</span>
                         </div>
-                        <div className="flex-1 p-4">
+                        <div className="flex-1 p-3">
                           {interview ? (
-                            <div className={`p-4 rounded-lg transition-all hover:shadow-lg cursor-pointer ${getStatusColor(interview.status)}`}>
+                            <div className={`p-3 rounded-lg transition-all hover:shadow-lg cursor-pointer ${getStatusColor(interview.status)}`}>
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                  <Avatar className="h-10 w-10">
-                                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm">
+                                  <Avatar className="h-8 w-8">
+                                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs">
                                       {interview.candidateName.split(' ').map(n => n[0]).join('')}
                                     </AvatarFallback>
                                   </Avatar>
@@ -363,7 +407,7 @@ const InterviewCalendar = () => {
                                     <p className="text-xs opacity-80">{interview.type} • {interview.position}</p>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2">
                                   {getMeetingIcon(interview.meetingType)}
                                   <Badge variant="outline" className="text-xs">
                                     {interview.duration}min
@@ -378,7 +422,7 @@ const InterviewCalendar = () => {
                               </div>
                             </div>
                           ) : (
-                            <div className="text-sm text-gray-400 py-3 border-l-2 border-transparent hover:border-blue-200 pl-3 transition-colors">
+                            <div className="text-sm text-gray-400 py-2 border-l-2 border-transparent hover:border-blue-200 pl-3 transition-colors">
                               Available
                             </div>
                           )}
@@ -388,43 +432,54 @@ const InterviewCalendar = () => {
                   })}
                 </div>
               ) : (
-                <div className="p-4">
-                  <div className="grid grid-cols-7 gap-2">
+                <div className="p-4 max-h-[600px] overflow-y-auto">
+                  <div className="grid grid-cols-7 gap-3">
                     {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => {
                       const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
                       const dayDate = addDays(weekStart, index);
                       const dayInterviews = getInterviewsForDate(dayDate);
                       
                       return (
-                        <div key={day} className="border rounded-lg p-3 min-h-[200px] bg-gradient-to-b from-white to-gray-50">
+                        <div key={day} className={`border rounded-lg p-3 min-h-[250px] bg-gradient-to-b from-white to-gray-50 cursor-pointer transition-all hover:shadow-md ${isSameDay(dayDate, selectedDate) ? 'ring-2 ring-blue-500' : ''}`}
+                             onClick={() => setSelectedDate(dayDate)}>
                           <div className="text-center mb-3 pb-2 border-b border-gray-100">
                             <p className="text-sm font-medium text-gray-900">{day}</p>
-                            <p className="text-lg font-bold text-blue-600">{format(dayDate, 'd')}</p>
+                            <p className="text-xl font-bold text-blue-600">{format(dayDate, 'd')}</p>
                           </div>
                           <div className="space-y-2">
-                            {dayInterviews.map((interview) => (
+                            {dayInterviews.slice(0, 3).map((interview) => (
                               <div key={interview.id} className={`p-2 rounded text-xs transition-all hover:shadow-md ${getStatusColor(interview.status)}`}>
                                 <p className="font-medium">{interview.time}</p>
                                 <p className="truncate">{interview.candidateName}</p>
                                 <div className="flex items-center gap-1 mt-1">
                                   {getMeetingIcon(interview.meetingType)}
                                   <span className="text-xs opacity-75">{interview.duration}m</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default InterviewCalendar;
+                                 </div>
+                               </div>
+                             ))}
+                             {dayInterviews.length > 3 && (
+                               <div className="text-xs text-gray-500 text-center py-1">
+                                 +{dayInterviews.length - 3} more
+                               </div>
+                             )}
+                             {dayInterviews.length === 0 && (
+                               <div className="text-xs text-gray-400 text-center py-4">
+                                 No interviews
+                               </div>
+                             )}
+                           </div>
+                         </div>
+                       );
+                     })}
+                   </div>
+                 </div>
+               )}
+             </CardContent>
+           </Card>
+         </div>
+       </div>
+     </div>
+   );
+ };
+ 
+ export default InterviewCalendar;
