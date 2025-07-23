@@ -33,6 +33,7 @@ import CandidateDetails from "./pages/CandidateDetails";
 import CandidateDetailsView from "./pages/CandidateDetailsView";
 import InterviewCalendar from "./pages/InterviewCalendar";
 import AvailabilitySettings from "./pages/AvailabilitySettings";
+import SchedulePage from "./pages/SchedulePage";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ const App = () => (
           <Route path="/signup" element={<Signup />} />
           <Route path="/apply/:jobId" element={<JobApplication />} />
           <Route path="/viewassignment/:resumeId" element={<ViewAssignment />} />
+          <Route path="/schedule/:resumeId" element={<SchedulePage />} />
           <Route path="/dashboard" element={<Dashboard />}>
             <Route path="jobs" element={<Jobs />} />
             <Route path="jobs/:jobId" element={<JobDetails />} />
